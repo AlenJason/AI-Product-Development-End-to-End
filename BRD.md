@@ -1,186 +1,252 @@
 # BUSINESS REQUIREMENTS DOCUMENT (BRD)
 ## Dự án: SmartFit AI – Adaptive Meal & Workout Planner
 **Tên sản phẩm:** Trợ lý AI Gợi ý & Điều chỉnh Thực đơn, Lịch tập Thông minh  
-**Môn học:** AI Product Development End-to-End  
-**Phiên bản:** 1.1.0  
-**Ngày cập nhật:** 12/09/2026  
-**Trạng thái:** Chính thức phê duyệt (Approved)
+**Môn học:** AI Product Development End-to-End (Đồ án Kỹ sư / Cử nhân Năm 4)  
+**Đơn vị thực hiện:** Trường Đại học Công nghệ Thông tin và Truyền thông Việt - Hàn (VKU)  
+**Phiên bản:** 2.0.0 (Dành cho Sinh viên thực hành: Flutter & FastAPI)  
+**Ngày cập nhật:** 13/09/2026  
+**Trạng thái:** Đã phê duyệt (Approved)  
 
 ---
 
 ## 1. TỔNG QUAN DỰ ÁN (EXECUTIVE SUMMARY)
 
-**SmartFit AI** là ứng dụng di động/web hỗ trợ quản lý sức khỏe cá nhân hóa, giúp tự động lập và điều chỉnh lịch trình ăn uống, tập luyện theo nhu cầu và thể trạng thực tế của từng người dùng. 
+**SmartFit AI** là ứng dụng di động hỗ trợ quản lý sức khỏe cá nhân hóa, giúp tự động tạo và linh hoạt điều chỉnh lịch ăn uống, tập luyện theo nhu cầu và thể trạng thực tế của từng cá nhân. 
 
-Thay vì cung cấp một bản kế hoạch dài hạn cố định, cứng nhắc (vốn là nguyên nhân hàng đầu khiến 80% người mới bỏ cuộc), SmartFit AI tiếp cận theo hướng **tương tác hai chiều linh hoạt (Human-in-the-loop & Adaptive Feedback)**. Ứng dụng tập trung vào chu kỳ kế hoạch **3 ngày cuốn chiếu (Rolling 3-Day Plan)** kết hợp các món ăn gia đình Việt Nam gần gũi, bài tập đơn giản tại nhà và danh sách đi chợ thông minh.
+Thay vì cung cấp một kế hoạch 30 ngày cứng nhắc (nguyên nhân khiến 80% người mới bỏ cuộc), SmartFit AI tiếp cận theo hướng **tương tác hai chiều thân thiện (Human-in-the-loop & Adaptive Feedback)** với chu kỳ **3 ngày cuốn chiếu (Rolling 3-Day Plan)**:
+* **Ăn uống:** Ưu tiên các món ăn gia đình Việt Nam bình dân, gần gũi, dễ mua, dễ nấu.
+* **Tập luyện:** Bài tập thể dục tại nhà (Bodyweight/Calisthenics), không cần tạ hay dụng cụ đắt tiền.
+* **Tiện ích:** Danh sách đi chợ thông minh (Checklist) gom nguyên liệu giúp sinh viên và người bận rộn mua sắm nhanh gọn.
 
-Dự án tuân thủ quy trình phát triển sản phẩm AI toàn diện chuẩn công nghiệp: từ phân tích yêu cầu nghiệp vụ (BRD/PRD), thiết kế Prompt với cấu trúc đầu ra chuẩn (Structured Output JSON), tích hợp REST API, đến kiểm thử tự động (Unit/Integration Test) và xây dựng tài liệu kỹ thuật hoàn chỉnh.
+> [!NOTE]
+> **Định vị kỹ thuật của đồ án:** Dự án được thiết kế chuẩn chỉnh theo mô hình phát triển sản phẩm AI End-to-End nhưng được **tối ưu hóa cho sinh viên năm 4 mới tiếp cận Flutter và REST API**. Kiến trúc tinh gọn, dễ debug, dễ kiểm thử bằng giao diện Swagger UI trước khi tích hợp vào ứng dụng di động.
 
 ---
 
-## 2. BÀI TOÁN & GIẢI PHÁP SẢN PHẨM (PROBLEM & SOLUTION)
+## 2. BÀI TOÁN & GIẢI PHÁP (PROBLEM & SOLUTION)
 
-### 2.1. Vấn đề thực tế của người dùng
-1. **Kế hoạch mẫu quá xa rời thực tế:** Thực đơn trên mạng thường đòi hỏi nguyên liệu ngoại nhập, đắt tiền (cá hồi, măng tây, quả bơ...) hoặc chế biến nhạt nhẽo (ức gà luộc) không phù hợp thói quen ăn uống gia đình Việt Nam.
-2. **Kế hoạch quá dài hạn gây nản lòng:** Lập kế hoạch 30 ngày rất dễ bị "vỡ trận" ngay tuần đầu tiên chỉ vì 1 buổi tiệc đột xuất hoặc 1 ngày mệt mỏi.
-3. **Thiếu tính năng thay thế tương đương:** Khi không mua được nguyên liệu hoặc đau nhức một nhóm cơ, người dùng không biết cách tự tìm món ăn hay bài tập khác có giá trị tương đương.
-4. **Bất tiện khi chuẩn bị nguyên liệu:** Khó khăn trong việc tính toán lượng thực phẩm cần mua cho nhiều ngày dẫn đến lãng phí hoặc thiếu hụt.
+### 2.1. Vấn đề thực tế
+1. **Thực đơn ngoại nhập khó áp dụng:** Các app quốc tế thường gợi ý yến mạch, măng tây, ức gà áp chảo, cá hồi... vừa đắt vừa khó duy trì với người Việt Nam.
+2. **Kế hoạch quá dài hạn:** Kế hoạch 1 tháng dễ bị "vỡ trận" ngay tuần đầu khi có tiệc tùng, bận thi cử hoặc một ngày mệt mỏi.
+3. **Không biết cách thay thế:** Khi hết nguyên liệu trong tủ lạnh hoặc đau cơ bắp, người dùng không biết chọn món nào hoặc bài tập nào tương đương để thay thế.
+4. **Bối rối khi đi chợ:** Khó tính toán khối lượng thịt, rau cần mua cho 3 ngày tới, dẫn tới lãng phí thực phẩm.
 
 ### 2.2. Giải pháp của SmartFit AI
-* **Khảo sát cá nhân hóa sâu:** Đo lường thể trạng, mục tiêu và đặc biệt là các hạn chế thể chất (chấn thương, dị ứng).
-* **Kế hoạch 3 ngày thực tế:** Tạo thực đơn món Việt thân quen, tiết kiệm và bài tập thể dục tại nhà (Home Workout không cần tạ).
-* **Đổi món & đổi bài tập thông minh (Interactive Swap):** Đổi ngay lập tức món ăn hoặc động tác khác nhưng AI đảm bảo giữ nguyên giá trị Calo và Macro mục tiêu.
-* **Vòng lặp thích ứng hàng ngày (Adaptive Feedback Loop):** Thu thập cảm nhận thể chất cuối ngày để tự động tinh chỉnh cường độ và dinh dưỡng cho ngày tiếp theo.
-* **Danh sách đi chợ thông minh (Smart Grocery Checklist):** Tự động bóc tách và cộng dồn nguyên liệu của 3 ngày thành danh sách tích chọn đi chợ tiện lợi.
+* **Khảo sát đơn giản & cá nhân:** Nhập chiều cao, cân nặng, mục tiêu và hạn chế (dị ứng, đau khớp).
+* **Kế hoạch 3 ngày thực tế:** Tạo thực đơn món Việt và bài tập tại nhà 15–25 phút.
+* **Đổi món & đổi bài tập thông minh (Interactive Swap):** Đổi ngay món hoặc bài tập khác tương đương lượng Calo/Macro chỉ bằng một chạm.
+* **Ghi nhận phản hồi cuối ngày (Adaptive Feedback):** Báo mệt mỏi hoặc lỡ ăn nhiều để AI tự hạ cường độ hoặc cân bằng calo ngày hôm sau.
+* **Danh sách đi chợ (Smart Checklist):** Tự động bóc tách nguyên liệu thành danh sách tích chọn đi chợ tiện lợi.
 
 ---
 
-## 3. ĐỐI TƯỢNG NGƯỜI DÙNG MỤC TIÊU (TARGET AUDIENCE)
+## 3. ĐỐI TƯỢNG NGƯỜI DÙNG MỤC TIÊU
 
-1. **Người đi làm / Nhân viên văn phòng bận rộn:** Cần bài tập tại nhà 15-25 phút, thực đơn cơm trưa văn phòng/gia đình dễ chuẩn bị, dễ thay đổi khi có lịch liên hoan đột xuất.
-2. **Sinh viên / Người mới bắt đầu (Beginner):** Ngân sách ăn uống giới hạn, chỉ ăn được món Việt bình dân, chưa có kinh nghiệm đến phòng gym và cần hướng dẫn bài tập không cần dụng cụ.
-3. **Người có hạn chế sức khỏe đặc thù:** Dị ứng thức ăn (hải sản, đậu phộng, lactose...), có tiền sử đau cổ tay, đau khớp gối cần tránh các động tác bật nhảy hoặc tì đè nặng.
+1. **Sinh viên & Người mới đi làm:** Cần thực đơn tiết kiệm, bài tập nhanh tại phòng trọ/nhà ở không cần dụng cụ.
+2. **Dân văn phòng bận rộn:** Cần ăn uống linh hoạt theo bữa cơm gia đình hoặc cơm văn phòng, có thể đổi món tức thì khi có lịch liên hoan đột xuất.
+3. **Người có hạn chế thể lực:** Người bị đau cổ tay, đau khớp gối (cần tránh nhảy dây/burpee) hoặc dị ứng thức ăn (hải sản, trứng, sữa...).
 
 ---
 
-## 4. CÁC TÍNH NĂNG CỐT LÕI (CORE FUNCTIONAL REQUIREMENTS)
+## 4. KIẾN TRÚC HỆ THỐNG DÀNH CHO SINH VIÊN (END-TO-END ARCHITECTURE)
+
+Dự án chọn công nghệ hiện đại, phổ biến trong tuyển dụng nhưng có đường cong học tập vừa sức cho sinh viên năm 4:
 
 ```mermaid
-graph TD
-    A[1. Khảo sát Onboarding] -->|Thông tin cá nhân & Thể trạng| B[AI Engine: Khởi tạo kế hoạch 3 ngày]
-    B --> C[Thực đơn 3 ngày - Món Việt]
-    B --> D[Lịch tập 3 ngày - Tại nhà]
-    
-    C -->|Người dùng bấm Đổi món| E[Interactive Swap: Đổi món tương đương Calo/Macro]
-    D -->|Người dùng bấm Đổi bài tập| F[Interactive Swap: Đổi bài tập cùng nhóm cơ/cường độ]
-    
-    C --> G[Danh sách đi chợ thông minh - Smart Checklist]
-    
-    C & D --> H[Thực hiện trong ngày]
-    H --> I[2. Adaptive Feedback: Đánh giá cuối ngày]
-    I -->|Mệt mỏi / Quá sức / Dư Calo| J[AI Engine: Tinh chỉnh ngày kế tiếp]
-    J --> C & D
+sequenceDiagram
+    autonumber
+    actor User as Sinh viên / Người dùng
+    participant Flutter as Flutter App (Mobile UI)
+    participant FastAPI as Backend API (Python FastAPI)
+    participant Gemini as Gemini AI (LLM Engine)
+
+    User->>Flutter: 1. Nhập thông tin thể trạng (Onboarding)
+    Flutter->>FastAPI: 2. Gửi thông tin (HTTP POST /api/v1/generate-plan)
+    Note over FastAPI: Tính BMR/TDEE (Toán thuần)<br/>Ghép System Prompt + Pydantic Schema
+    FastAPI->>Gemini: 3. Gọi Gemini API (Structured JSON Mode)
+    Gemini-->>FastAPI: 4. Trả về chuỗi JSON Kế hoạch 3 ngày
+    Note over FastAPI: Pydantic kiểm tra tính hợp lệ JSON
+    FastAPI-->>Flutter: 5. Trả về HTTP 200 OK (JSON hoàn chỉnh)
+    Flutter-->>User: 6. Hiển thị Thực đơn, Lịch tập & Checklist đi chợ
 ```
 
-### Feature 1: Khảo sát cá nhân hóa (Personalized Onboarding)
-* **FR-1.1 (Chỉ số nhân trắc học):** Nhập tuổi, giới tính, chiều cao (cm), cân nặng hiện tại (kg).
-* **FR-1.2 (Mục tiêu cá nhân):** Chọn 1 trong 3 mục tiêu rõ ràng: *Giảm mỡ (Cut)*, *Tăng cơ (Bulk)*, hoặc *Duy trì vóc dáng (Maintain)*.
-* **FR-1.3 (Ràng buộc & Hạn chế):**
-  * Dị ứng thực phẩm: Tích chọn các loại thực phẩm gây dị ứng (Hải sản, sữa/lactose, trứng, các loại hạt...).
-  * Chấn thương / Vấn đề cơ xương khớp: Đau gối, đau lưng dưới, đau cổ tay, huyết áp...
-* **FR-1.4 (Engine tính toán nền tảng):** Tự động tính toán chỉ số BMI, BMR (Mifflin-St Jeor) và TDEE khoa học để làm mốc năng lượng chuẩn cho AI.
-
-### Feature 2: Khởi tạo kế hoạch 3 ngày (Rolling 3-Day Plan Generation)
-* **FR-2.1 (Thực đơn món ăn Việt):** Sinh kế hoạch ăn uống 3 ngày liên tiếp gồm 3 bữa chính (Sáng, Trưa, Tối) và 1 bữa phụ (tùy chọn). Ưu tiên các món ăn Việt Nam gần gũi, quen thuộc (phở, bún, cơm gia đình, canh rau, thịt kho, cá hấp...).
-* **FR-2.2 (Lịch tập tại nhà):** Lập lịch vận động 3 ngày với các bài tập Bodyweight/Calisthenics đơn giản, không cần tạ, phù hợp không gian phòng khách/phòng trọ, chỉ rõ số hiệp (sets), số lần (reps) hoặc thời gian (giây).
-* **FR-2.3 (Bảo đảm dinh dưỡng):** Mỗi ngày đều có thông số hiển thị rõ ràng: Tổng Calo, tỉ lệ Protein - Carbs - Fat.
-
-### Feature 3: Đổi món & Bài tập linh hoạt (Interactive Swap)
-* **FR-3.1 (Đổi món ăn):** Người dùng có thể nhấn nút **"Đổi món"** tại bất kỳ bữa nào (do thiếu nguyên liệu hoặc không muốn ăn). AI lập tức sinh ra một món ăn thay thế đáp ứng:
-  * Không chứa thực phẩm người dùng dị ứng.
-  * Lượng Calo và Protein tương đương món cũ ($\pm 10\%$).
-* **FR-3.2 (Đổi bài tập):** Người dùng nhấn nút **"Đổi bài tập"** nếu cảm thấy đau khớp hoặc không thực hiện được động tác. AI thay thế bằng một bài tập khác tác động cùng nhóm cơ nhưng áp lực thấp hơn.
-
-### Feature 4: Tự điều chỉnh theo phản hồi (Adaptive Feedback)
-* **FR-4.1 (Check-in cuối ngày):** Mỗi buổi tối, ứng dụng kích hoạt màn hình đánh giá nhanh (1-2 phút):
-  * Mức độ hoàn thành thực đơn (Đúng kế hoạch / Ăn thiếu / Ăn lố calo).
-  * Cảm nhận thể lực buổi tập: *Rất nhẹ / Vừa sức / Rất mệt, đuối sức*.
-  * Tình trạng thể chất phát sinh: Đau nhức cơ bắp (DOMS), mất ngủ, stress...
-* **FR-4.2 (Tinh chỉnh ngày kế tiếp):**
-  * Nếu người dùng báo *Quá mệt/Đau cơ*: AI tự động giảm $20-30\%$ cường độ bài tập ngày hôm sau hoặc chuyển sang giãn cơ (stretching/yoga phục hồi).
-  * Nếu người dùng báo *Lỡ ăn tiệc quá nhiều Calo*: AI điều chỉnh nhẹ nhàng giảm tinh bột và tăng rau xanh vào các bữa ngày mai để cân bằng năng lượng.
-
-### Feature 5: Danh sách đi chợ thông minh (Smart Grocery Checklist)
-* **FR-5.1 (Tự động bóc tách & tổng hợp):** Từ thực đơn 3 ngày đã tạo, hệ thống tự động bóc tách các thành phần nguyên liệu và gom nhóm (VD: Ức gà: 600g, Cải thìa: 500g, Trứng gà: 6 quả, Cà chua: 3 quả...).
-* **FR-5.2 (Giao diện Checkbox tiện lợi):** Người dùng mang điện thoại đi siêu thị hoặc chợ, chạm để tích gạch đầu dòng các món đã mua xong, xóa nhanh nguyên liệu đã có sẵn trong tủ lạnh.
+### Lựa chọn công nghệ chi tiết:
+* **Frontend (Flutter):**
+  * Thư viện mạng: Gói `http` cơ bản (dễ học hơn `dio` cho người mới).
+  * State Management: `setState` hoặc `ChangeNotifier` / `Provider` (dễ hiểu, không cần học Bloc quá phức tạp lúc đầu).
+  * Lưu trữ cục bộ: `shared_preferences` để lưu lại kế hoạch JSON, mở app lại không bị mất dữ liệu và giảm số lần gọi AI.
+* **Backend (FastAPI - Python):**
+  * Tốc độ phát triển cực nhanh, code ngắn gọn, tự động sinh tài liệu kiểm thử **Swagger UI** tại `http://127.0.0.1:8000/docs` giúp sinh viên test API ngay trên trình duyệt trước khi viết code Flutter.
+* **AI Engine (Google Gemini API):**
+  * Sử dụng model `gemini-1.5-flash` (hoặc `gemini-2.5-flash`): tốc độ phản hồi nhanh, miễn phí hạn mức cho sinh viên, hỗ trợ mạnh mẽ chế độ xuất cấu trúc JSON (`response_mime_type="application/json"`).
 
 ---
 
-## 5. QUY TRÌNH PHÁT TRIỂN SẢN PHẨM AI TOÀN DIỆN (END-TO-END PIPELINE)
+## 5. PHÂN CHIA TÍNH NĂNG THEO GIAI ĐOẠN (PROJECT SCOPE)
 
-Để đáp ứng tiêu chuẩn cao nhất của đồ án môn học **AI Product Development**, dự án triển khai theo quy trình chuẩn:
+Để đảm bảo sinh viên hoàn thành đúng hạn đồ án môn học, các yêu cầu được chia thành 2 giai đoạn rõ ràng:
 
-| Giai đoạn | Công việc trọng tâm | Đầu ra (Deliverables) |
-|---|---|---|
-| **1. Product Requirements (PRD/BRD)** | Xác định phạm vi, user flow, quy định các trường thông tin dữ liệu. | File `BRD.md`, sơ đồ kiến trúc hệ thống, Database Schema. |
-| **2. Prompt Engineering (AI Engine)** | Thiết kế System Prompt, ràng buộc **Structured Output JSON**, Few-shot món ăn Việt Nam, quy tắc toán học cân bằng Calo/Macro. | Bộ test prompt trong `ai_workspace/`, file định nghĩa Schema JSON (Pydantic / TypeScript Interfaces). |
-| **3. API & Backend Integration** | Xây dựng REST API bằng FastAPI, định tuyến các endpoint Onboarding, Generate Plan, Swap Item, Adaptive Feedback, Grocery List. | Bộ mã nguồn `backend_api/` hoàn chỉnh, tài liệu Swagger UI (`/docs`). |
-| **4. Frontend Development** | Xây dựng ứng dụng Flutter (`frontend_app/`), tích hợp State Management, gọi API Backend, thiết kế UX/UI hiện đại. | Giao diện mobile/web hoàn chỉnh, thao tác mượt mà. |
-| **5. Testing & Quality Assurance** | Kiểm thử Unit Test (cho thuật toán BMR/TDEE & parser JSON), Integration Test (luồng Swap & Adaptive), kiểm tra trường hợp ngoại lệ. | Thư mục `test/` đạt độ phủ kiểm thử, báo cáo kiểm thử tự động. |
-| **6. Technical Documentation** | Viết tài liệu hướng dẫn cài đặt, kiến trúc hệ thống, báo cáo đánh giá độ chính xác của AI. | File `README.md`, `ARCHITECTURE.md`, Slide báo cáo nộp môn học. |
+### Giai đoạn 1: MVP Cốt lõi (Bắt buộc hoàn thành để nộp đồ án)
+
+#### FR-1: Khảo sát thông tin (Personalized Onboarding)
+* **FR-1.1:** Giao diện Form nhập: Tuổi, giới tính, chiều cao (cm), cân nặng (kg).
+* **FR-1.2:** Chọn mục tiêu: *Giảm mỡ (Cut)*, *Tăng cơ (Bulk)*, hoặc *Duy trì vóc dáng (Maintain)*.
+* **FR-1.3:** Tích chọn hạn chế: Dị ứng thực phẩm (Hải sản, trứng, sữa...), Chấn thương (Đau gối, đau lưng...).
+* **FR-1.4 (Logic Deterministic):** Backend tự tính chỉ số BMI, BMR (công thức Mifflin-St Jeor) và TDEE khoa học.
+
+#### FR-2: Khởi tạo kế hoạch 3 ngày (Rolling 3-Day Plan)
+* **FR-2.1 (Thực đơn món Việt):** 3 ngày, mỗi ngày 3 bữa chính (Sáng, Trưa, Tối). Món ăn quen thuộc (phở, bún thịt nạc, canh rau ngót, trứng luộc...).
+* **FR-2.2 (Bài tập tại nhà):** Lịch tập 3 ngày gồm các động tác Bodyweight (Squat, chống đẩy khuỵu gối, plank...), ghi rõ số hiệp (sets) và số lần (reps).
+* **FR-2.3 (Hiển thị Calo):** Hiển thị tổng Calo dự tính và phân bổ Protein / Carbs / Fat mỗi ngày.
+
+#### FR-3: Danh sách đi chợ thông minh (Smart Grocery Checklist)
+* **FR-3.1:** Tổng hợp các nguyên liệu nấu ăn của cả 3 ngày thành danh sách nhóm (Rau củ, Thịt trứng, Gia vị).
+* **FR-3.2:** Hiển thị danh sách Checkbox trong Flutter, cho phép người dùng chạm để đánh dấu đã mua hoặc xóa món đã có sẵn trong tủ lạnh.
+
+---
+
+### Giai đoạn 2: Tính năng Nâng cao (Điểm cộng & Đánh giá cao khi bảo vệ)
+
+#### FR-4: Đổi món & Đổi bài tập (Interactive Swap)
+* **FR-4.1:** Nhấn nút "Đổi món" tại một bữa ăn $\rightarrow$ Backend gọi AI sinh 1 món ăn khác có mức calo tương đương ($\pm 10\%$), không chứa thành phần dị ứng.
+* **FR-4.2:** Nhấn nút "Đổi bài tập" $\rightarrow$ AI gợi ý động tác khác nhẹ hơn cùng tác động lên nhóm cơ đó.
+
+#### FR-5: Đánh giá thích ứng cuối ngày (Adaptive Feedback)
+* **FR-5.1:** Form đánh giá nhanh cuối ngày (1 phút):
+  * Cảm nhận thể lực: *Nhẹ nhàng / Vừa sức / Rất mệt*.
+  * Ăn uống: *Đúng thực đơn / Ăn thiếu / Lỡ ăn tiệc quá nhiều*.
+* **FR-5.2:** AI điều chỉnh kế hoạch ngày tiếp theo (giảm bớt bài tập nếu quá mệt, tăng rau xanh giảm tinh bột nếu lỡ ăn tiệc).
 
 ---
 
 ## 6. THIẾT KẾ CẤU TRÚC ĐẦU RA AI (STRUCTURED OUTPUT JSON SCHEMA)
 
-Mọi phản hồi từ AI Engine đều bắt buộc tuân theo định dạng JSON nguyên khối (không sinh kèm text tự do) để đảm bảo Backend và Flutter có thể parse trực tiếp 100% không gặp lỗi:
+Để Flutter không bị lỗi parse dữ liệu, Backend cấu hình Gemini API trả về cấu trúc JSON chuẩn mực, dễ ánh xạ sang Model trong Dart:
 
 ```json
 {
-  "plan_id": "smartfit_plan_001",
+  "plan_id": "smartfit_plan_demo_01",
   "daily_target": {
     "target_calories": 1850,
-    "protein_g": 130,
-    "carbs_g": 180,
-    "fat_g": 55
+    "protein_g": 110,
+    "carbs_g": 200,
+    "fat_g": 50
   },
   "days": [
     {
       "day_number": 1,
+      "day_name": "Ngày 1",
       "meals": [
         {
-          "meal_type": "Breakfast",
-          "name": "Bún bò Huế giò nạc (ít mỡ)",
-          "portion": "1 bát vừa",
-          "calories": 480,
-          "macros": { "protein": 28, "carbs": 55, "fat": 16 },
-          "ingredients": ["Bún tươi (150g)", "Bắp bò (80g)", "Chả lụa (30g)", "Hành, rau thơm"]
+          "meal_id": "m1_1",
+          "meal_type": "Bữa sáng",
+          "name": "Bún thịt bò nạc",
+          "portion": "1 tô vừa",
+          "calories": 420,
+          "protein_g": 25,
+          "ingredients": ["Bún tươi (150g)", "Thịt bò nạc (70g)", "Rau thơm, hành lá"]
+        },
+        {
+          "meal_id": "m1_2",
+          "meal_type": "Bữa trưa",
+          "name": "Cơm trắng, ức gà xào nấm, canh cải ngọt",
+          "portion": "1 chén cơm + 1 đĩa thức ăn",
+          "calories": 650,
+          "protein_g": 40,
+          "ingredients": ["Gạo tẻ (100g)", "Ức gà (150g)", "Nấm rơm (50g)", "Rau cải ngọt (150g)"]
+        },
+        {
+          "meal_id": "m1_3",
+          "meal_type": "Bữa tối",
+          "name": "Cá hấp hành gừng, canh bí đỏ thịt băm",
+          "portion": "1 phần vừa",
+          "calories": 520,
+          "protein_g": 35,
+          "ingredients": ["Cá điêu hồng/cá quả (150g)", "Bí đỏ (100g)", "Thịt nạc băm (40g)"]
         }
       ],
       "workout": {
-        "title": "Full Body Burn tại nhà",
+        "title": "Vận động toàn thân tại nhà",
         "duration_minutes": 20,
         "exercises": [
           {
+            "exercise_id": "e1_1",
+            "name": "Jumping Jacks (Khởi động)",
+            "sets": 2,
+            "reps_or_duration": "30 giây",
+            "target_muscle": "Tim mạch & Khởi động"
+          },
+          {
+            "exercise_id": "e1_2",
             "name": "Squat tay không",
             "sets": 3,
-            "reps": "15 lần",
-            "rest_seconds": 45,
+            "reps_or_duration": "12-15 lần",
             "target_muscle": "Đùi & Mông"
+          },
+          {
+            "exercise_id": "e1_3",
+            "name": "Chống đẩy khuỵu gối (Knee Push-ups)",
+            "sets": 3,
+            "reps_or_duration": "10-12 lần",
+            "target_muscle": "Ngực & Tay sau"
           }
         ]
       }
     }
   ],
   "grocery_list": [
-    { "category": "Thịt & Protein", "items": ["Bắp bò 250g", "Ức gà 500g", "Trứng gà 4 quả"] },
-    { "category": "Rau củ", "items": ["Cải thìa 500g", "Cà chua 300g", "Hành lá 100g"] }
+    {
+      "category": "Thịt & Thủy hải sản",
+      "items": ["Thịt bò nạc (70g)", "Ức gà (450g)", "Thịt nạc băm (120g)", "Cá tươi (400g)"]
+    },
+    {
+      "category": "Rau củ quả",
+      "items": ["Rau cải ngọt (500g)", "Bí đỏ (300g)", "Nấm rơm (150g)", "Hành, gừng, rau thơm"]
+    },
+    {
+      "category": "Lương thực & Gia vị",
+      "items": ["Gạo tẻ", "Bún tươi (150g)", "Dầu ăn, nước mắm, hạt nêm"]
+    }
   ]
 }
 ```
 
----
-
-## 7. YÊU CẦU PHI CHỨC NĂNG (NON-FUNCTIONAL REQUIREMENTS)
-
-1. **Hiệu năng (Performance):**
-   * Tốc độ phản hồi tạo kế hoạch 3 ngày của AI: $< 4$ giây.
-   * Tốc độ xử lý "Đổi món / Đổi bài tập" (Interactive Swap): $< 2$ giây.
-2. **Độ tin cậy của AI (Reliability & Robustness):**
-   * Tỷ lệ sinh đúng định dạng JSON đạt $\ge 99\%$ (áp dụng cơ chế Schema Validation của Pydantic).
-   * Không bao giờ gợi ý thực phẩm thuộc danh sách dị ứng của người dùng (Safety Constraint).
-3. **Tính tương thích (Compatibility):**
-   * Backend chạy tương thích trên Python 3.10+ (hỗ trợ Windows, macOS, Linux).
-   * Frontend chạy mượt mà trên Flutter Web và thiết bị di động (Android/iOS).
+> [!TIP]
+> **Hướng dẫn cho sinh viên tạo Dart Model nhanh:**
+> Bạn chỉ cần copy đoạn JSON mẫu ở trên, dán vào trang web chuyển đổi miễn phí `quicktype.io` (chọn language là **Dart**), hệ thống sẽ tự sinh toàn bộ class Dart kèm hàm `fromJson` và `toJson` chuẩn xác để dùng ngay trong Flutter!
 
 ---
 
-## 8. TIÊU CHÍ NGHIỆM THU MÔN HỌC (ACCEPTANCE CRITERIA)
+## 7. YÊU CẦU PHI CHỨC NĂNG THỰC TẾ (STUDENT-FRIENDLY NFRS)
 
-* [x] **Tài liệu hoàn chỉnh:** Có đầy đủ BRD/PRD, tài liệu kiến trúc hệ thống và hướng dẫn chạy project.
-* [ ] **Chức năng Onboarding:** Người dùng nhập thông số, hệ thống tính chuẩn BMR/TDEE.
-* [ ] **Chức năng Sinh kế hoạch 3 ngày:** AI tạo thực đơn món Việt và bài tập tại nhà dưới dạng JSON chuẩn.
-* [ ] **Chức năng Đổi món & Bài tập:** Nhấn nút là đổi được ngay phương án tương đương.
-* [ ] **Chức năng Adaptive Feedback:** Nhập phản hồi cuối ngày, lịch ngày hôm sau được cập nhật tự động.
-* [ ] **Chức năng Danh sách đi chợ:** Hiển thị danh sách nguyên liệu dạng Checklist tích chọn tiện lợi.
-* [ ] **Kiểm thử tự động:** Có bộ Unit Test kiểm tra logic tính calo và kiểm thử phản hồi API.
+1. **Trải nghiệm người dùng (UX & Loading State):**
+   * Do gọi mô hình ngôn ngữ lớn (LLM) qua mạng thường mất từ **3 – 6 giây**, Flutter **bắt buộc phải có hiệu ứng chờ thân thiện** (Loading Spinner, thanh tiến trình hoặc câu thông báo vui nhộn như *"SmartFit đang chuẩn bị thực đơn món Việt cho bạn..."*), tránh để màn hình trắng đơ khiến người dùng tưởng ứng dụng bị treo.
+2. **Xử lý sự cố đơn giản (Graceful Fallback):**
+   * Nếu người dùng mất mạng hoặc Gemini API gặp sự cố giới hạn (Rate limit), Backend sẽ trả về mã lỗi dễ hiểu thay vì làm crash ứng dụng Flutter.
+   * Cung cấp sẵn một file `sample_plan.json` dự phòng để phục vụ việc demo thuyết trình trơn tru ngay cả khi mạng trường bị yếu.
+3. **Môi trường chạy đơn giản (Local Environment):**
+   * Backend chạy trực tiếp trên máy cá nhân bằng lệnh `uvicorn main:app --reload` (Python 3.10+).
+   * Flutter chạy mượt mà trên Chrome (Flutter Web) hoặc máy ảo Android / điện thoại thật qua cáp USB.
+
+---
+
+## 8. KẾ HOẠCH TRIỂN KHAI THEO TUẦN (WEEKLY ROADMAP CHO ĐỒ ÁN)
+
+| Tuần | Mục tiêu chính | Đầu ra cần đạt (Deliverables) |
+|:---|:---|:---|
+| **Tuần 1** | **Chốt yêu cầu & Thiết kế Prompt** | Hoàn thiện file `BRD.md`; viết thử nghiệm script Python gọi Gemini API sinh JSON trong `ai_workspace/`. |
+| **Tuần 2** | **Xây dựng Backend (FastAPI)** | Hoàn thiện 2 endpoint chính (`/generate-plan`, `/health`) trong `backend_api/`; test thử nghiệm thành công trên Swagger UI (`/docs`). |
+| **Tuần 3** | **Xây dựng Giao diện Flutter (MVP)** | Tạo màn hình Onboarding (Form nhập tuổi, chiều cao, cân nặng) và màn hình hiển thị kế hoạch 3 ngày trong `frontend_app/`. |
+| **Tuần 4** | **Kết nối API (Integration) & Checklist** | Flutter gọi API Backend hiển thị dữ liệu thật; hoàn thiện tính năng Danh sách đi chợ (Checkbox). |
+| **Tuần 5** | **Hoàn thiện tính năng nâng cao & Demo** | Thêm nút "Đổi món" (Swap); viết Unit Test cho thuật toán BMR; hoàn thiện slide báo cáo và video quay demo nộp môn học. |
+
+---
+
+## 9. TIÊU CHÍ NGHIỆM THU MÔN HỌC (RUBRIC CHECKLIST)
+
+* [x] **Tài liệu đặc tả (BRD/PRD):** Rõ ràng bài toán, kiến trúc, sơ đồ luồng và cấu trúc JSON.
+* [ ] **Module AI Engine (`ai_workspace/`):** Có prompt chuyên biệt cho món ăn Việt và cấu hình Structured Output JSON chuẩn.
+* [ ] **Module Backend (`backend_api/`):** FastAPI chạy được local, có Swagger UI trực quan, tính đúng công thức BMR/TDEE.
+* [ ] **Module Frontend (`frontend_app/`):** Ứng dụng Flutter nhập được thông số, có hiệu ứng loading khi chờ AI, hiển thị đẹp mắt thực đơn 3 ngày.
+* [ ] **Tính năng Checklist:** Người dùng tích chọn được các nguyên liệu khi đi chợ.
+* [ ] **Demo & Báo cáo:** Demo chạy thông suốt từ Client $\rightarrow$ Server $\rightarrow$ AI $\rightarrow$ Client.
