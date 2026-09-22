@@ -1,0 +1,99 @@
+{
+  "plan_id": "smartfit_plan_demo_01",
+  "daily_target": {
+    "target_calories": 1850,
+    "protein_g": 110,
+    "carbs_g": 200,
+    "fat_g": 50
+  },
+  "days": [
+    {
+      "day_number": 1,
+      "day_name": "Ngày 1",
+      "meals": [
+        {
+          "meal_id": "m1_1",
+          "meal_type": "Bữa sáng",
+          "name": "Bún thịt bò nạc",
+          "portion": "1 tô vừa",
+          "calories": 420,
+          "protein_g": 25,
+          "ingredients": ["Bún tươi (150g)", "Thịt bò nạc (70g)", "Rau thơm, hành lá"]
+        },
+        {
+          "meal_id": "m1_2",
+          "meal_type": "Bữa trưa",
+          "name": "Cơm trắng, ức gà xào nấm, canh cải ngọt",
+          "portion": "1 chén cơm + 1 đĩa thức ăn",
+          "calories": 650,
+          "protein_g": 40,
+          "ingredients": ["Gạo tẻ (100g)", "Ức gà (150g)", "Nấm rơm (50g)", "Rau cải ngọt (150g)"]
+        },
+        {
+          "meal_id": "m1_3",
+          "meal_type": "Bữa tối",
+          "name": "Cá hấp hành gừng, canh bí đỏ thịt băm",
+          "portion": "1 phần vừa",
+          "calories": 520,
+          "protein_g": 35,
+          "ingredients": ["Cá điêu hồng/cá quả (150g)", "Bí đỏ (100g)", "Thịt nạc băm (40g)"]
+        }
+      ],
+      "workout": {
+        "title": "Vận động toàn thân tại nhà",
+        "duration_minutes": 20,
+        "exercises": [
+          {
+            "exercise_id": "e1_1",
+            "name": "Jumping Jacks (Khởi động)",
+            "sets": 2,
+            "reps_or_duration": "30 giây",
+            "target_muscle": "Tim mạch & Khởi động"
+          },
+          {
+            "exercise_id": "e1_2",
+            "name": "Squat tay không",
+            "sets": 3,
+            "reps_or_duration": "12-15 lần",
+            "target_muscle": "Đùi & Mông"
+          },
+          {
+            "exercise_id": "e1_3",
+            "name": "Chống đẩy khuỵu gối (Knee Push-ups)",
+            "sets": 3,
+            "reps_or_duration": "10-12 lần",
+            "target_muscle": "Ngực & Tay sau"
+          }
+        ]
+      }
+    }
+  ],
+  "grocery_list": [
+    {
+      "category": "Thịt & Thủy hải sản",
+      "items": [
+        { "name": "Thịt bò nạc (70g)", "source_meal_ids": ["m1_1"] },
+        { "name": "Ức gà (450g)", "source_meal_ids": ["m1_2"] },
+        { "name": "Thịt nạc băm (120g)", "source_meal_ids": ["m1_3"] },
+        { "name": "Cá tươi (400g)", "source_meal_ids": ["m1_3"] }
+      ]
+    },
+    {
+      "category": "Rau củ quả",
+      "items": [
+        { "name": "Rau cải ngọt (500g)", "source_meal_ids": ["m1_2"] },
+        { "name": "Bí đỏ (300g)", "source_meal_ids": ["m1_3"] },
+        { "name": "Nấm rơm (150g)", "source_meal_ids": ["m1_2"] },
+        { "name": "Hành, gừng, rau thơm", "source_meal_ids": ["m1_1", "m1_3"] }
+      ]
+    },
+    {
+      "category": "Lương thực & Gia vị",
+      "items": [
+        { "name": "Gạo tẻ", "source_meal_ids": ["m1_2"] },
+        { "name": "Bún tươi (150g)", "source_meal_ids": ["m1_1"] },
+        { "name": "Dầu ăn, nước mắm, hạt nêm", "source_meal_ids": [] }
+      ]
+    }
+  ]
+}
