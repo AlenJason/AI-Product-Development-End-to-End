@@ -3,7 +3,7 @@
 **Tên sản phẩm:** Trợ lý AI Gợi ý & Điều chỉnh Thực đơn, Lịch tập Thông minh  
 **Môn học:** AI Product Development End-to-End (Đồ án Kỹ sư / Cử nhân Năm 4)  
 **Đơn vị thực hiện:** Trường Đại học Công nghệ Thông tin và Truyền thông Việt - Hàn (VKU)  
-**Phiên bản:** 2.1.0 (Dành cho Sinh viên thực hành: Flutter & NestJS)  
+**Phiên bản:** 2.2.0 (Dành cho Sinh viên thực hành: Flutter & NestJS)  
 **Ngày cập nhật:** 22/09/2026  
 **Trạng thái:** Đã phê duyệt (Approved)  
 
@@ -70,17 +70,43 @@ sequenceDiagram
     Flutter-->>User: 6. Hiển thị Thực đơn, Lịch tập & Checklist đi chợ
 ```
 
+### Luồng xác thực (Google Sign-In) — bổ sung ở bản 2.2.0
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor User as Người dùng
+    participant Flutter as Flutter App
+    participant Google as Google Sign-In SDK
+    participant NestJS as Backend API (NestJS)
+    participant DB as SQLite (TypeORM)
+
+    User->>Flutter: 1. Bấm "Đăng nhập với Google"
+    Flutter->>Google: 2. Yêu cầu đăng nhập (google_sign_in package)
+    Google-->>Flutter: 3. Trả về Google ID Token
+    Flutter->>NestJS: 4. POST /api/v1/auth/google { id_token }
+    NestJS->>Google: 5. Verify ID Token (google-auth-library)
+    NestJS->>DB: 6. Find-or-create User theo google_sub
+    NestJS-->>Flutter: 7. Trả về { access_token (JWT), user }
+    Flutter->>NestJS: 8. Các request sau kèm header Authorization: Bearer <access_token>
+```
+
 ### Lựa chọn công nghệ chi tiết:
 * **Frontend (Flutter):**
   * Thư viện mạng: Gói `http` cơ bản (dễ học hơn `dio` cho người mới).
   * State Management: `setState` hoặc `ChangeNotifier` / `Provider` (dễ hiểu, không cần học Bloc quá phức tạp lúc đầu).
-  * Lưu trữ cục bộ: `shared_preferences` để lưu lại kế hoạch JSON, mở app lại không bị mất dữ liệu và giảm số lần gọi AI.
+  * Lưu trữ cục bộ: `shared_preferences` để lưu lại kế hoạch JSON và `access_token`, mở app lại không bị mất dữ liệu và giảm số lần gọi AI.
+  * Đăng nhập: `google_sign_in` — lấy ID Token từ Google, gửi lên backend đổi lấy JWT riêng của app (FR-6).
 * **Backend (NestJS - TypeScript):**
   * Kiến trúc module/controller/service rõ ràng (giống Angular), cùng ngôn ngữ TypeScript với phần nhiều tooling frontend, dễ định nghĩa DTO/validate dữ liệu bằng `class-validator` + `class-transformer`.
   * Dùng `@nestjs/swagger` để tự sinh tài liệu kiểm thử **Swagger UI** tại `http://localhost:3000/docs` giúp sinh viên test API ngay trên trình duyệt trước khi viết code Flutter.
   * **Quản lý API Key:** Gemini API Key lưu trong file `.env` (đọc qua `@nestjs/config`), **không hardcode trong source code**. File `.env` phải được thêm vào `.gitignore` ngay từ đầu để tránh lộ key khi commit lên Git.
 * **AI Engine (Google Gemini API):**
   * Sử dụng model `gemini-3.8-flash`: tốc độ phản hồi nhanh, miễn phí hạn mức cho sinh viên, hỗ trợ mạnh mẽ chế độ xuất cấu trúc JSON. Gọi qua SDK Node.js chính thức `@google/genai` (SDK cũ `@google/generative-ai` đã bị khai tử), tham số cấu hình JSON mode là `config: { responseMimeType: "application/json" }`.
+* **Cơ sở dữ liệu & Xác thực (mới ở bản 2.2.0):**
+  * **SQLite + TypeORM** (`@nestjs/typeorm`): file DB dạng `database.sqlite` ngay trong `backend_api/`, không cần cài đặt server DB riêng — đúng tinh thần "môi trường chạy đơn giản" (NFR mục 7). File DB phải được thêm vào `.gitignore` vì có thể chứa dữ liệu người dùng thật khi demo.
+  * **Xác thực:** `google-auth-library` để verify ID Token từ Google phía backend; `@nestjs/jwt` để backend tự phát hành JWT riêng (không dùng thẳng token Google cho mọi request) — tách biệt vòng đời session của app khỏi Google.
+  * Không tự lưu mật khẩu người dùng — toàn bộ xác thực danh tính giao cho Google, backend chỉ lưu `google_sub`/`email`/`name` để định danh.
 
 ---
 
@@ -119,6 +145,23 @@ sequenceDiagram
   * Cảm nhận thể lực: *Nhẹ nhàng / Vừa sức / Rất mệt*.
   * Ăn uống: *Đúng thực đơn / Ăn thiếu / Lỡ ăn tiệc quá nhiều*.
 * **FR-5.2:** AI điều chỉnh kế hoạch ngày tiếp theo (giảm bớt bài tập nếu quá mệt, tăng rau xanh giảm tinh bột nếu lỡ ăn tiệc).
+
+---
+
+### Giai đoạn 3: Tài khoản & Lịch sử (Bổ sung sau khi BRD được duyệt, bản 2.2.0)
+
+> Yêu cầu phát sinh: cho phép người dùng xem lại các kế hoạch đã tạo trước đó, kể cả khi đổi thiết bị — điều mà lưu trữ cục bộ (`shared_preferences`) không đáp ứng được. Kéo theo việc dự án cần thêm database phía backend (xem mục 4).
+
+#### FR-6: Đăng nhập bằng Google (Google Sign-In)
+* **FR-6.1:** Màn hình chào mở app có nút "Đăng nhập với Google"; dùng package `google_sign_in` phía Flutter.
+* **FR-6.2:** Backend nhận ID Token từ Flutter, verify với Google, tự tạo tài khoản mới nếu `google_sub` chưa tồn tại (không cần màn hình đăng ký riêng).
+* **FR-6.3:** Backend phát hành JWT riêng của app sau khi xác thực thành công; Flutter lưu JWT này (không lưu ID Token Google) để gọi các API cần đăng nhập ở các lần sau.
+
+#### FR-7: Lịch sử kế hoạch (Plan History)
+* **FR-7.1:** Mỗi lần `/api/v1/generate-plan` thành công **và** request có kèm JWT hợp lệ, Backend lưu lại plan đó vào bảng lịch sử, gắn với `user_id`.
+* **FR-7.2:** Màn hình "Lịch sử" trong Flutter (thay cho placeholder "Thống kê" hiện tại) hiển thị danh sách các plan đã tạo trước đó (ngày tạo, calo mục tiêu), bấm vào xem lại chi tiết từng plan.
+* **FR-7.3:** Đăng nhập cùng tài khoản Google trên thiết bị khác vẫn thấy đầy đủ lịch sử — vì dữ liệu gắn với `user_id` trong DB, không gắn với thiết bị.
+* **Lưu ý:** Nếu gọi `/api/v1/generate-plan` mà không đăng nhập (không có JWT), API vẫn hoạt động bình thường như bản 2.1.0 (không lưu lịch sử) — đăng nhập là tuỳ chọn, không bắt buộc để dùng tính năng cốt lõi.
 
 ---
 
@@ -258,6 +301,31 @@ Payload Flutter gửi lên sau khi hoàn thành khảo sát (FR-1), bao gồm `a
 > **Hướng dẫn cho sinh viên tạo Dart Model nhanh:**
 > Bạn chỉ cần copy đoạn JSON mẫu ở trên, dán vào trang web chuyển đổi miễn phí `quicktype.io` (chọn language là **Dart**), hệ thống sẽ tự sinh toàn bộ class Dart kèm hàm `fromJson` và `toJson` chuẩn xác để dùng ngay trong Flutter!
 
+### 6.3. Xác thực & Lịch sử (bổ sung bản 2.2.0)
+
+**`POST /api/v1/auth/google`** — request:
+```json
+{ "id_token": "eyJhbGciOi..." }
+```
+Response:
+```json
+{
+  "access_token": "eyJhbGciOi...",
+  "user": { "id": "uuid", "email": "sv@vku.edu.vn", "name": "Nguyễn Văn A" }
+}
+```
+
+**`GET /api/v1/plans/history`** — cần header `Authorization: Bearer <access_token>`. Response:
+```json
+{
+  "plans": [
+    { "id": "uuid", "created_at": "2026-09-22T10:00:00Z", "target_calories": 1850 }
+  ]
+}
+```
+
+**`GET /api/v1/plans/history/:id`** — cần header `Authorization: Bearer <access_token>`. Response: đúng cấu trúc `MealPlanResponse` như mục 6.2.
+
 ---
 
 ## 7. YÊU CẦU PHI CHỨC NĂNG THỰC TẾ (STUDENT-FRIENDLY NFRS)
@@ -273,6 +341,14 @@ Payload Flutter gửi lên sau khi hoàn thành khảo sát (FR-1), bao gồm `a
 4. **Độ tin cậy dữ liệu dinh dưỡng (Nutrition Data Sanity Check):**
    * Gemini có thể "bịa" calo/macro không nhất quán cho cùng một món ăn giữa các lần gọi. Backend cần validate số liệu AI trả về nằm trong khoảng hợp lý theo loại bữa ăn trước khi trả cho Flutter, ví dụ: Bữa sáng 250–600 kcal, Bữa trưa/tối 400–800 kcal (dùng `class-validator` `@Min()`/`@Max()` trên DTO).
    * Nếu số liệu AI trả về vượt ngưỡng, backend yêu cầu Gemini sinh lại (retry) tối đa 1 lần, hoặc rơi về `sample_plan.json` dự phòng thay vì hiển thị số liệu sai cho người dùng.
+5. **Bảo mật xác thực (Auth Security — bổ sung bản 2.2.0):**
+   * `JWT_SECRET` dùng để ký JWT phải lưu trong `.env`, không hardcode, tương tự `GEMINI_API_KEY` (mục 4).
+   * JWT có thời hạn hết hạn hợp lý (ví dụ 7 ngày) để hạn chế rủi ro nếu token bị lộ; hết hạn thì Flutter yêu cầu đăng nhập lại qua Google.
+   * File `database.sqlite` (chứa email/tên người dùng thật khi demo) phải nằm trong `.gitignore`, không commit lên Git.
+   * Không tự lưu hoặc xử lý mật khẩu người dùng dưới bất kỳ hình thức nào — toàn bộ xác thực uỷ quyền cho Google.
+6. **SQLite nằm ở backend, không nằm trên thiết bị (bổ sung bản 2.2.0):**
+   * `database.sqlite` là file trên **máy chạy `backend_api/`**, không phải lưu trên điện thoại. Mọi thiết bị (điện thoại A, điện thoại B...) gọi API tới **cùng một backend** nên đều đọc/ghi chung một file này — đây là lý do lịch sử kế hoạch (FR-7) xem được xuyên thiết bị khi đăng nhập cùng tài khoản Google, khác hẳn với `shared_preferences` (luôn lưu cục bộ trên từng máy).
+   * Trong lúc code/test, backend chạy tạm trên localhost (`npm run start:dev`) là đủ — nhưng nếu muốn demo/nộp bài với nhiều thiết bị thật hoạt động ổn định lâu dài (không phụ thuộc laptop của nhóm có đang bật hay không), cần **deploy `backend_api/` lên một nơi chạy liên tục** (ví dụ Render, Railway, hoặc VPS — đều có gói miễn phí/giá rẻ phù hợp đồ án sinh viên). Đây là yêu cầu chung cho bất kỳ database nào (kể cả Postgres/MySQL), không riêng gì SQLite.
 
 ---
 
@@ -285,6 +361,7 @@ Payload Flutter gửi lên sau khi hoàn thành khảo sát (FR-1), bao gồm `a
 | **Tuần 3** | **Xây dựng Giao diện Flutter (MVP)** | Tạo màn hình Onboarding (Form nhập tuổi, chiều cao, cân nặng) và màn hình hiển thị kế hoạch 3 ngày trong `frontend_app/`. |
 | **Tuần 4** | **Kết nối API (Integration) & Checklist** | Flutter gọi API Backend hiển thị dữ liệu thật; hoàn thiện tính năng Danh sách đi chợ (Checkbox). |
 | **Tuần 5** | **Hoàn thiện tính năng nâng cao & Demo** | Thêm nút "Đổi món" (Swap); viết Unit Test cho thuật toán BMR; hoàn thiện slide báo cáo và video quay demo nộp môn học. |
+| **Tuần 6** *(bổ sung, bản 2.2.0)* | **Tài khoản & Lịch sử** | Tích hợp `google_sign_in` + `SQLite/TypeORM` trong `backend_api/`; hoàn thiện `/api/v1/auth/google`, `/api/v1/plans/history`; màn hình Lịch sử trong Flutter thay placeholder "Thống kê". |
 
 ---
 
@@ -295,4 +372,5 @@ Payload Flutter gửi lên sau khi hoàn thành khảo sát (FR-1), bao gồm `a
 * [ ] **Module Backend (`backend_api/`):** NestJS chạy được local, có Swagger UI trực quan, tính đúng công thức BMR/TDEE.
 * [ ] **Module Frontend (`frontend_app/`):** Ứng dụng Flutter nhập được thông số, có hiệu ứng loading khi chờ AI, hiển thị đẹp mắt thực đơn 3 ngày.
 * [ ] **Tính năng Checklist:** Người dùng tích chọn được các nguyên liệu khi đi chợ.
+* [ ] **Tài khoản & Lịch sử (bản 2.2.0):** Đăng nhập Google hoạt động; đăng nhập lại (kể cả thiết bị khác) vẫn thấy đầy đủ lịch sử các plan đã tạo trước đó.
 * [ ] **Demo & Báo cáo:** Demo chạy thông suốt từ Client $\rightarrow$ Server $\rightarrow$ AI $\rightarrow$ Client.
