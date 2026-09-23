@@ -1,0 +1,59 @@
+{
+  "slug": "phase-2-backend-tests",
+  "features": [
+    { "id": "F01", "name": "Ma trận BMR/TDEE 18 trường hợp", "scope": "API" },
+    { "id": "F02", "name": "GEMINI_BASE_URL, server Gemini giả, test GeminiService với SDK thật", "scope": "API" },
+    { "id": "F03", "name": "Test PlanService với Gemini giả: gọi lại, hết giờ, khoá sai, log", "scope": "API" },
+    { "id": "F04", "name": "configureApp() dùng chung + e2e POST /api/v1/generate-plan", "scope": "API" },
+    { "id": "F05", "name": "GitHub Actions: build + test backend, kiểm kiểu ai_workspace", "scope": "CI" },
+    { "id": "F06", "name": "Wiki, CLAUDE.md, hướng dẫn, Changelog, tiến độ", "scope": "Docs" }
+  ],
+  "dependencies": {
+    "F04": ["F02"],
+    "F05": ["F01", "F02", "F03", "F04"],
+    "F06": ["F05"]
+  },
+  "phase_gates": [
+    {
+      "after": "F01",
+      "checks": ["cd backend_api && npx vitest run src/plan/daily-target.spec.ts"],
+      "expected": ["Tests  21 passed (21)"]
+    },
+    {
+      "after": "F02",
+      "checks": [
+        "cd backend_api && npm run build",
+        "cd backend_api && npx vitest run src/plan/gemini.service.spec.ts",
+        "cd backend_api && npm test"
+      ],
+      "expected": ["", "Tests  6 passed (6)", "Test Files  9 passed (9)"]
+    },
+    {
+      "after": "F03",
+      "checks": ["cd backend_api && npx vitest run src/plan/plan.service.spec.ts"],
+      "expected": ["Tests  9 passed (9)"]
+    },
+    {
+      "after": "F04",
+      "checks": ["cd backend_api && npm run build", "cd backend_api && npm test", "cd backend_api && npm run test:e2e"],
+      "expected": ["", "Tests  61 passed (61)", "Tests  12 passed (12)"]
+    },
+    {
+      "after": "F05",
+      "checks": [
+        "curl -s 'https://api.github.com/repos/AlenJason/AI-Product-Development-End-to-End/actions/runs?branch=Thien-Source&per_page=1' | python3 -c \"import json,sys; r=json.load(sys.stdin)['workflow_runs'][0]; print(r['name'], r['status'], r['conclusion'], r['head_sha'][:7])\""
+      ],
+      "expected": ["Backend CI completed success <sha của commit vừa push>"],
+      "note": "Chỉ chạy được sau khi push; chờ run xong (khoảng 2–4 phút)."
+    },
+    {
+      "after": "F06",
+      "checks": [
+        "grep -c 'gemini-integration' docs/knowledge/wiki/INDEX.md",
+        "grep -c '^- \\[x\\] \\*\\*2\\.' docs/PLAN.md"
+      ],
+      "expected": ["1", "6"]
+    }
+  ],
+  "executor": "direct"
+}
