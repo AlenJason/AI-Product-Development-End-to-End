@@ -6,4 +6,6 @@ export const WARNINGS = {
     'Bạn có khai báo tình trạng sức khoẻ: kế hoạch chỉ mang tính tham khảo, không thay thế tư vấn y tế. Hãy hỏi ý kiến bác sĩ trước khi áp dụng.',
   sampleNotFiltered:
     'Đang dùng thực đơn mẫu: thực đơn này chưa được lọc theo dị ứng, chấn thương hay tình trạng sức khoẻ bạn đã nhập. Hãy tự kiểm tra lại từng món và bài tập.',
+  historyNotSaved:
+    'Chưa lưu được kế hoạch này vào lịch sử do lỗi máy chủ. Kế hoạch vẫn dùng bình thường; muốn lưu thì tạo lại sau.',
 };

@@ -9,6 +9,7 @@ export function configureApp(app: INestApplication): void {
     .setTitle('SmartFit AI API')
     .setDescription('Backend API cho SmartFit AI — xem BRD.md ở repo gốc')
     .setVersion('1.0')
+    .addBearerAuth()
     .build();
   SwaggerModule.setup('docs', app, SwaggerModule.createDocument(app, config));
 }

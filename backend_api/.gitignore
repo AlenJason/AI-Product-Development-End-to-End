@@ -23,3 +23,7 @@ npm-debug.log*
 
 # OS
 .DS_Store
+
+# SQLite (tài khoản + lịch sử, có thể chứa email thật khi demo — BRD NFR-5)
+*.sqlite
+*.sqlite-*

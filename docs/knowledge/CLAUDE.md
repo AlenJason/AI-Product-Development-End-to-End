@@ -24,4 +24,4 @@ Knowledge base cho **SmartFit AI** — đồ án VKU: ứng dụng Flutter + Nes
 2. Tích hợp Gemini structured output — thiết kế prompt, tuân thủ JSON schema, kiểm tra hợp lý dữ liệu dinh dưỡng
 3. Giao diện Flutter trong `frontend_app/` — screens/widgets và (khi làm tới) kết nối API
 4. Kỷ luật phạm vi sản phẩm — BRD.md là nguồn spec đã được duyệt; thay đổi tính năng cần đối chiếu lại, không tự ý lệch khỏi tài liệu
-5. Xác thực Google Sign-In + lưu lịch sử kế hoạch qua SQLite/TypeORM (BRD v2.2.0, FR-6/FR-7) — quyết định kiến trúc đã chốt, chưa có code
+5. Xác thực Google Sign-In + lịch sử kế hoạch qua SQLite/TypeORM (BRD FR-6, FR-7) — có code từ giai đoạn 3, xem [[auth-and-history]]

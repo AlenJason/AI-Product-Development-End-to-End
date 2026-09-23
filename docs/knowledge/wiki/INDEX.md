@@ -11,6 +11,7 @@ _Cập nhật lần cuối: 2026-09-24_
 | [[reference-materials]]     | Tài liệu/công nghệ tham khảo bên ngoài liên quan tới dự án             |
 | [[plan-data-contract]]      | Hợp đồng dữ liệu plan: luồng generate-plan, hai lớp DTO, mã cố định, danh sách đi chợ |
 | [[gemini-integration]]      | Hành vi thật của SDK Gemini (hết giờ, lỗi, không tự gọi lại), cách test không cần khoá |
+| [[auth-and-history]]        | Đăng nhập Google/giả lập, JWT, guard, SQLite + migration, lịch sử kế hoạch; hành vi thư viện đã kiểm chứng |
 | [[log]]                     | Nhật ký thay đổi wiki theo thời gian                                   |
 
 ## Tra cứu nhanh

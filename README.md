@@ -16,13 +16,13 @@
 
 ```
 frontend_app/    Ứng dụng Flutter (đang phát triển UI, dùng dữ liệu mẫu)
-backend_api/     API NestJS — khung dự án đã dựng, endpoint /health + /api/v1/generate-plan (fallback demo)
+backend_api/     API NestJS — /health, generate-plan (Gemini hoặc thực đơn mẫu), đăng nhập Google, lịch sử kế hoạch (SQLite)
 ai_workspace/    Script Node/TS thử nghiệm prompt & schema Gemini, độc lập với backend
 docs/            Kế hoạch triển khai, hướng dẫn gắn khoá, wiki nội bộ
 BRD.md           Tài liệu đặc tả yêu cầu (nguồn spec chính thức)
 ```
 
-Dự án chạy được ngay khi chưa có khoá nào (chế độ giả lập, dùng dữ liệu mẫu). Muốn dùng Gemini thật: xem [docs/SETUP_CREDENTIALS.md](docs/SETUP_CREDENTIALS.md).
+Dự án chạy được ngay khi chưa có khoá nào (chế độ giả lập: thực đơn mẫu thay cho Gemini, đăng nhập bằng `mock:<email>` thay cho Google). Muốn dùng Gemini hay Google Sign-In thật: xem [docs/SETUP_CREDENTIALS.md](docs/SETUP_CREDENTIALS.md).
 
 ## Bắt đầu
 
@@ -39,7 +39,7 @@ flutter run -d chrome   # hoặc flutter run cho thiết bị/máy ảo
 ```bash
 cd backend_api
 npm install
-cp .env.example .env   # để trống GEMINI_API_KEY = chạy giả lập; điền key = dùng Gemini thật
+cp .env.example .env   # để nguyên = chạy giả lập (thực đơn mẫu, đăng nhập giả lập); điền khoá = dùng thật
 npm run start:dev      # http://localhost:3000, Swagger UI tại /docs, /health báo đang dùng Gemini hay dữ liệu mẫu
 ```
 
@@ -61,6 +61,12 @@ Kết quả build và test tự động của từng commit: tab [Actions](https
 ## Nhật ký thay đổi (Changelog)
 
 Đối chiếu theo phiên bản BRD (mục "Phiên bản" trong [BRD.md](BRD.md)), để giảng viên/trợ giảng theo dõi tiến độ trực tiếp trên repo mà không cần đọc từng commit.
+
+### BRD v2.4.0 — 2026-09-24
+- Giai đoạn 3 — tài khoản & lịch sử: đăng nhập Google (`POST /api/v1/auth/google`), JWT hết hạn sau 7 ngày, lịch sử 50 kế hoạch mới nhất xem lại được trên mọi thiết bị (`GET /api/v1/plans/history`, `/:id`), dữ liệu lưu bằng SQLite + TypeORM với migration. Mặc định chạy chế độ đăng nhập giả lập (`mock:<email>`), không cần tài khoản Google Cloud; cách gắn Client ID thật ở [docs/SETUP_CREDENTIALS.md](docs/SETUP_CREDENTIALS.md) mục 2
+- Tạo kế hoạch khi đã đăng nhập thì tự lưu vào lịch sử; lưu lỗi vẫn trả kế hoạch kèm cảnh báo. Kế hoạch trong lịch sử không chứa dị ứng, chấn thương hay tình trạng sức khoẻ (có test kiểm thẳng trong DB). Xem kế hoạch của tài khoản khác → 404
+- Thêm `DELETE /api/v1/me` (FR-6.4): xoá tài khoản cùng toàn bộ lịch sử. Backend không khởi động nếu deploy (`NODE_ENV=production`) mà vẫn để đăng nhập giả lập, trừ khi bật cờ `ALLOW_MOCK_AUTH=true` có chủ đích
+- Kiểm thử: thêm 65 unit test và 24 e2e (không test nào gọi Google hay ghi file DB thật); thêm smoke test chạy bản build như server thật trong CI, bắt được một lỗi khởi động mà toàn bộ unit test và e2e không thấy
 
 ### BRD v2.3.0 — 2026-09-24
 - Chốt hợp đồng API (BRD mục 6) trước khi làm frontend. Nguyên liệu từng món có định lượng; danh sách đi chợ do server tự tính nên luôn khớp thực đơn. Bữa ăn, nhóm cơ, loại nguyên liệu dùng mã cố định. Server tự gán ID. Response có `source` (Gemini thật hay thực đơn mẫu) và `warnings`

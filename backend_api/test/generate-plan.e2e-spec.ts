@@ -1,10 +1,7 @@
-import type { INestApplication } from '@nestjs/common';
-import { Test } from '@nestjs/testing';
 import { readFileSync } from 'node:fs';
 import request from 'supertest';
-import type { App } from 'supertest/types';
-import { configureApp } from '../src/app.setup.js';
 import { startFakeGemini, type FakeGemini } from './fake-gemini-server.js';
+import { createTestApp, type TestApp } from './test-app.js';
 
 const SAMPLE_CONTENT: unknown = JSON.parse(
   readFileSync(new URL('../src/plan/data/sample-plan.json', import.meta.url), 'utf-8'),
@@ -16,38 +13,23 @@ const body = (overrides: object = {}) => ({
   restrictions: { allergies: 'Hải sản', injuries: '', health_conditions: SECRET },
   ...overrides,
 });
-const PINNED_ENV = ['GEMINI_API_KEY', 'GEMINI_BASE_URL', 'GEMINI_TIMEOUT_MS'] as const;
 
 describe('POST /api/v1/generate-plan (e2e, SDK thật + server Gemini giả)', () => {
-  let app: INestApplication<App>;
+  let testApp: TestApp;
   let fake: FakeGemini;
-  const savedEnv: Partial<Record<(typeof PINNED_ENV)[number], string>> = {};
 
   beforeAll(async () => {
     fake = await startFakeGemini();
-    for (const key of PINNED_ENV) savedEnv[key] = process.env[key];
-    // Ghim trước khi nạp AppModule: máy dev có thể có khoá Gemini thật trong .env.
-    process.env.GEMINI_API_KEY = 'test-key';
-    process.env.GEMINI_BASE_URL = fake.url;
-    process.env.GEMINI_TIMEOUT_MS = '200';
-
-    const { AppModule } = await import('../src/app.module.js');
-    const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
-    app = moduleRef.createNestApplication({ logger: false });
-    configureApp(app);
-    await app.init();
+    testApp = await createTestApp({ GEMINI_API_KEY: 'test-key', GEMINI_BASE_URL: fake.url, GEMINI_TIMEOUT_MS: '200' });
   });
 
   afterAll(async () => {
-    await app.close();
+    await testApp.close();
     await fake.close();
-    for (const key of PINNED_ENV) {
-      if (savedEnv[key] === undefined) delete process.env[key];
-      else process.env[key] = savedEnv[key];
-    }
   });
 
-  const post = (payload: object) => request(app.getHttpServer()).post('/api/v1/generate-plan').send(payload);
+  const post = (payload: object) =>
+    request(testApp.app.getHttpServer()).post('/api/v1/generate-plan').send(payload);
 
   it('returns a Gemini plan that follows the contract', async () => {
     fake.reply({ kind: 'json', body: SAMPLE_CONTENT });
@@ -103,7 +85,7 @@ describe('POST /api/v1/generate-plan (e2e, SDK thật + server Gemini giả)', (
   });
 
   it('documents the response schema in Swagger', async () => {
-    const res = await request(app.getHttpServer()).get('/docs-json').expect(200);
+    const res = await request(testApp.app.getHttpServer()).get('/docs-json').expect(200);
     expect(res.body.components.schemas).toHaveProperty('MealPlanResponseDto');
   });
 });

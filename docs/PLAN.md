@@ -1,6 +1,6 @@
 # Kế hoạch triển khai SmartFit AI
 
-Plan này chia [BRD.md](../BRD.md) (v2.3.0) thành các bước làm được theo thứ tự. BRD vẫn là nguồn yêu cầu; plan chỉ trả lời "làm gì trước, làm gì sau, xong khi nào".
+Plan này chia [BRD.md](../BRD.md) (v2.4.0) thành các bước làm được theo thứ tự. BRD vẫn là nguồn yêu cầu; plan chỉ trả lời "làm gì trước, làm gì sau, xong khi nào".
 
 **Thứ tự tổng thể:** hoàn thiện backend trước (kiểm thử toàn bộ qua Swagger), sau đó mới làm frontend bám theo hợp đồng API đã chốt.
 
@@ -23,14 +23,14 @@ Cả hai dịch vụ bên ngoài đều có chế độ giả lập, nên toàn 
 | Dịch vụ | Chế độ giả lập (mặc định) | Bật chế độ thật |
 |---|---|---|
 | Gemini API | Không có `GEMINI_API_KEY` → trả dữ liệu mẫu soạn sẵn (plan 3 ngày, kho món/bài tập để đổi) | Điền `GEMINI_API_KEY` vào `.env` |
-| Google Sign-In | `AUTH_MODE=mock` → backend chấp nhận token dạng `mock:<email>`, bỏ qua bước xác minh với Google. Phần còn lại (tạo user trong DB, phát JWT, lưu lịch sử) chạy thật | `AUTH_MODE=google` + `GOOGLE_CLIENT_ID` + `JWT_SECRET` |
+| Google Sign-In | `AUTH_MODE=mock` → backend chấp nhận token dạng `mock:<email>`, bỏ qua bước xác minh với Google. Phần còn lại (tạo user trong DB, phát JWT, lưu lịch sử) chạy thật. Bị chặn khi `NODE_ENV=production`, trừ khi `ALLOW_MOCK_AUTH=true` | `AUTH_MODE=google` + `GOOGLE_CLIENT_ID` + `JWT_SECRET` |
 
 ---
 
 ## Hiện trạng (đã xong)
 
-- [x] BRD v2.3.0 (MVP, tính năng nâng cao, tài khoản & lịch sử, hợp đồng API đầy đủ)
-- [x] Backend: `GET /health`, `POST /api/v1/generate-plan` (tính BMR/TDEE, gọi Gemini, kiểm tra khoảng calo, fallback), validate DTO, Swagger UI
+- [x] BRD v2.4.0 (MVP, tính năng nâng cao, tài khoản & lịch sử, hợp đồng API đầy đủ)
+- [x] Backend: `GET /health`, `POST /api/v1/generate-plan` (tính BMR/TDEE, gọi Gemini, kiểm tra khoảng calo, fallback), đăng nhập Google (giả lập mặc định), lịch sử kế hoạch (SQLite), validate DTO, Swagger UI
 - [x] `ai_workspace/`: script thử prompt Gemini
 - [x] Frontend: giao diện Onboarding, Loading, Dashboard, Grocery, bảng Feedback — dùng dữ liệu mẫu, **chưa nối API**
 - [x] Wiki nội bộ `docs/knowledge/`, `CLAUDE.md`
@@ -105,13 +105,17 @@ Chi tiết: brainstorm `docs/superpowers/brainstorms/phase-2-backend-tests.md`, 
 
 ## Giai đoạn 3 — Backend: Tài khoản & Lịch sử (FR-6, FR-7) · L
 
-- [ ] **3.1** Thêm TypeORM + SQLite. Chọn driver không cần build native: thử `better-sqlite3` trước; nếu npm chặn install script (đã thấy cảnh báo `allowScripts` khi cài package) thì dùng `sql.js`. Entity không dùng kiểu dữ liệu riêng của SQLite, để sau này chuyển sang Postgres chỉ cần đổi cấu hình
-- [ ] **3.2** Entity `User` (google_sub, email, name) và `PlanRecord` (user, plan_json, created_at); file DB nằm trong `.gitignore`
-- [ ] **3.3** `AuthModule`: `POST /api/v1/auth/google`, hai chế độ `AUTH_MODE=mock | google`, JWT hết hạn sau 7 ngày. Chế độ google bắt buộc có `JWT_SECRET` (thiếu thì không cho khởi động); chế độ mock được dùng secret mặc định kèm cảnh báo. `/health` báo thêm `auth_mode`
-- [ ] **3.4** Guard: bắt buộc đăng nhập cho API lịch sử; tuỳ chọn cho `generate-plan` (token hợp lệ → lưu lịch sử; token sai → 401; không có token → chạy như cũ, không lưu)
-- [ ] **3.5** `GET /api/v1/plans/history` và `GET /api/v1/plans/history/:id` (plan của người khác → 404)
-- [ ] **3.6** Test: auth chế độ mock, guard, quyền sở hữu plan, E2E: đăng nhập giả lập → tạo plan → xem lịch sử
-- [ ] **3.7** `SETUP_CREDENTIALS.md` — phần **Google Sign-In (backend)**: tạo OAuth Client ID trên Google Cloud Console, điền `.env`, kiểm tra qua `/health`
+- [x] **3.1** Thêm TypeORM + SQLite: `better-sqlite3@12` (TypeORM 1.1 không còn driver `sqlite3`, chỉ nhận `better-sqlite3 ^12`; install script được duyệt tường minh trong `package.json`). Entity chỉ dùng kiểu cột có ở cả SQLite và Postgres
+- [x] **3.2** Entity `User` (google_sub, email, name) và `PlanRecord` (user, plan_json, target_calories, created_at); bảng tạo bằng migration chạy khi khởi động, không `synchronize`; file DB nằm trong `.gitignore`
+- [x] **3.3** `AuthModule`: `POST /api/v1/auth/google`, hai chế độ `AUTH_MODE=mock | google`, JWT hết hạn sau 7 ngày. Chế độ google bắt buộc có `GOOGLE_CLIENT_ID` và `JWT_SECRET` ≥ 32 ký tự (thiếu thì không cho khởi động); chế độ mock được dùng secret mặc định kèm cảnh báo, và bị chặn khi `NODE_ENV=production` trừ khi `ALLOW_MOCK_AUTH=true`. `/health` báo thêm `auth_mode`
+- [x] **3.4** Guard: bắt buộc đăng nhập cho API lịch sử; tuỳ chọn cho `generate-plan` (token hợp lệ → lưu lịch sử; token sai → 401; không có token → chạy như cũ, không lưu)
+- [x] **3.5** `GET /api/v1/plans/history` (50 plan mới nhất) và `GET /api/v1/plans/history/:id` (plan của người khác → 404)
+- [x] **3.6** Test: auth hai chế độ (Google test bằng khoá RSA tự tạo, không gọi mạng), guard, quyền sở hữu plan, migration khớp entity, E2E: đăng nhập giả lập → tạo plan → xem lịch sử
+- [x] **3.7** `SETUP_CREDENTIALS.md` — phần **Google Sign-In (backend)**: tạo OAuth Client ID trên Google Cloud Console, điền `.env`, kiểm tra qua `/health`
+- [x] **3.8** *(bổ sung, quyết định Q4)* `DELETE /api/v1/me`: xoá tài khoản cùng toàn bộ lịch sử (BRD FR-6.4, v2.4.0)
+- [x] **3.9** *(bổ sung khi lập plan)* Smoke test chạy bản build (`npm run test:smoke`) trong CI — bắt lỗi import vòng giữa entity mà vitest không thấy
+
+Chi tiết: brainstorm `docs/superpowers/brainstorms/phase-3-auth-history.md` (quyết định Q1–Q4 ở mục 8), plan `docs/superpowers/plans/phase-3-auth-history/`.
 
 ## Giai đoạn 4 — Backend: Đổi món, đổi bài tập, feedback (FR-4, FR-5) · M
 
@@ -132,6 +136,7 @@ Chi tiết: brainstorm `docs/superpowers/brainstorms/phase-2-backend-tests.md`, 
 - [ ] **5.4** `ApiClient` (`lib/services/`): gọi mọi endpoint; lỗi mạng → thông báo dễ hiểu, không crash (NFR-2)
 - [ ] **5.5** `PlanProvider` (plan hiện tại, lưu `shared_preferences`) và `AuthProvider` (JWT)
 - [ ] **5.6** `MainShell`: chưa có plan → mở Onboarding, đã có → Dashboard; sửa `widget_test.dart` theo luồng mới (test hiện đang giả định app mở thẳng Dashboard)
+- [ ] **5.7** Bật CORS trong `configureApp()` (`backend_api/src/app.setup.ts`) cho địa chỉ Flutter web, cho phép header `Authorization` — không có thì trình duyệt chặn mọi request từ bản web chạy ở cổng khác (phát hiện ở giai đoạn 3)
 
 ## Giai đoạn 6 — Frontend: nối MVP (FR-1 → FR-3) · M
 
@@ -158,7 +163,7 @@ Chi tiết: brainstorm `docs/superpowers/brainstorms/phase-2-backend-tests.md`, 
 ## Giai đoạn 9 — Deploy, nghiệm thu, nộp bài · M
 
 - [ ] **9.1** Chọn nơi deploy: (a) giữ SQLite, dùng host có ổ lưu trữ bền (Railway volume, Fly.io volume, VPS), hoặc (b) chuyển sang Postgres. **Không** dùng Render bản free với SQLite
-- [ ] **9.2** Deploy backend, cấu hình biến môi trường trên host
+- [ ] **9.2** Deploy backend, cấu hình biến môi trường trên host: `NODE_ENV=production`, `AUTH_MODE=google`, `GOOGLE_CLIENT_ID`, `JWT_SECRET`, `DATABASE_PATH` trỏ vào ổ lưu trữ bền, `GEMINI_API_KEY`
 - [ ] **9.3** Build app để demo: bản web và/hoặc APK Android
 - [ ] **9.4** Chạy checklist kiểm thử toàn luồng ở cả hai chế độ (giả lập / khoá thật)
 - [ ] **9.5** Cập nhật README (cách chạy, ảnh chụp màn hình), Changelog, BRD mục 9, wiki

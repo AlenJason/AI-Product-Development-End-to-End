@@ -3,7 +3,7 @@
 **Tên sản phẩm:** Trợ lý AI Gợi ý & Điều chỉnh Thực đơn, Lịch tập Thông minh  
 **Môn học:** AI Product Development End-to-End (Đồ án Kỹ sư / Cử nhân Năm 4)  
 **Đơn vị thực hiện:** Trường Đại học Công nghệ Thông tin và Truyền thông Việt - Hàn (VKU)  
-**Phiên bản:** 2.3.0 (Dành cho Sinh viên thực hành: Flutter & NestJS)  
+**Phiên bản:** 2.4.0 (Dành cho Sinh viên thực hành: Flutter & NestJS)  
 **Ngày cập nhật:** 24/09/2026  
 **Trạng thái:** Đã phê duyệt (Approved)  
 
@@ -104,7 +104,7 @@ sequenceDiagram
 * **AI Engine (Google Gemini API):**
   * Sử dụng model `gemini-3.8-flash`: tốc độ phản hồi nhanh, miễn phí hạn mức cho sinh viên, hỗ trợ mạnh mẽ chế độ xuất cấu trúc JSON. Gọi qua SDK Node.js chính thức `@google/genai` (SDK cũ `@google/generative-ai` đã bị khai tử), tham số cấu hình JSON mode là `config: { responseMimeType: "application/json" }`.
 * **Cơ sở dữ liệu & Xác thực (mới ở bản 2.2.0):**
-  * **SQLite + TypeORM** (`@nestjs/typeorm`): file DB dạng `database.sqlite` ngay trong `backend_api/`, không cần cài đặt server DB riêng — đúng tinh thần "môi trường chạy đơn giản" (NFR mục 7). File DB phải được thêm vào `.gitignore` vì có thể chứa dữ liệu người dùng thật khi demo.
+  * **SQLite + TypeORM** (`@nestjs/typeorm`, driver `better-sqlite3` bản 12 — TypeORM 1.x không còn driver `sqlite3`): file DB dạng `database.sqlite` ngay trong `backend_api/` (đổi bằng `DATABASE_PATH`), không cần cài đặt server DB riêng — đúng tinh thần "môi trường chạy đơn giản" (NFR mục 7). Bảng được tạo bằng migration chạy tự động khi khởi động, không dùng `synchronize`. File DB phải được thêm vào `.gitignore` vì có thể chứa dữ liệu người dùng thật khi demo.
   * **Xác thực:** `google-auth-library` để verify ID Token từ Google phía backend; `@nestjs/jwt` để backend tự phát hành JWT riêng (không dùng thẳng token Google cho mọi request) — tách biệt vòng đời session của app khỏi Google.
   * Không tự lưu mật khẩu người dùng — toàn bộ xác thực danh tính giao cho Google, backend chỉ lưu `google_sub`/`email`/`name` để định danh.
 
@@ -166,6 +166,7 @@ sequenceDiagram
 * **FR-6.1:** Màn hình chào mở app có nút "Đăng nhập với Google"; dùng package `google_sign_in` phía Flutter.
 * **FR-6.2:** Backend nhận ID Token từ Flutter, verify với Google, tự tạo tài khoản mới nếu `google_sub` chưa tồn tại (không cần màn hình đăng ký riêng).
 * **FR-6.3:** Backend phát hành JWT riêng của app sau khi xác thực thành công; Flutter lưu JWT này (không lưu ID Token Google) để gọi các API cần đăng nhập ở các lần sau.
+* **FR-6.4** *(bổ sung bản 2.4.0)*: Người dùng tự xoá được tài khoản của mình: backend xoá tài khoản cùng toàn bộ lịch sử kế hoạch (`DELETE /api/v1/me`). Đây là quyền yêu cầu xoá dữ liệu cá nhân theo Nghị định 13/2023/NĐ-CP.
 
 #### FR-7: Lịch sử kế hoạch (Plan History)
 * **FR-7.1:** Mỗi lần `/api/v1/generate-plan` thành công **và** request có kèm JWT hợp lệ, Backend lưu lại plan đó vào bảng lịch sử, gắn với `user_id`.
@@ -343,30 +344,37 @@ Server chịu trách nhiệm:
 > **Hướng dẫn cho sinh viên tạo Dart Model nhanh:**
 > Bạn chỉ cần copy đoạn JSON mẫu ở trên, dán vào trang web chuyển đổi miễn phí `quicktype.io` (chọn language là **Dart**), hệ thống sẽ tự sinh toàn bộ class Dart kèm hàm `fromJson` và `toJson` chuẩn xác để dùng ngay trong Flutter!
 
-### 6.3. Xác thực & Lịch sử (bổ sung bản 2.2.0)
+### 6.3. Xác thực & Lịch sử (bổ sung bản 2.2.0, chi tiết hoá ở bản 2.4.0)
 
 **`POST /api/v1/auth/google`** — request:
 ```json
 { "id_token": "eyJhbGciOi..." }
 ```
-Response:
+Response (200):
 ```json
 {
   "access_token": "eyJhbGciOi...",
   "user": { "id": "uuid", "email": "sv@vku.edu.vn", "name": "Nguyễn Văn A" }
 }
 ```
+`id_token` thiếu hoặc không phải chuỗi → 400. Token không xác minh được (sai chữ ký, hết hạn, cấp cho app khác, email chưa xác minh) → 401. Ở chế độ đăng nhập giả lập (`AUTH_MODE=mock`, mặc định khi phát triển), backend nhận `"id_token": "mock:<email>"` thay cho token Google thật.
 
-**`GET /api/v1/plans/history`** — cần header `Authorization: Bearer <access_token>`. Response:
+`access_token` là JWT của SmartFit: hết hạn sau 7 ngày, chỉ chứa id người dùng. Các API cần đăng nhập nhận nó qua header `Authorization: Bearer <access_token>` và trả **401** khi thiếu token, token sai hoặc hết hạn, hoặc tài khoản đã bị xoá.
+
+**`GET /api/v1/plans/history`** — cần đăng nhập. Tối đa 50 kế hoạch, mới nhất trước; `created_at` theo ISO 8601 (UTC). Response:
 ```json
 {
   "plans": [
-    { "id": "uuid", "created_at": "2026-09-22T10:00:00Z", "target_calories": 1850 }
+    { "id": "uuid", "created_at": "2026-09-22T10:00:00.000Z", "target_calories": 1850 }
   ]
 }
 ```
 
-**`GET /api/v1/plans/history/:id`** — cần header `Authorization: Bearer <access_token>`. Response: đúng cấu trúc `MealPlanResponse` như mục 6.2.
+**`GET /api/v1/plans/history/:id`** — cần đăng nhập. Response: đúng cấu trúc `MealPlanResponse` như mục 6.2, giống hệt lúc tạo. `id` không phải UUID → 400; không có, hoặc là plan của tài khoản khác → 404.
+
+**`DELETE /api/v1/me`** *(bổ sung bản 2.4.0, FR-6.4)* — cần đăng nhập. Xoá tài khoản và toàn bộ lịch sử; trả 204, không có nội dung. Token cũ không dùng được nữa.
+
+**Lưu lịch sử khi tạo plan (FR-7.1):** `POST /api/v1/generate-plan` không có header `Authorization` → chạy như khách, không lưu. Có header với token hợp lệ → lưu plan; nếu lưu lỗi, vẫn trả plan và thêm một câu vào `warnings`. Có header nhưng token sai hoặc hết hạn → 401, để app biết cần đăng nhập lại thay vì âm thầm không lưu.
 
 ### 6.4. Đổi món, đổi bài tập, feedback (bổ sung bản 2.3.0, triển khai ở giai đoạn 4 của `docs/PLAN.md`)
 
@@ -411,6 +419,8 @@ Giá trị cho feedback:
    * JWT có thời hạn hết hạn hợp lý (ví dụ 7 ngày) để hạn chế rủi ro nếu token bị lộ; hết hạn thì Flutter yêu cầu đăng nhập lại qua Google.
    * File `database.sqlite` (chứa email/tên người dùng thật khi demo) phải nằm trong `.gitignore`, không commit lên Git.
    * Không tự lưu hoặc xử lý mật khẩu người dùng dưới bất kỳ hình thức nào — toàn bộ xác thực uỷ quyền cho Google.
+   * JWT chỉ chứa id người dùng, không chứa email hay dữ liệu sức khoẻ. Chế độ `AUTH_MODE=google` bắt buộc có `GOOGLE_CLIENT_ID` và `JWT_SECRET` dài ít nhất 32 ký tự; thiếu thì backend không khởi động. *(bổ sung bản 2.4.0)*
+   * Đăng nhập giả lập (`AUTH_MODE=mock`) cho phép bất kỳ ai đăng nhập thành người khác, nên chỉ dùng khi phát triển hoặc demo: backend **không khởi động** khi `NODE_ENV=production` mà vẫn để `AUTH_MODE=mock`, trừ khi đặt `ALLOW_MOCK_AUTH=true` có chủ đích cho buổi demo không có dữ liệu thật. *(bổ sung bản 2.4.0)*
 6. **SQLite nằm ở backend, không nằm trên thiết bị (bổ sung bản 2.2.0):**
    * `database.sqlite` là file trên **máy chạy `backend_api/`**, không phải lưu trên điện thoại. Mọi thiết bị (điện thoại A, điện thoại B...) gọi API tới **cùng một backend** nên đều đọc/ghi chung một file này — đây là lý do lịch sử kế hoạch (FR-7) xem được xuyên thiết bị khi đăng nhập cùng tài khoản Google, khác hẳn với `shared_preferences` (luôn lưu cục bộ trên từng máy).
    * Trong lúc code/test, backend chạy tạm trên localhost (`npm run start:dev`) là đủ. Muốn demo/nộp bài với nhiều thiết bị thật hoạt động ổn định lâu dài (không phụ thuộc laptop của nhóm có đang bật hay không), cần **deploy `backend_api/` lên một nơi chạy liên tục**.
@@ -432,7 +442,7 @@ Giá trị cho feedback:
 | **Tuần 3** | **Xây dựng Giao diện Flutter (MVP)** | Tạo màn hình Onboarding (Form nhập tuổi, chiều cao, cân nặng) và màn hình hiển thị kế hoạch 3 ngày trong `frontend_app/`. |
 | **Tuần 4** | **Kết nối API (Integration) & Checklist** | Flutter gọi API Backend hiển thị dữ liệu thật; hoàn thiện tính năng Danh sách đi chợ (Checkbox). |
 | **Tuần 5** | **Hoàn thiện tính năng nâng cao & Demo** | Thêm nút "Đổi món" (Swap); viết Unit Test cho thuật toán BMR; hoàn thiện slide báo cáo và video quay demo nộp môn học. |
-| **Tuần 6** *(bổ sung, bản 2.2.0)* | **Tài khoản & Lịch sử** | Tích hợp `google_sign_in` + `SQLite/TypeORM` trong `backend_api/`; hoàn thiện `/api/v1/auth/google`, `/api/v1/plans/history`; màn hình Lịch sử trong Flutter thay placeholder "Thống kê". |
+| **Tuần 6** *(bổ sung, bản 2.2.0)* | **Tài khoản & Lịch sử** | Tích hợp `google_sign_in` + `SQLite/TypeORM` trong `backend_api/`; hoàn thiện `/api/v1/auth/google`, `/api/v1/plans/history`, `DELETE /api/v1/me`; màn hình Lịch sử trong Flutter thay placeholder "Thống kê". |
 
 ---
 

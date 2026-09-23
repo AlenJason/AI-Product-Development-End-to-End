@@ -1,11 +1,11 @@
 # Hướng dẫn gắn khoá thật (Gemini API, Google Sign-In)
 
-Mặc định dự án chạy ở **chế độ giả lập**, không cần khoá nào: backend trả dữ liệu mẫu thay cho Gemini. Chỉ cần làm theo file này khi muốn dùng AI thật (hoặc đăng nhập Google thật, sau khi phần đó được làm).
+Mặc định dự án chạy ở **chế độ giả lập**, không cần khoá nào: backend trả dữ liệu mẫu thay cho Gemini. Chỉ cần làm theo file này khi muốn dùng AI thật (hoặc đăng nhập Google thật).
 
 | Dịch vụ | Trạng thái trong code | Hướng dẫn |
 |---|---|---|
 | Gemini API | Đã có | [Mục 1](#1-gemini-api-key) |
-| Google Sign-In — backend | Chưa làm ([PLAN.md](PLAN.md) bước 3.7) | [Mục 2](#2-google-sign-in) |
+| Google Sign-In — backend | Đã có | [Mục 2](#2-google-sign-in) |
 | Google Sign-In — Flutter | Chưa làm ([PLAN.md](PLAN.md) bước 8.4) | [Mục 2](#2-google-sign-in) |
 
 ---
@@ -88,4 +88,79 @@ Script in ra prompt, JSON Gemini trả về, và kết quả kiểm tra khoảng
 
 ## 2. Google Sign-In
 
-Chưa có trong code. Tính năng đăng nhập được làm ở giai đoạn 3 (backend) và giai đoạn 8 (Flutter) của [PLAN.md](PLAN.md). Khi làm xong, backend mặc định chạy `AUTH_MODE=mock` (đăng nhập giả lập, không cần tài khoản Google Cloud), và mục này sẽ hướng dẫn tạo OAuth Client ID, điền `.env` phía backend và cấu hình phía Flutter.
+### 2.1. Chế độ giả lập (mặc định)
+
+Backend mặc định chạy `AUTH_MODE=mock`: `POST /api/v1/auth/google` nhận `{"id_token": "mock:<email>"}` (ví dụ `mock:sv@vku.edu.vn`) thay cho token Google thật. Phần còn lại chạy thật: tạo tài khoản trong file DB, phát JWT, lưu và xem lịch sử. Không cần tài khoản Google Cloud.
+
+Thử trên Swagger (`http://localhost:3000/docs`):
+
+1. `POST /api/v1/auth/google` với `{"id_token": "mock:sv@vku.edu.vn"}` → copy `access_token`.
+2. Bấm **Authorize** (góc trên bên phải), dán `access_token`, bấm **Authorize**.
+3. Gọi `POST /api/v1/generate-plan`, rồi `GET /api/v1/plans/history` → thấy plan vừa tạo.
+
+> Ở chế độ giả lập, ai gửi `mock:<email>` cũng đăng nhập được thành email đó và đọc được lịch sử của người đó. Vì vậy backend **từ chối khởi động** khi `NODE_ENV=production` mà vẫn để `AUTH_MODE=mock`. Chỉ đặt `ALLOW_MOCK_AUTH=true` khi cố ý deploy một bản demo không có dữ liệu thật.
+
+### 2.2. Tạo OAuth Client ID
+
+1. Mở trang **Clients** của Google Auth Platform: [console.developers.google.com/auth/clients](https://console.developers.google.com/auth/clients). Chọn hoặc tạo một project (có thể dùng chung project với Gemini).
+2. Nếu được yêu cầu, điền trang **Branding** (tên app, email hỗ trợ). Phạm vi mặc định cho đăng nhập là đủ, không cần thêm scope nào.
+3. Bấm **Create client**, chọn **Web application**. Ở **Authorized JavaScript origins**, thêm địa chỉ chạy Flutter web khi phát triển: `http://localhost` và `http://localhost:<cổng>`. Nên chạy Flutter web ở cổng cố định, ví dụ `flutter run -d chrome --web-port 5000`.
+4. Copy **Client ID**, dạng `1234567890-abc123def456.apps.googleusercontent.com`.
+5. Trang **Audience**: khi app còn ở trạng thái *Testing*, chỉ các tài khoản trong danh sách **Test users** đăng nhập được. Thêm email của các thành viên nhóm và người chấm demo.
+
+Client ID không phải bí mật (nó nằm sẵn trong app). **Client secret** thì là bí mật — backend không cần nó, đừng copy vào `.env` hay vào app.
+
+Cấu hình phía Flutter (Client ID cho Android/iOS, SHA-1, thẻ meta cho bản web) làm ở [PLAN.md](PLAN.md) bước 8.4. Trên Android/iOS, app thường xin ID Token cho Web Client ID (tham số `serverClientId`), nên backend chỉ cần Web Client ID.
+
+### 2.3. Điền vào backend
+
+Mở `backend_api/.env`:
+
+```
+AUTH_MODE=google
+GOOGLE_CLIENT_ID=<Web Client ID vừa copy>
+JWT_SECRET=<chuỗi ngẫu nhiên, ít nhất 32 ký tự>
+JWT_EXPIRES_IN=7d
+```
+
+Tạo `JWT_SECRET`:
+
+```bash
+openssl rand -base64 48
+# hoặc, không có openssl:
+node -e "console.log(require('node:crypto').randomBytes(48).toString('base64'))"
+```
+
+- `GOOGLE_CLIENT_ID` nhận nhiều giá trị cách nhau dấu phẩy, khi app gửi ID Token cấp cho nhiều Client ID khác nhau (ví dụ Web và iOS).
+- Đổi `JWT_SECRET` thì mọi phiên đăng nhập cũ hết hiệu lực: người dùng phải đăng nhập lại, dữ liệu không mất.
+- `DATABASE_PATH` (mặc định `database.sqlite`, tính từ thư mục chạy backend) là file chứa tài khoản và lịch sử. File này đã nằm trong `.gitignore`.
+
+Khởi động lại backend. Thiếu `GOOGLE_CLIENT_ID`, hoặc `JWT_SECRET` ngắn hơn 32 ký tự → backend dừng ngay lúc khởi động và in lý do.
+
+### 2.4. Kiểm tra
+
+1. `http://localhost:3000/health` phải có `"auth_mode":"google"`.
+2. Gửi `POST /api/v1/auth/google` với `{"id_token": "abc"}` → 401, và terminal backend có dòng `Từ chối Google ID Token: Wrong number of segments in token`. Nghĩa là backend đang xác minh bằng Google và không còn nhận `mock:`.
+3. Kiểm tra trọn vẹn (đăng nhập bằng tài khoản Google thật) cần nút đăng nhập trong app Flutter — [PLAN.md](PLAN.md) giai đoạn 8.
+
+### 2.5. Lỗi thường gặp
+
+| Hiện tượng | Nguyên nhân thường gặp | Cách xử lý |
+|---|---|---|
+| Backend dừng lúc khởi động: `AUTH_MODE=google cần GOOGLE_CLIENT_ID` hoặc `cần JWT_SECRET dài ít nhất 32 ký tự` | Thiếu hoặc sai biến trong `.env` | Điền theo mục 2.3 |
+| Backend dừng: `Không khởi động với AUTH_MODE=mock khi NODE_ENV=production` | Deploy mà vẫn để đăng nhập giả lập | Đặt `AUTH_MODE=google` (hoặc `ALLOW_MOCK_AUTH=true` nếu cố ý demo giả lập) |
+| Đăng nhập trả 401, log: `Wrong recipient, payload audience != requiredAudience` | ID Token được cấp cho một Client ID khác với `GOOGLE_CLIENT_ID` | Thêm Client ID đó vào `GOOGLE_CLIENT_ID`, hoặc sửa `serverClientId` phía Flutter |
+| 401, log: `Token used too late` | ID Token Google đã hết hạn (khoảng 1 giờ), hoặc đồng hồ máy chạy backend bị lệch | App lấy token mới rồi gửi ngay; kiểm tra giờ hệ thống |
+| 401 `Tài khoản Google chưa xác minh email` | Tài khoản Google chưa xác minh email | Dùng tài khoản khác |
+| Không đăng nhập được bằng một tài khoản cụ thể | App đang ở trạng thái *Testing*, tài khoản chưa có trong **Test users** | Thêm vào trang **Audience** |
+| Mọi API cần đăng nhập trả 401 sau khi khởi động lại hoặc deploy lại | Đã đổi `JWT_SECRET`; hoặc file DB bị xoá (host không có ổ lưu trữ bền) | Đăng nhập lại. Nếu mất cả lịch sử, xem lại nơi deploy ([PLAN.md](PLAN.md) bước 9.1) |
+
+### 2.6. Quay lại chế độ giả lập
+
+Đặt `AUTH_MODE=mock` (hoặc xoá dòng đó), khởi động lại backend. Tài khoản đã tạo bằng Google thật vẫn nằm trong DB, nhưng không đăng nhập được bằng `mock:<email>` vì định danh khác nhau.
+
+### 2.7. Bảo mật
+
+- `JWT_SECRET` bảo vệ giống khoá Gemini (mục 1.7): chỉ nằm trong `.env`, không commit; khi deploy thì khai báo trên trang cấu hình của host.
+- Không commit file DB (`*.sqlite`) — nó chứa email và tên người dùng thật.
+- JWT chỉ chứa id người dùng. Log của backend không ghi token hay email khi từ chối đăng nhập.
