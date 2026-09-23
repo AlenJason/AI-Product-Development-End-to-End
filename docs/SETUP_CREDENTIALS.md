@@ -34,15 +34,17 @@ GEMINI_API_KEY=<key vừa copy>
 GEMINI_MODEL=gemini-3.8-flash
 ```
 
+Tuỳ chọn: `GEMINI_TIMEOUT_MS=15000` — giới hạn thời gian mỗi lần gọi Gemini (ms). Hết giờ thì backend dùng thực đơn mẫu ngay.
+
 Sau đó **khởi động lại backend** (Ctrl+C rồi chạy lại `npm run start:dev`). Backend chỉ đọc `.env` lúc khởi động; chế độ watch tự khởi động lại khi sửa code nhưng **không** khi sửa `.env`.
 
 ### 1.3. Kiểm tra
 
 1. Mở `http://localhost:3000/health`. Kết quả phải có `"gemini":"configured"`.
    Trường này chỉ cho biết backend **đã thấy** key, chưa chắc key hợp lệ.
-2. Gọi thử `POST /api/v1/generate-plan` trên Swagger (`http://localhost:3000/docs`), rồi xem terminal đang chạy backend:
-   - Không có dòng cảnh báo nào → Gemini thật đã trả kết quả.
-   - Có dòng `Lỗi khi gọi Gemini API`, tiếp theo là `Rơi về sample_plan.json dự phòng...` → key có vấn đề (xem mục 1.5). App vẫn chạy bình thường vì backend tự dùng dữ liệu mẫu.
+2. Gọi thử `POST /api/v1/generate-plan` trên Swagger (`http://localhost:3000/docs`) và xem trường `source` trong kết quả:
+   - `"source": "gemini"` → Gemini thật đã trả kết quả hợp lệ.
+   - `"source": "sample"` → backend đã dùng thực đơn mẫu. Xem terminal đang chạy backend để biết lý do: dòng `Lỗi khi gọi Gemini (lần 1): …` (khoá sai, hết hạn mức, model sai, hết giờ) hoặc `Kết quả Gemini không đạt hợp đồng (lần 1): …` (Gemini trả sai định dạng hay số liệu; backend tự gọi lại một lần). App vẫn chạy bình thường vì backend tự dùng dữ liệu mẫu.
 
 ### 1.4. Thử key nhanh bằng `ai_workspace/`
 
@@ -66,6 +68,8 @@ Script in ra prompt, JSON Gemini trả về, và kết quả kiểm tra khoảng
 | Log báo lỗi xác thực/quyền truy cập dù key copy đúng | Key loại *Standard* đã bị từ chối (xem lưu ý ở mục 1.1) | Tạo key mới trên AI Studio |
 | Log báo `RESOURCE_EXHAUSTED` (429) | Hết hạn mức miễn phí | Đợi hạn mức hồi lại hoặc dùng project khác; trong lúc đó backend vẫn trả dữ liệu mẫu |
 | Log báo model không tồn tại | `GEMINI_MODEL` sai tên | Xem tên model tại [ai.google.dev/gemini-api/docs/models](https://ai.google.dev/gemini-api/docs/models) |
+| Log báo `Gemini không phản hồi sau 15000 ms` | Mạng chậm hoặc model phản hồi chậm | Thử lại; nếu thường xuyên xảy ra, tăng `GEMINI_TIMEOUT_MS` trong `.env` rồi khởi động lại backend |
+| Log báo `Kết quả Gemini không đạt hợp đồng` lặp lại nhiều lần | Prompt chưa đủ chặt với model đang dùng | Thử prompt bằng `ai_workspace/` (mục 1.4), chỉnh rồi chép sang `backend_api/src/plan/gemini.service.ts` |
 
 ### 1.6. Quay lại chế độ giả lập
 

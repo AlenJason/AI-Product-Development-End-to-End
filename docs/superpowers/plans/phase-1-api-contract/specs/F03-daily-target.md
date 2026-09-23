@@ -121,7 +121,7 @@ Chạy:
 cd backend_api && npx vitest run src/plan/daily-target.spec.ts
 ```
 
-Mong đợi: **FAIL** — `Failed to load url ./daily-target.js`.
+Mong đợi: **FAIL** — `Cannot find module './daily-target.js'`.
 
 ### Task 2 — Hằng số D1
 

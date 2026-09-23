@@ -1,6 +1,6 @@
 ---
 type: meta
-last_updated: 2026-09-22
+last_updated: 2026-09-24
 ---
 
 # Wiki Triggers
@@ -14,8 +14,8 @@ Dự án không có `lib/auth/`, `middleware.ts`, hay thư mục database/ORM (k
 | File thay đổi | Bài wiki cần load / cập nhật |
 | --- | --- |
 | `backend_api/src/app.controller.ts`, `backend_api/src/app.service.ts`, `backend_api/src/plan/plan.controller.ts`, `backend_api/src/plan/plan.module.ts`, `backend_api/src/main.ts` | `api-routes.md` |
-| `backend_api/src/plan/gemini.service.ts`, `backend_api/src/plan/nutrition-sanity.util.ts`, `ai_workspace/**` | `gemini-integration.md` |
-| `backend_api/src/plan/dto/**`, `backend_api/src/plan/enums/**`, `backend_api/src/plan/interfaces/**`, `backend_api/src/plan/data/**`, `backend_api/src/plan/plan.service.ts` | `plan-data-contract.md` |
+| `backend_api/src/plan/gemini.service.ts`, `ai_workspace/**` | `gemini-integration.md` |
+| `backend_api/src/plan/dto/**`, `backend_api/src/plan/enums/**`, `backend_api/src/plan/data/**`, `backend_api/src/plan/plan-validation.ts`, `backend_api/src/plan/plan-assembly.ts`, `backend_api/src/plan/daily-target.ts`, `backend_api/src/plan/plan-warnings.ts`, `backend_api/src/plan/text.util.ts`, `backend_api/src/plan/plan.service.ts` | `plan-data-contract.md` |
 | `frontend_app/lib/screens/**`, `frontend_app/lib/widgets/**`, `frontend_app/lib/main.dart` | `flutter-ui.md` |
 | `frontend_app/lib/models/**` | `flutter-ui.md` |
 | `BRD.md` | `product-spec.md` |
@@ -23,7 +23,7 @@ Dự án không có `lib/auth/`, `middleware.ts`, hay thư mục database/ORM (k
 Trigger bổ sung (bất kỳ thay đổi nào sau đây → bắt buộc cập nhật khi commit):
 
 - Một ràng buộc thay đổi (khoảng calo, hệ số vận động, mức điều chỉnh calo theo mục tiêu — xem `critical-constraints.md`)
-- Schema JSON request/response của Gemini thay đổi (BRD.md mục 6) mà `backend_api/src/plan/interfaces/` và `dto/` chưa cập nhật khớp theo
+- Hợp đồng request/response (BRD.md mục 6) thay đổi mà `backend_api/src/plan/dto/`, `enums/` và `data/sample-plan.json` chưa cập nhật khớp theo
 - Một đoạn tóm tắt trong wiki không còn đúng thực tế
 
 ## Trigger theo từ khóa chủ đề

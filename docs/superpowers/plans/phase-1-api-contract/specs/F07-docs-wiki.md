@@ -137,6 +137,12 @@ Mỗi file có `*.spec.ts` đặt cạnh trong `src/plan/`; chạy `cd backend_a
 | `backend_api/src/plan/dto/**`, `backend_api/src/plan/enums/**`, `backend_api/src/plan/data/**`, `backend_api/src/plan/plan-validation.ts`, `backend_api/src/plan/plan-assembly.ts`, `backend_api/src/plan/daily-target.ts`, `backend_api/src/plan/plan-warnings.ts`, `backend_api/src/plan/text.util.ts`, `backend_api/src/plan/plan.service.ts` | `plan-data-contract.md` |
 ```
 
+Cũng trong `wiki-triggers.md`, ở phần "Trigger bổ sung", thay dòng nhắc `backend_api/src/plan/interfaces/` (thư mục đã xoá ở F06) bằng:
+
+```
+- Hợp đồng request/response (BRD.md mục 6) thay đổi mà `backend_api/src/plan/dto/`, `enums/` và `data/sample-plan.json` chưa cập nhật khớp theo
+```
+
 `INDEX.md`: đổi dòng `_Cập nhật lần cuối: …_` thành `_Cập nhật lần cuối: 2026-09-24_` và thêm hàng sau `[[reference-materials]]`:
 
 ```

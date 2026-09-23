@@ -196,7 +196,7 @@ Chạy:
 cd backend_api && npx vitest run src/plan/text.util.spec.ts src/plan/plan-validation.spec.ts
 ```
 
-Mong đợi: **FAIL** — `Failed to load url ./text.util.js` / `./plan-validation.js` (file chưa tồn tại).
+Mong đợi: **FAIL** — `Cannot find module './text.util.js'` và `Cannot find module './plan-validation.js'` (file chưa tồn tại).
 
 ### Task 2 — Enum
 

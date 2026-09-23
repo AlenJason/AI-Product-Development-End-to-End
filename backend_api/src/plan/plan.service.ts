@@ -1,17 +1,18 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { CreatePlanDto } from './dto/create-plan.dto.js';
-import { GeminiService } from './gemini.service.js';
-import { ACTIVITY_MULTIPLIER } from './enums/activity-level.enum.js';
-import { GOAL_CALORIE_ADJUSTMENT } from './enums/goal.enum.js';
-import { Gender } from './enums/gender.enum.js';
-import type { DailyTarget, MealPlanResponse } from './interfaces/plan.interface.js';
-import { isNutritionWithinBounds } from './nutrition-sanity.util.js';
+import type { CreatePlanDto } from './dto/create-plan.dto.js';
+import type { DailyTargetDto, MealPlanResponseDto } from './dto/meal-plan-response.dto.js';
+import type { PlanContentDto } from './dto/plan-content.dto.js';
+import { computeDailyTarget } from './daily-target.js';
+import { PlanSource } from './enums/plan-source.enum.js';
+import { GeminiService, GeminiTimeoutError } from './gemini.service.js';
+import { assemblePlan } from './plan-assembly.js';
+import { parsePlanContent } from './plan-validation.js';
+import { WARNINGS } from './plan-warnings.js';
 
-const SAMPLE_PLAN_PATH = fileURLToPath(
-  new URL('./data/sample-plan.json', import.meta.url),
-);
+const SAMPLE_PLAN_PATH = fileURLToPath(new URL('./data/sample-plan.json', import.meta.url));
+const MAX_GEMINI_ATTEMPTS = 2;
 
 @Injectable()
 export class PlanService {
@@ -19,57 +20,57 @@ export class PlanService {
 
   constructor(private readonly gemini: GeminiService) {}
 
-  async generatePlan(dto: CreatePlanDto): Promise<MealPlanResponse> {
-    const dailyTarget = this.computeDailyTarget(dto);
+  async generatePlan(profile: CreatePlanDto): Promise<MealPlanResponseDto> {
+    const { target, flooredToBmr } = computeDailyTarget(profile);
+    const warnings: string[] = [];
+    if (flooredToBmr) warnings.push(WARNINGS.bmrFloor(target.bmr));
+    if (profile.restrictions.health_conditions) warnings.push(WARNINGS.healthConditions);
 
-    if (!this.gemini.isConfigured) {
-      this.logger.warn(
-        'GEMINI_API_KEY chưa cấu hình — trả về sample_plan.json dự phòng (BRD NFR-2).',
-      );
-      return this.loadSamplePlan(dailyTarget);
+    const content = await this.generateWithGemini(profile, target);
+    if (content) {
+      return assemblePlan(content, target, PlanSource.GEMINI, warnings);
     }
 
-    // NFR-4: validate số liệu AI trả về, retry tối đa 1 lần, cuối cùng rơi về sample_plan.json.
-    for (let attempt = 0; attempt < 2; attempt++) {
+    if (hasRestrictions(profile)) warnings.push(WARNINGS.sampleNotFiltered);
+    return assemblePlan(loadSampleContent(), target, PlanSource.SAMPLE, warnings);
+  }
+
+  // Log chỉ ghi thông báo lỗi và vi phạm hợp đồng, không ghi request hay nội dung Gemini (NFR-7).
+  private async generateWithGemini(
+    profile: CreatePlanDto,
+    target: DailyTargetDto,
+  ): Promise<PlanContentDto | null> {
+    if (!this.gemini.isConfigured) {
+      this.logger.warn('GEMINI_API_KEY chưa cấu hình — dùng thực đơn mẫu (BRD NFR-2).');
+      return null;
+    }
+
+    for (let attempt = 1; attempt <= MAX_GEMINI_ATTEMPTS; attempt++) {
       try {
-        const plan = await this.gemini.generatePlan(dto, dailyTarget);
-        if (isNutritionWithinBounds(plan)) {
-          return plan;
-        }
-        this.logger.warn(
-          `Gemini trả về calo ngoài khoảng hợp lý (lần thử ${attempt + 1}), đang thử lại...`,
-        );
+        const { plan, errors } = parsePlanContent(await this.gemini.generatePlanContent(profile, target));
+        if (plan) return plan;
+        this.logger.warn(`Kết quả Gemini không đạt hợp đồng (lần ${attempt}): ${errors.slice(0, 5).join('; ')}`);
       } catch (error) {
-        this.logger.error('Lỗi khi gọi Gemini API', error as Error);
+        const message = error instanceof Error ? error.message : String(error);
+        this.logger.error(`Lỗi khi gọi Gemini (lần ${attempt}): ${message}`);
+        if (error instanceof GeminiTimeoutError) break;
       }
     }
 
-    this.logger.warn('Rơi về sample_plan.json dự phòng sau khi retry thất bại.');
-    return this.loadSamplePlan(dailyTarget);
+    this.logger.warn('Dùng thực đơn mẫu sau khi Gemini không trả được kết quả hợp lệ.');
+    return null;
   }
+}
 
-  // FR-1.5: BMI, BMR (Mifflin-St Jeor), TDEE = BMR × hệ số hoạt động (FR-1.2), calo mục tiêu theo goal (FR-1.3).
-  computeDailyTarget(dto: CreatePlanDto): DailyTarget {
-    const bmr =
-      dto.gender === Gender.MALE
-        ? 10 * dto.weight_kg + 6.25 * dto.height_cm - 5 * dto.age + 5
-        : 10 * dto.weight_kg + 6.25 * dto.height_cm - 5 * dto.age - 161;
+function hasRestrictions(profile: CreatePlanDto): boolean {
+  const { allergies, injuries, health_conditions } = profile.restrictions;
+  return Boolean(allergies || injuries || health_conditions);
+}
 
-    const tdee = bmr * ACTIVITY_MULTIPLIER[dto.activity_level];
-    const targetCalories = Math.round(tdee + GOAL_CALORIE_ADJUSTMENT[dto.goal]);
-
-    // Macro mặc định cho MVP: protein 25%, carbs 45%, fat 30% tổng calo mục tiêu.
-    return {
-      target_calories: targetCalories,
-      protein_g: Math.round((targetCalories * 0.25) / 4),
-      carbs_g: Math.round((targetCalories * 0.45) / 4),
-      fat_g: Math.round((targetCalories * 0.3) / 9),
-    };
+function loadSampleContent(): PlanContentDto {
+  const { plan, errors } = parsePlanContent(JSON.parse(readFileSync(SAMPLE_PLAN_PATH, 'utf-8')));
+  if (!plan) {
+    throw new Error(`sample-plan.json không đạt hợp đồng: ${errors.join('; ')}`);
   }
-
-  private loadSamplePlan(dailyTarget: DailyTarget): MealPlanResponse {
-    const raw = readFileSync(SAMPLE_PLAN_PATH, 'utf-8');
-    const plan = JSON.parse(raw) as MealPlanResponse;
-    return { ...plan, daily_target: dailyTarget };
-  }
+  return plan;
 }

@@ -177,7 +177,7 @@ Chạy:
 cd backend_api && npx vitest run src/plan/plan-assembly.spec.ts
 ```
 
-Mong đợi: **FAIL** — `Failed to load url ./plan-assembly.js`.
+Mong đợi: **FAIL** — `Cannot find module './plan-assembly.js'`.
 
 ### Task 2 — Ghép plan
 

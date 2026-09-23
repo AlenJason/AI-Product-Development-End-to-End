@@ -1,99 +1,185 @@
 {
-  "plan_id": "smartfit_plan_demo_01",
-  "daily_target": {
-    "target_calories": 1850,
-    "protein_g": 110,
-    "carbs_g": 200,
-    "fat_g": 50
-  },
   "days": [
     {
-      "day_number": 1,
-      "day_name": "Ngày 1",
       "meals": [
         {
-          "meal_id": "m1_1",
-          "meal_type": "Bữa sáng",
+          "meal_type": "breakfast",
           "name": "Bún thịt bò nạc",
           "portion": "1 tô vừa",
-          "calories": 420,
+          "calories": 410,
           "protein_g": 25,
-          "ingredients": ["Bún tươi (150g)", "Thịt bò nạc (70g)", "Rau thơm, hành lá"]
+          "carbs_g": 55,
+          "fat_g": 10,
+          "ingredients": [
+            { "name": "Bún tươi", "amount": 150, "unit": "g", "category": "pantry" },
+            { "name": "Thịt bò nạc", "amount": 70, "unit": "g", "category": "protein" },
+            { "name": "Rau thơm", "amount": 20, "unit": "g", "category": "produce" },
+            { "name": "Hành lá", "amount": 10, "unit": "g", "category": "produce" }
+          ]
         },
         {
-          "meal_id": "m1_2",
-          "meal_type": "Bữa trưa",
+          "meal_type": "lunch",
           "name": "Cơm trắng, ức gà xào nấm, canh cải ngọt",
-          "portion": "1 chén cơm + 1 đĩa thức ăn",
-          "calories": 650,
-          "protein_g": 40,
-          "ingredients": ["Gạo tẻ (100g)", "Ức gà (150g)", "Nấm rơm (50g)", "Rau cải ngọt (150g)"]
+          "portion": "1 chén cơm + 1 đĩa thức ăn + 1 bát canh",
+          "calories": 630,
+          "protein_g": 45,
+          "carbs_g": 85,
+          "fat_g": 12,
+          "ingredients": [
+            { "name": "Gạo tẻ", "amount": 100, "unit": "g", "category": "pantry" },
+            { "name": "Ức gà", "amount": 150, "unit": "g", "category": "protein" },
+            { "name": "Nấm rơm", "amount": 50, "unit": "g", "category": "produce" },
+            { "name": "Rau cải ngọt", "amount": 150, "unit": "g", "category": "produce" },
+            { "name": "Dầu ăn", "amount": 1, "unit": "tbsp", "category": "pantry" }
+          ]
         },
         {
-          "meal_id": "m1_3",
-          "meal_type": "Bữa tối",
-          "name": "Cá hấp hành gừng, canh bí đỏ thịt băm",
-          "portion": "1 phần vừa",
-          "calories": 520,
-          "protein_g": 35,
-          "ingredients": ["Cá điêu hồng/cá quả (150g)", "Bí đỏ (100g)", "Thịt nạc băm (40g)"]
+          "meal_type": "dinner",
+          "name": "Đậu phụ sốt cà chua, canh bí đỏ thịt băm",
+          "portion": "1 chén cơm + 1 đĩa đậu + 1 bát canh",
+          "calories": 555,
+          "protein_g": 30,
+          "carbs_g": 75,
+          "fat_g": 15,
+          "ingredients": [
+            { "name": "Gạo tẻ", "amount": 80, "unit": "g", "category": "pantry" },
+            { "name": "Đậu phụ", "amount": 150, "unit": "g", "category": "protein" },
+            { "name": "Cà chua", "amount": 100, "unit": "g", "category": "produce" },
+            { "name": "Bí đỏ", "amount": 150, "unit": "g", "category": "produce" },
+            { "name": "Thịt nạc băm", "amount": 40, "unit": "g", "category": "protein" }
+          ]
         }
       ],
       "workout": {
         "title": "Vận động toàn thân tại nhà",
         "duration_minutes": 20,
         "exercises": [
-          {
-            "exercise_id": "e1_1",
-            "name": "Jumping Jacks (Khởi động)",
-            "sets": 2,
-            "reps_or_duration": "30 giây",
-            "target_muscle": "Tim mạch & Khởi động"
-          },
-          {
-            "exercise_id": "e1_2",
-            "name": "Squat tay không",
-            "sets": 3,
-            "reps_or_duration": "12-15 lần",
-            "target_muscle": "Đùi & Mông"
-          },
-          {
-            "exercise_id": "e1_3",
-            "name": "Chống đẩy khuỵu gối (Knee Push-ups)",
-            "sets": 3,
-            "reps_or_duration": "10-12 lần",
-            "target_muscle": "Ngực & Tay sau"
-          }
+          { "name": "Jumping Jacks (khởi động)", "sets": 2, "reps_or_duration": "30 giây", "muscle_group": "cardio", "tags": ["jumping"] },
+          { "name": "Squat tay không", "sets": 3, "reps_or_duration": "12-15 lần", "muscle_group": "legs", "tags": [] },
+          { "name": "Chống đẩy khuỵu gối", "sets": 3, "reps_or_duration": "10-12 lần", "muscle_group": "chest", "tags": ["kneeling", "wrist_load"] },
+          { "name": "Plank cẳng tay", "sets": 3, "reps_or_duration": "30 giây", "muscle_group": "core", "tags": [] }
         ]
       }
-    }
-  ],
-  "grocery_list": [
-    {
-      "category": "Thịt & Thủy hải sản",
-      "items": [
-        { "name": "Thịt bò nạc (70g)", "source_meal_ids": ["m1_1"] },
-        { "name": "Ức gà (450g)", "source_meal_ids": ["m1_2"] },
-        { "name": "Thịt nạc băm (120g)", "source_meal_ids": ["m1_3"] },
-        { "name": "Cá tươi (400g)", "source_meal_ids": ["m1_3"] }
-      ]
     },
     {
-      "category": "Rau củ quả",
-      "items": [
-        { "name": "Rau cải ngọt (500g)", "source_meal_ids": ["m1_2"] },
-        { "name": "Bí đỏ (300g)", "source_meal_ids": ["m1_3"] },
-        { "name": "Nấm rơm (150g)", "source_meal_ids": ["m1_2"] },
-        { "name": "Hành, gừng, rau thơm", "source_meal_ids": ["m1_1", "m1_3"] }
-      ]
+      "meals": [
+        {
+          "meal_type": "breakfast",
+          "name": "Bánh mì trứng ốp la",
+          "portion": "1 ổ bánh mì + 2 quả trứng",
+          "calories": 380,
+          "protein_g": 18,
+          "carbs_g": 45,
+          "fat_g": 14,
+          "ingredients": [
+            { "name": "Bánh mì", "amount": 1, "unit": "piece", "category": "pantry" },
+            { "name": "Trứng gà", "amount": 2, "unit": "piece", "category": "protein" },
+            { "name": "Dưa leo", "amount": 50, "unit": "g", "category": "produce" },
+            { "name": "Dầu ăn", "amount": 1, "unit": "tsp", "category": "pantry" }
+          ]
+        },
+        {
+          "meal_type": "lunch",
+          "name": "Cơm gà luộc, rau muống xào tỏi",
+          "portion": "1 chén cơm + 1 đĩa gà + 1 đĩa rau",
+          "calories": 615,
+          "protein_g": 42,
+          "carbs_g": 82,
+          "fat_g": 13,
+          "ingredients": [
+            { "name": "Gạo tẻ", "amount": 100, "unit": "g", "category": "pantry" },
+            { "name": "Thịt gà bỏ da", "amount": 150, "unit": "g", "category": "protein" },
+            { "name": "Rau muống", "amount": 150, "unit": "g", "category": "produce" },
+            { "name": "Tỏi", "amount": 5, "unit": "g", "category": "produce" },
+            { "name": "Dầu ăn", "amount": 1, "unit": "tbsp", "category": "pantry" }
+          ]
+        },
+        {
+          "meal_type": "dinner",
+          "name": "Bò xào cần tây, canh rau ngót",
+          "portion": "1 chén cơm + 1 đĩa bò + 1 bát canh",
+          "calories": 550,
+          "protein_g": 32,
+          "carbs_g": 70,
+          "fat_g": 16,
+          "ingredients": [
+            { "name": "Gạo tẻ", "amount": 80, "unit": "g", "category": "pantry" },
+            { "name": "Thịt bò nạc", "amount": 100, "unit": "g", "category": "protein" },
+            { "name": "Cần tây", "amount": 80, "unit": "g", "category": "produce" },
+            { "name": "Rau ngót", "amount": 100, "unit": "g", "category": "produce" },
+            { "name": "Dầu ăn", "amount": 1, "unit": "tbsp", "category": "pantry" }
+          ]
+        }
+      ],
+      "workout": {
+        "title": "Chân và mông, không bật nhảy",
+        "duration_minutes": 20,
+        "exercises": [
+          { "name": "Đi bộ tại chỗ nâng cao gối (khởi động)", "sets": 2, "reps_or_duration": "45 giây", "muscle_group": "cardio", "tags": [] },
+          { "name": "Lunge lùi", "sets": 3, "reps_or_duration": "10 lần mỗi chân", "muscle_group": "legs", "tags": [] },
+          { "name": "Cầu mông (Glute bridge)", "sets": 3, "reps_or_duration": "15 lần", "muscle_group": "legs", "tags": [] },
+          { "name": "Bird-dog", "sets": 3, "reps_or_duration": "10 lần mỗi bên", "muscle_group": "core", "tags": ["kneeling", "wrist_load"] }
+        ]
+      }
     },
     {
-      "category": "Lương thực & Gia vị",
-      "items": [
-        { "name": "Gạo tẻ", "source_meal_ids": ["m1_2"] },
-        { "name": "Bún tươi (150g)", "source_meal_ids": ["m1_1"] },
-        { "name": "Dầu ăn, nước mắm, hạt nêm", "source_meal_ids": [] }
-      ]
+      "meals": [
+        {
+          "meal_type": "breakfast",
+          "name": "Phở gà",
+          "portion": "1 tô vừa",
+          "calories": 400,
+          "protein_g": 24,
+          "carbs_g": 58,
+          "fat_g": 8,
+          "ingredients": [
+            { "name": "Bánh phở", "amount": 150, "unit": "g", "category": "pantry" },
+            { "name": "Thịt gà bỏ da", "amount": 70, "unit": "g", "category": "protein" },
+            { "name": "Hành lá", "amount": 10, "unit": "g", "category": "produce" },
+            { "name": "Rau thơm", "amount": 20, "unit": "g", "category": "produce" }
+          ]
+        },
+        {
+          "meal_type": "lunch",
+          "name": "Cơm thịt nạc kho, canh bầu",
+          "portion": "1 chén cơm + 1 đĩa thịt + 1 bát canh",
+          "calories": 605,
+          "protein_g": 36,
+          "carbs_g": 84,
+          "fat_g": 14,
+          "ingredients": [
+            { "name": "Gạo tẻ", "amount": 100, "unit": "g", "category": "pantry" },
+            { "name": "Thịt heo nạc", "amount": 120, "unit": "g", "category": "protein" },
+            { "name": "Bầu", "amount": 150, "unit": "g", "category": "produce" },
+            { "name": "Nước mắm", "amount": 1, "unit": "tbsp", "category": "pantry" }
+          ]
+        },
+        {
+          "meal_type": "dinner",
+          "name": "Trứng hấp thịt băm, rau cải luộc",
+          "portion": "1 chén cơm + 1 đĩa trứng + 1 đĩa rau",
+          "calories": 535,
+          "protein_g": 28,
+          "carbs_g": 68,
+          "fat_g": 17,
+          "ingredients": [
+            { "name": "Gạo tẻ", "amount": 80, "unit": "g", "category": "pantry" },
+            { "name": "Trứng gà", "amount": 2, "unit": "piece", "category": "protein" },
+            { "name": "Thịt nạc băm", "amount": 50, "unit": "g", "category": "protein" },
+            { "name": "Rau cải ngọt", "amount": 150, "unit": "g", "category": "produce" }
+          ]
+        }
+      ],
+      "workout": {
+        "title": "Thân trên và cơ lõi",
+        "duration_minutes": 20,
+        "exercises": [
+          { "name": "Xoay khớp vai và tay (khởi động)", "sets": 1, "reps_or_duration": "2 phút", "muscle_group": "full_body", "tags": [] },
+          { "name": "Chống đẩy tường", "sets": 3, "reps_or_duration": "12-15 lần", "muscle_group": "chest", "tags": [] },
+          { "name": "Superman", "sets": 3, "reps_or_duration": "12 lần", "muscle_group": "back", "tags": ["back_load"] },
+          { "name": "Gập bụng chạm gót", "sets": 3, "reps_or_duration": "20 lần", "muscle_group": "core", "tags": [] }
+        ]
+      }
     }
   ]
 }

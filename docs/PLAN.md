@@ -1,6 +1,6 @@
 # Kế hoạch triển khai SmartFit AI
 
-Plan này chia [BRD.md](../BRD.md) (v2.2.0) thành các bước làm được theo thứ tự. BRD vẫn là nguồn yêu cầu; plan chỉ trả lời "làm gì trước, làm gì sau, xong khi nào".
+Plan này chia [BRD.md](../BRD.md) (v2.3.0) thành các bước làm được theo thứ tự. BRD vẫn là nguồn yêu cầu; plan chỉ trả lời "làm gì trước, làm gì sau, xong khi nào".
 
 **Thứ tự tổng thể:** hoàn thiện backend trước (kiểm thử toàn bộ qua Swagger), sau đó mới làm frontend bám theo hợp đồng API đã chốt.
 
@@ -29,7 +29,7 @@ Cả hai dịch vụ bên ngoài đều có chế độ giả lập, nên toàn 
 
 ## Hiện trạng (đã xong)
 
-- [x] BRD v2.2.0 (MVP, tính năng nâng cao, tài khoản & lịch sử)
+- [x] BRD v2.3.0 (MVP, tính năng nâng cao, tài khoản & lịch sử, hợp đồng API đầy đủ)
 - [x] Backend: `GET /health`, `POST /api/v1/generate-plan` (tính BMR/TDEE, gọi Gemini, kiểm tra khoảng calo, fallback), validate DTO, Swagger UI
 - [x] `ai_workspace/`: script thử prompt Gemini
 - [x] Frontend: giao diện Onboarding, Loading, Dashboard, Grocery, bảng Feedback — dùng dữ liệu mẫu, **chưa nối API**
@@ -75,27 +75,29 @@ Giao diện Flutter (thiết kế từ Figma) và backend/BRD từng lệch nhau
 - [x] **0.6** Tạo `docs/SETUP_CREDENTIALS.md` — phần **Gemini API key**: lấy key ở đâu, điền vào file nào, kiểm tra thế nào
 - [x] **0.7** README trỏ tới plan này và file hướng dẫn
 
-## Giai đoạn 1 — Chốt hợp đồng API · S
+## Giai đoạn 1 — Chốt hợp đồng API · M
 
-- [ ] **1.1** Áp dụng D1–D4 vào BRD, nâng lên v2.3.0 (thay đổi phạm vi thật: thêm ô bệnh nền, sửa hồ sơ, feedback mới):
+- [x] **1.1** Áp dụng D1–D4 vào BRD, nâng lên v2.3.0 (thay đổi phạm vi thật: thêm ô bệnh nền, sửa hồ sơ, feedback mới):
   - FR-1.3: mức điều chỉnh calo −300 / +250 (D1)
   - FR-1.4: 3 ô nhập tự do + chip gợi ý (D4); thêm FR-1.6: sửa hồ sơ ở tab "Cá nhân"
   - FR-5.1, FR-5.2: feedback 3 câu hỏi và quy tắc xử lý dấu hiệu nguy hiểm (D2)
   - Mục 6.1: `restrictions` đổi thành 3 chuỗi `allergies`, `injuries`, `health_conditions` (tối đa 300 ký tự mỗi chuỗi)
   - Mục 6.2: nguyên liệu tách `name` / `quantity`, 3 nhóm cố định (D3)
   - Mục 7: thêm NFR quyền riêng tư dữ liệu sức khoẻ (không lưu/ghi log ở server), chống prompt injection, khuyến cáo "không thay thế tư vấn y tế"
-- [ ] **1.2** Thêm BRD mục 6.4: schema request/response cho đổi món, đổi bài tập, feedback (hiện mới chỉ bàn trong chat, chưa có trong BRD)
-- [ ] **1.3** Cập nhật backend cho khớp: DTO, interface, hằng số `GOAL_CALORIE_ADJUSTMENT`, prompt Gemini (đưa văn bản tự do vào khối dữ liệu tách biệt). Soạn lại `sample-plan.json` theo schema mới và **đủ 3 ngày** (hiện chỉ có Ngày 1, demo ở chế độ giả lập sẽ thiếu 2 ngày)
-- [ ] **1.4** Thêm vào wiki `critical-constraints.md`: không lưu dữ liệu sức khoẻ ở server; dấu hiệu nguy hiểm → khuyến cáo, không tự điều chỉnh plan; không hạ calo dưới BMR
+- [x] **1.2** Thêm BRD mục 6.4: schema request/response cho đổi món, đổi bài tập, feedback (hiện mới chỉ bàn trong chat, chưa có trong BRD)
+- [x] **1.3** Cập nhật backend cho khớp: DTO, interface, hằng số `GOAL_CALORIE_ADJUSTMENT`, prompt Gemini (đưa văn bản tự do vào khối dữ liệu tách biệt). Soạn lại `sample-plan.json` theo schema mới và **đủ 3 ngày** (hiện chỉ có Ngày 1, demo ở chế độ giả lập sẽ thiếu 2 ngày)
+- [x] **1.4** Thêm vào wiki `critical-constraints.md`: không lưu dữ liệu sức khoẻ ở server; dấu hiệu nguy hiểm → khuyến cáo, không tự điều chỉnh plan; không hạ calo dưới BMR
 
 → Sau giai đoạn này, BRD mục 6 là hợp đồng đầy đủ cho mọi endpoint; frontend chỉ cần bám theo.
 
+Chi tiết: brainstorm `docs/superpowers/brainstorms/phase-1-api-contract.md` (hướng B, quyết định Q1–Q4), plan `docs/superpowers/plans/phase-1-api-contract/`.
+
 ## Giai đoạn 2 — Backend: kiểm thử nền · S
 
-- [ ] **2.1** Unit test `computeDailyTarget()`: nam/nữ, 3 mức vận động, 3 mục tiêu (tiêu chí nghiệm thu tuần 5)
-- [ ] **2.2** Unit test `isNutritionWithinBounds()`
-- [ ] **2.3** Unit test `PlanService.generatePlan()` với Gemini giả: không có key → fallback; calo lệch khoảng → thử lại → fallback; Gemini lỗi → fallback; Gemini đúng → trả kết quả
-- [ ] **2.4** E2E `POST /api/v1/generate-plan`: payload đúng → 200, payload sai → 400
+- [ ] **2.1** Unit test `computeDailyTarget()` (`daily-target.ts`): mở rộng từ 3 ca đã có ở giai đoạn 1 ra đủ nam/nữ × 3 mức vận động × 3 mục tiêu (tiêu chí nghiệm thu tuần 5)
+- [x] **2.2** ~~Unit test `isNutritionWithinBounds()`~~ — hàm này đã được thay bằng `findPlanViolations()` và có test ở giai đoạn 1 (`plan-validation.spec.ts`)
+- [ ] **2.3** Unit test `PlanService.generatePlan()` với Gemini giả: kết quả hợp lệ → `source: gemini`; sai hợp đồng → gọi lại → thực đơn mẫu; hết giờ → không gọi lại; khoá sai → thực đơn mẫu (trường hợp không có khoá đã có test ở giai đoạn 1)
+- [ ] **2.4** E2E `POST /api/v1/generate-plan`: payload đúng → 200, payload sai → 400, `restrictions` kiểu mảng cũ → 400 (test e2e cần bật `ValidationPipe` giống `main.ts`)
 
 ## Giai đoạn 3 — Backend: Tài khoản & Lịch sử (FR-6, FR-7) · L
 

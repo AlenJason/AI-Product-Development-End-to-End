@@ -7,7 +7,7 @@ import {
   Min,
   ValidateNested,
 } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { ActivityLevel } from '../enums/activity-level.enum.js';
 import { Gender } from '../enums/gender.enum.js';
 import { Goal } from '../enums/goal.enum.js';
@@ -45,8 +45,8 @@ export class CreatePlanDto {
   @IsEnum(Goal)
   goal: Goal;
 
-  @ApiProperty({ type: RestrictionsDto })
+  @ApiPropertyOptional({ type: RestrictionsDto })
   @ValidateNested()
   @Type(() => RestrictionsDto)
-  restrictions: RestrictionsDto;
+  restrictions: RestrictionsDto = new RestrictionsDto();
 }

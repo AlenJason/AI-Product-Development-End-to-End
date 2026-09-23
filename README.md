@@ -60,6 +60,12 @@ Tiến độ từng bước (có checkbox) theo dõi tại **[docs/PLAN.md](docs
 
 Đối chiếu theo phiên bản BRD (mục "Phiên bản" trong [BRD.md](BRD.md)), để giảng viên/trợ giảng theo dõi tiến độ trực tiếp trên repo mà không cần đọc từng commit.
 
+### BRD v2.3.0 — 2026-09-24
+- Chốt hợp đồng API (BRD mục 6) trước khi làm frontend. Nguyên liệu từng món có định lượng; danh sách đi chợ do server tự tính nên luôn khớp thực đơn. Bữa ăn, nhóm cơ, loại nguyên liệu dùng mã cố định. Server tự gán ID. Response có `source` (Gemini thật hay thực đơn mẫu) và `warnings`
+- Hồ sơ: dị ứng, chấn thương, tình trạng sức khoẻ do người dùng tự nhập; chỉ lưu trên máy, backend không lưu và không ghi log. Calo mục tiêu không bao giờ thấp hơn BMR; mức điều chỉnh đổi thành −300 (giảm mỡ) / +250 (tăng cơ) theo thiết kế giao diện
+- Feedback cuối ngày gồm 3 câu hỏi, có quy tắc riêng cho dấu hiệu nguy hiểm (chóng mặt, khó thở, đau ngực); feedback ngày 3 tạo luôn plan mới. Thêm hợp đồng cho đổi món, đổi bài tập, feedback (BRD mục 6.4) — code làm ở giai đoạn 4
+- Backend: mọi kết quả Gemini được kiểm tra theo hợp đồng trước khi trả về (trước đây Gemini chỉ cần viết tên bữa ăn khác đi là lọt bước kiểm tra calo); thực đơn mẫu đủ 3 ngày; mỗi lần gọi Gemini có giới hạn 15 giây; thêm 29 test
+
 ### BRD v2.2.0 — 2026-09-22 → 2026-09-24
 - Chốt thêm tài khoản người dùng (đăng nhập Google) và lịch sử kế hoạch xem được trên nhiều thiết bị (FR-6, FR-7); backend sẽ dùng SQLite + TypeORM. Đã có trong BRD, chưa có code
 - Lập kế hoạch triển khai toàn dự án [docs/PLAN.md](docs/PLAN.md) (giai đoạn 0–9); chốt 4 điểm lệch giữa giao diện Flutter và backend (mức điều chỉnh calo, feedback cuối ngày, dữ liệu đi chợ, thông tin sức khoẻ do người dùng tự nhập)
