@@ -4,7 +4,7 @@
 **Môn học:** AI Product Development End-to-End (Đồ án Kỹ sư / Cử nhân Năm 4)  
 **Đơn vị thực hiện:** Trường Đại học Công nghệ Thông tin và Truyền thông Việt - Hàn (VKU)  
 **Phiên bản:** 2.2.0 (Dành cho Sinh viên thực hành: Flutter & NestJS)  
-**Ngày cập nhật:** 22/09/2026  
+**Ngày cập nhật:** 24/09/2026  
 **Trạng thái:** Đã phê duyệt (Approved)  
 
 ---
@@ -348,7 +348,8 @@ Response:
    * Không tự lưu hoặc xử lý mật khẩu người dùng dưới bất kỳ hình thức nào — toàn bộ xác thực uỷ quyền cho Google.
 6. **SQLite nằm ở backend, không nằm trên thiết bị (bổ sung bản 2.2.0):**
    * `database.sqlite` là file trên **máy chạy `backend_api/`**, không phải lưu trên điện thoại. Mọi thiết bị (điện thoại A, điện thoại B...) gọi API tới **cùng một backend** nên đều đọc/ghi chung một file này — đây là lý do lịch sử kế hoạch (FR-7) xem được xuyên thiết bị khi đăng nhập cùng tài khoản Google, khác hẳn với `shared_preferences` (luôn lưu cục bộ trên từng máy).
-   * Trong lúc code/test, backend chạy tạm trên localhost (`npm run start:dev`) là đủ — nhưng nếu muốn demo/nộp bài với nhiều thiết bị thật hoạt động ổn định lâu dài (không phụ thuộc laptop của nhóm có đang bật hay không), cần **deploy `backend_api/` lên một nơi chạy liên tục** (ví dụ Render, Railway, hoặc VPS — đều có gói miễn phí/giá rẻ phù hợp đồ án sinh viên). Đây là yêu cầu chung cho bất kỳ database nào (kể cả Postgres/MySQL), không riêng gì SQLite.
+   * Trong lúc code/test, backend chạy tạm trên localhost (`npm run start:dev`) là đủ. Muốn demo/nộp bài với nhiều thiết bị thật hoạt động ổn định lâu dài (không phụ thuộc laptop của nhóm có đang bật hay không), cần **deploy `backend_api/` lên một nơi chạy liên tục**.
+   * Vì SQLite là một file trên ổ đĩa của server, nơi deploy phải có **ổ lưu trữ bền** (persistent disk/volume). Nhiều gói hosting miễn phí dùng ổ đĩa tạm: file bị xoá mỗi khi service ngủ, restart hoặc redeploy. Ví dụ, Render bản free không gắn được persistent disk, nên dùng SQLite trên đó sẽ mất toàn bộ tài khoản và lịch sử. Hai hướng đúng: (a) giữ SQLite, chọn host có volume bền (ví dụ Railway volume, Fly.io volume, hoặc VPS); (b) chuyển sang Postgres được quản lý sẵn — TypeORM chỉ cần đổi cấu hình kết nối. Kiểm tra lại gói và giá hiện hành của host trước khi chọn.
 
 ---
 

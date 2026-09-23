@@ -31,6 +31,10 @@ Hiện `gemini.service.ts` chỉ dùng `responseMimeType: 'application/json'` v�
 
 Model mặc định từng là `gemini-2.5-flash` (đã cũ). Theo [Models | Gemini API](https://ai.google.dev/gemini-api/docs/models), model workhorse hiện tại (09/2026) là **`gemini-3.8-flash`** (GA từ 02/09/2026, cửa sổ input ~1M token, hỗ trợ computer use/file search/grounding). Đã cập nhật làm giá trị mặc định ở `backend_api/.env.example`, `ai_workspace/.env.example`, `gemini.service.ts`, `generate-plan-experiment.ts`, và BRD.md mục 4.
 
+### 1.4. Loại API key — auth key thay cho standard key (xác minh 2026-09-24)
+
+Theo [Using Gemini API keys](https://ai.google.dev/gemini-api/docs/api-key): từ 28/05/2026 mọi key mới tạo trên AI Studio là *auth key* (gắn với service account, cho phép phân quyền chi tiết); trong tháng 9/2026 Gemini API bắt đầu từ chối key loại *Standard*. Cách dùng trong code không đổi (`new GoogleGenAI({ apiKey })`), chỉ cần thay giá trị key. Xem loại key ở cột **Key Type** trên trang API Keys. Hướng dẫn cho người dùng: `docs/SETUP_CREDENTIALS.md` mục 1.1.
+
 ## 2. Backend NestJS
 
 Setup hiện tại (`ValidationPipe` toàn cục + `class-validator`/`class-transformer` trên DTO + `@nestjs/swagger`) khớp đúng pattern chính thức:
@@ -46,7 +50,7 @@ Ba package BRD.md đề xuất (mục 4) đều còn được duy trì tích c�
 
 - [`http`](https://pub.dev/packages/http) — gọi REST API, package chính thức của dart.dev.
 - [`provider`](https://pub.dev/packages/provider) — state management dựa trên `InheritedWidget`.
-- [`shared_preferences`](https://pub.dev/packages/shared_preferences) — lưu trữ cục bộ key-value, bản mới nhất (2.5.5) yêu cầu Flutter 3.35+/Dart 3.9+ (kiểm tra khớp với `frontend_app/pubspec.yaml` — hiện SDK constraint là `^3.13.1`, cần nâng nếu thêm `shared_preferences` bản mới).
+- [`shared_preferences`](https://pub.dev/packages/shared_preferences) — lưu trữ cục bộ key-value, bản mới nhất (2.5.5) yêu cầu Flutter 3.35+/Dart 3.9+. `frontend_app/pubspec.yaml` đang khai báo `sdk: ^3.13.1` (tức Dart ≥ 3.13.1), đã thoả yêu cầu này, không cần nâng. Máy dev hiện chạy Flutter 3.47.5 / Dart 3.13.4.
 
 ## 4. Dinh dưỡng — dữ liệu tham chiếu cho NFR-4
 

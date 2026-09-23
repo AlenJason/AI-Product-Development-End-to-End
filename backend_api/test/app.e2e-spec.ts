@@ -16,11 +16,11 @@ describe('AppController (e2e)', () => {
     await app.init();
   });
 
-  it('/health (GET)', () => {
-    return request(app.getHttpServer())
-      .get('/health')
-      .expect(200)
-      .expect({ status: 'ok' });
+  // gemini depends on whether the developer's local .env has a key, so accept either value.
+  it('/health (GET)', async () => {
+    const res = await request(app.getHttpServer()).get('/health').expect(200);
+    expect(res.body.status).toBe('ok');
+    expect(['configured', 'fallback']).toContain(res.body.gemini);
   });
 
   afterEach(async () => {

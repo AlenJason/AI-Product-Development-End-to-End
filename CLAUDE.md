@@ -8,12 +8,20 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Full product spec, target users, phased scope (MVP vs. advanced features), the planned NestJS↔Gemini JSON contract, and the weekly roadmap live in [BRD.md](BRD.md) — read it before making scope decisions or designing the backend API, since it is the source of truth for requirements.
 
+## How work is planned
+
+[docs/PLAN.md](docs/PLAN.md) is the execution roadmap: phases 0–9 with checkboxes, plus decisions D1–D4 that resolved mismatches between the Flutter UI and the backend/BRD (calorie adjustment −300/+250, 3-question feedback with a danger-sign rule, grocery `name`/`quantity` split, free-text health inputs kept on-device only). Work the phases in order and tick the checkbox when a step is done.
+
+Every phase from 1 onward goes through `/feature-explore` → `/feature-plan` before coding; artifacts land in `docs/superpowers/brainstorms/` and `docs/superpowers/plans/<slug>/`. `/feature-build` as installed assumes a Next.js layout and does not recognize `backend_api/src/` or Flutter — implement from the specs directly unless a repo-local adapted copy exists in `.claude/skills/`.
+
+Both external services run in a mock mode by default so everything works without credentials: no `GEMINI_API_KEY` → bundled sample data; `AUTH_MODE=mock` (planned, phase 3) → fake Google tokens accepted. How to switch to real credentials: [docs/SETUP_CREDENTIALS.md](docs/SETUP_CREDENTIALS.md).
+
 ## Repository layout and current state
 
 This is a monorepo with three components:
 
 - **`frontend_app/`** — Flutter app. UI-first: screens are built against hardcoded/mock data models, with no network layer wired up yet (`pubspec.yaml` still only declares stock `flutter`, `cupertino_icons`, `flutter_lints` — no `http`, `provider`, or `shared_preferences` despite these being named in the BRD's tech choices). Screen navigation is driven by a local enum (`AppScreen` in `lib/main.dart`), not a router package. **Not yet wired to `backend_api/`.**
-- **`backend_api/`** — NestJS (TypeScript) service, scaffolded and working: `GET /health` and `POST /api/v1/generate-plan` (see Backend architecture below). Request/response DTOs validated with `class-validator`; Gemini call is wired but falls back to a bundled `sample-plan.json` when `GEMINI_API_KEY` is unset or the AI response fails the nutrition sanity check (BRD NFR-2, NFR-4).
+- **`backend_api/`** — NestJS (TypeScript) service, scaffolded and working: `GET /health` and `POST /api/v1/generate-plan` (see Backend architecture below). Request/response DTOs validated with `class-validator`; Gemini call is wired but falls back to a bundled `sample-plan.json` when `GEMINI_API_KEY` is unset or the AI response fails the nutrition sanity check (BRD NFR-2, NFR-4). Google Sign-In, SQLite/TypeORM, and plan history (BRD FR-6, FR-7) are decided but **not built yet** (PLAN.md phase 3).
 - **`ai_workspace/`** — standalone Node/TypeScript project (own `package.json`, unrelated to `backend_api/`'s dependencies) for iterating on the Gemini prompt via `npm run experiment` before copying the finalized prompt into `backend_api/src/plan/gemini.service.ts`.
 
 When asked to "connect the app to the backend," the backend now exists and runs locally — the remaining work is adding `http`/state management to `frontend_app/` and pointing it at `backend_api`'s endpoints.
@@ -54,12 +62,12 @@ npm run experiment              # runs generate-plan-experiment.ts
 
 ## Backend architecture (`backend_api/`)
 
-- `src/app.controller.ts` / `app.service.ts` — `GET /health`.
+- `src/app.controller.ts` / `app.service.ts` — `GET /health`, which also reports whether Gemini is configured (`gemini: "configured" | "fallback"`) — the quickest way to confirm a key was picked up. `.env` is read once at boot; `start:dev` watch mode does not restart on `.env` edits.
 - `src/plan/` — the `/api/v1/generate-plan` feature:
   - `dto/create-plan.dto.ts` + `dto/restrictions.dto.ts` — request shape, matches BRD.md §6.1 (`age`, `gender`, `height_cm`, `weight_kg`, `activity_level`, `goal`, `restrictions`).
   - `enums/` — `ActivityLevel` (+ `ACTIVITY_MULTIPLIER`), `Goal` (+ `GOAL_CALORIE_ADJUSTMENT`), `Gender`. These encode the Mifflin-St Jeor multipliers/adjustments, not just labels.
   - `plan.service.ts` — `computeDailyTarget()` does the BMR (Mifflin-St Jeor) → TDEE → goal-adjusted target-calorie math (BRD FR-1.5). `generatePlan()` orchestrates: calls `GeminiService`, retries once if `isNutritionWithinBounds()` fails, then falls back to `data/sample-plan.json` (with `daily_target` overwritten by the just-computed values, since the sample only has real day-1 data).
-  - `gemini.service.ts` — wraps `@google/generative-ai`, builds the Vietnamese system prompt inline. `isConfigured` is false when `GEMINI_API_KEY` is unset; callers must check it rather than assuming Gemini is reachable.
+  - `gemini.service.ts` — wraps `@google/genai` (`client.models.generateContent()`, result via the `response.text` property; the old `@google/generative-ai` SDK is deprecated — don't reintroduce it), default model `gemini-3.8-flash`, builds the Vietnamese system prompt inline. `isConfigured` is false when `GEMINI_API_KEY` is unset; callers must check it rather than assuming Gemini is reachable.
   - `nutrition-sanity.util.ts` — per-meal-type calorie bounds from BRD NFR-4 (breakfast 250–600 kcal, lunch/dinner 400–800 kcal).
   - `interfaces/plan.interface.ts` — response types matching BRD.md §6.2, including `GroceryItem.source_meal_ids` (used to sync the grocery checklist when a meal is swapped per FR-4.1 — not yet implemented, just modeled).
 - The project uses ESM (`"type": "module"` in `package.json`) — relative imports need explicit `.js` extensions even though the source is `.ts` (e.g. `import { AppService } from './app.service.js'`).

@@ -18,8 +18,11 @@
 frontend_app/    Ứng dụng Flutter (đang phát triển UI, dùng dữ liệu mẫu)
 backend_api/     API NestJS — khung dự án đã dựng, endpoint /health + /api/v1/generate-plan (fallback demo)
 ai_workspace/    Script Node/TS thử nghiệm prompt & schema Gemini, độc lập với backend
+docs/            Kế hoạch triển khai, hướng dẫn gắn khoá, wiki nội bộ
 BRD.md           Tài liệu đặc tả yêu cầu (nguồn spec chính thức)
 ```
+
+Dự án chạy được ngay khi chưa có khoá nào (chế độ giả lập, dùng dữ liệu mẫu). Muốn dùng Gemini thật: xem [docs/SETUP_CREDENTIALS.md](docs/SETUP_CREDENTIALS.md).
 
 ## Bắt đầu
 
@@ -36,8 +39,8 @@ flutter run -d chrome   # hoặc flutter run cho thiết bị/máy ảo
 ```bash
 cd backend_api
 npm install
-cp .env.example .env   # điền GEMINI_API_KEY để dùng Gemini thật, để trống sẽ tự fallback sang sample_plan.json
-npm run start:dev      # http://localhost:3000, Swagger UI tại /docs
+cp .env.example .env   # để trống GEMINI_API_KEY = chạy giả lập; điền key = dùng Gemini thật
+npm run start:dev      # http://localhost:3000, Swagger UI tại /docs, /health báo đang dùng Gemini hay dữ liệu mẫu
 ```
 
 ### AI Workspace (thử nghiệm prompt Gemini)
@@ -51,11 +54,17 @@ npm run experiment
 
 ## Trạng thái dự án
 
-Xem tiến độ chi tiết theo tuần và tiêu chí nghiệm thu tại [BRD.md mục 8–9](BRD.md#8-kế-hoạch-triển-khai-theo-tuần-weekly-roadmap-cho-đồ-án).
+Tiến độ từng bước (có checkbox) theo dõi tại **[docs/PLAN.md](docs/PLAN.md)**. Tiêu chí nghiệm thu gốc ở [BRD.md mục 9](BRD.md#9-tiêu-chí-nghiệm-thu-môn-học-rubric-checklist).
 
 ## Nhật ký thay đổi (Changelog)
 
 Đối chiếu theo phiên bản BRD (mục "Phiên bản" trong [BRD.md](BRD.md)), để giảng viên/trợ giảng theo dõi tiến độ trực tiếp trên repo mà không cần đọc từng commit.
+
+### BRD v2.2.0 — 2026-09-22 → 2026-09-24
+- Chốt thêm tài khoản người dùng (đăng nhập Google) và lịch sử kế hoạch xem được trên nhiều thiết bị (FR-6, FR-7); backend sẽ dùng SQLite + TypeORM. Đã có trong BRD, chưa có code
+- Lập kế hoạch triển khai toàn dự án [docs/PLAN.md](docs/PLAN.md) (giai đoạn 0–9); chốt 4 điểm lệch giữa giao diện Flutter và backend (mức điều chỉnh calo, feedback cuối ngày, dữ liệu đi chợ, thông tin sức khoẻ do người dùng tự nhập)
+- Giai đoạn 0: `/health` báo backend đang dùng Gemini thật hay dữ liệu mẫu; `POST /api/v1/generate-plan` trả HTTP 200 đúng như BRD; thêm hướng dẫn gắn khoá [docs/SETUP_CREDENTIALS.md](docs/SETUP_CREDENTIALS.md)
+- Sửa BRD mục 7.6: host dùng SQLite phải có ổ lưu trữ bền (Render bản free xoá file DB khi service ngủ/restart)
 
 ### BRD v2.1.0 — 2026-09-22
 - Chuyển tech stack backend từ FastAPI/Python sang **NestJS/TypeScript** (BRD mục 4, 6, 7, 8, 9)
