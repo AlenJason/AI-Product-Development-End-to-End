@@ -92,12 +92,16 @@ Giao diện Flutter (thiết kế từ Figma) và backend/BRD từng lệch nhau
 
 Chi tiết: brainstorm `docs/superpowers/brainstorms/phase-1-api-contract.md` (hướng B, quyết định Q1–Q4), plan `docs/superpowers/plans/phase-1-api-contract/`.
 
-## Giai đoạn 2 — Backend: kiểm thử nền · S
+## Giai đoạn 2 — Backend: kiểm thử nền · M
 
-- [ ] **2.1** Unit test `computeDailyTarget()` (`daily-target.ts`): mở rộng từ 3 ca đã có ở giai đoạn 1 ra đủ nam/nữ × 3 mức vận động × 3 mục tiêu (tiêu chí nghiệm thu tuần 5)
+- [x] **2.1** Unit test `computeDailyTarget()` (`daily-target.ts`): mở rộng từ 3 ca đã có ở giai đoạn 1 ra đủ nam/nữ × 3 mức vận động × 3 mục tiêu (tiêu chí nghiệm thu tuần 5)
 - [x] **2.2** ~~Unit test `isNutritionWithinBounds()`~~ — hàm này đã được thay bằng `findPlanViolations()` và có test ở giai đoạn 1 (`plan-validation.spec.ts`)
-- [ ] **2.3** Unit test `PlanService.generatePlan()` với Gemini giả: kết quả hợp lệ → `source: gemini`; sai hợp đồng → gọi lại → thực đơn mẫu; hết giờ → không gọi lại; khoá sai → thực đơn mẫu (trường hợp không có khoá đã có test ở giai đoạn 1)
-- [ ] **2.4** E2E `POST /api/v1/generate-plan`: payload đúng → 200, payload sai → 400, `restrictions` kiểu mảng cũ → 400 (test e2e cần bật `ValidationPipe` giống `main.ts`)
+- [x] **2.3** Unit test `PlanService.generatePlan()` với Gemini giả: kết quả hợp lệ → `source: gemini`; sai hợp đồng → gọi lại → thực đơn mẫu; hết giờ → không gọi lại; khoá sai → thực đơn mẫu (trường hợp không có khoá đã có test ở giai đoạn 1)
+- [x] **2.4** E2E `POST /api/v1/generate-plan`: payload đúng → 200, payload sai → 400, `restrictions` kiểu mảng cũ → 400 (test e2e cần bật `ValidationPipe` giống `main.ts`)
+- [x] **2.5** *(bổ sung, quyết định Q1)* Test `GeminiService` với SDK `@google/genai` thật trỏ vào server Gemini giả cục bộ (`GEMINI_BASE_URL`): hết giờ, khoá sai, không tự gọi lại, lỗi JSON không lộ nội dung
+- [x] **2.6** *(bổ sung, quyết định Q2)* GitHub Actions: build + unit + e2e backend trên Node 24 và 26, kiểm kiểu `ai_workspace`, mỗi lần push
+
+Chi tiết: brainstorm `docs/superpowers/brainstorms/phase-2-backend-tests.md`, plan `docs/superpowers/plans/phase-2-backend-tests/`.
 
 ## Giai đoạn 3 — Backend: Tài khoản & Lịch sử (FR-6, FR-7) · L
 

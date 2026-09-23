@@ -13,8 +13,8 @@ Dự án không có `lib/auth/`, `middleware.ts`, hay thư mục database/ORM (k
 
 | File thay đổi | Bài wiki cần load / cập nhật |
 | --- | --- |
-| `backend_api/src/app.controller.ts`, `backend_api/src/app.service.ts`, `backend_api/src/plan/plan.controller.ts`, `backend_api/src/plan/plan.module.ts`, `backend_api/src/main.ts` | `api-routes.md` |
-| `backend_api/src/plan/gemini.service.ts`, `ai_workspace/**` | `gemini-integration.md` |
+| `backend_api/src/app.controller.ts`, `backend_api/src/app.service.ts`, `backend_api/src/app.setup.ts`, `backend_api/src/plan/plan.controller.ts`, `backend_api/src/plan/plan.module.ts`, `backend_api/src/main.ts` | `api-routes.md` |
+| `backend_api/src/plan/gemini.service.ts`, `backend_api/test/fake-gemini-server.ts`, `ai_workspace/**` | `gemini-integration.md` |
 | `backend_api/src/plan/dto/**`, `backend_api/src/plan/enums/**`, `backend_api/src/plan/data/**`, `backend_api/src/plan/plan-validation.ts`, `backend_api/src/plan/plan-assembly.ts`, `backend_api/src/plan/daily-target.ts`, `backend_api/src/plan/plan-warnings.ts`, `backend_api/src/plan/text.util.ts`, `backend_api/src/plan/plan.service.ts` | `plan-data-contract.md` |
 | `frontend_app/lib/screens/**`, `frontend_app/lib/widgets/**`, `frontend_app/lib/main.dart` | `flutter-ui.md` |
 | `frontend_app/lib/models/**` | `flutter-ui.md` |

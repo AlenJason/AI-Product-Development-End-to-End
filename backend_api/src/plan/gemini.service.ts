@@ -44,7 +44,9 @@ export class GeminiService {
     const apiKey = this.config.get<string>('GEMINI_API_KEY');
     this.model = this.config.get<string>('GEMINI_MODEL') ?? 'gemini-3.8-flash';
     this.timeoutMs = Number(this.config.get<string>('GEMINI_TIMEOUT_MS')) || DEFAULT_TIMEOUT_MS;
-    this.client = apiKey ? new GoogleGenAI({ apiKey }) : null;
+    // Chỉ để trỏ SDK sang server Gemini giả khi test; production để trống.
+    const baseUrl = this.config.get<string>('GEMINI_BASE_URL');
+    this.client = apiKey ? new GoogleGenAI({ apiKey, ...(baseUrl ? { httpOptions: { baseUrl } } : {}) }) : null;
   }
 
   get isConfigured(): boolean {

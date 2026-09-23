@@ -36,6 +36,8 @@ GEMINI_MODEL=gemini-3.8-flash
 
 Tuỳ chọn: `GEMINI_TIMEOUT_MS=15000` — giới hạn thời gian mỗi lần gọi Gemini (ms). Hết giờ thì backend dùng thực đơn mẫu ngay.
 
+`GEMINI_BASE_URL` trong `.env.example` chỉ dùng khi chạy test với server Gemini giả — **để trống** khi dùng thật, nếu không backend sẽ gửi request (kèm khoá) tới địa chỉ đó thay vì Google.
+
 Sau đó **khởi động lại backend** (Ctrl+C rồi chạy lại `npm run start:dev`). Backend chỉ đọc `.env` lúc khởi động; chế độ watch tự khởi động lại khi sửa code nhưng **không** khi sửa `.env`.
 
 ### 1.3. Kiểm tra

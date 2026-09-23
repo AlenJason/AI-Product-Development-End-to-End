@@ -46,11 +46,14 @@ npm install
 cp .env.example .env            # fill in GEMINI_API_KEY (optional — falls back to sample data without it)
 npm run start:dev               # http://localhost:3000, Swagger UI at /docs
 npm run build                   # tsc via Nest compiler; verifies the project compiles
-npm test                        # vitest unit tests
+npm test                        # vitest unit tests (src/**/*.spec.ts)
+npx vitest run src/plan/plan.service.spec.ts   # a single test file
 npm run test:e2e                # vitest e2e tests (test/app.e2e-spec.ts)
 ```
 
 Note: `nest-cli.json` has `compilerOptions.assets` copying `plan/data/*.json` into `dist/` on build — if you add another non-`.ts` file under `src/` that needs to ship, add it there too, or it silently won't exist at runtime (this bit the initial `sample-plan.json` wiring).
+
+Tests never call the real Gemini API. `test/fake-gemini-server.ts` is a local HTTP server that speaks Gemini's `generateContent` format; the real `@google/genai` SDK is pointed at it through `GEMINI_BASE_URL` (leave that empty in real runs). The e2e suite pins `GEMINI_*` env vars *before* dynamically importing `AppModule`, because a developer's `.env` may hold a real key. GitHub Actions (`.github/workflows/backend.yml`) runs build + unit + e2e on Node 24 and 26 on every push touching `backend_api/` or `ai_workspace/`, with no secrets.
 
 AI workspace (`ai_workspace/`, independent Node project):
 
@@ -72,7 +75,7 @@ npm run experiment              # runs generate-plan-experiment.ts
   6. `plan-assembly.ts` — `assemblePlan()` assigns `plan_id` (UUID) and `m{day}_{n}` / `e{day}_{n}` ids, orders meals, and `buildGroceryList()` recomputes the grocery list from structured ingredients. Grocery lists are never taken from Gemini or the client.
   - `dto/meal-plan-response.dto.ts` holds the response classes Swagger shows; `MealDto` / `ExerciseDto` extend the content DTOs with ids. `enums/` holds the fixed codes (meal type, ingredient category/unit, muscle group, exercise tags, plan source).
 - The project uses ESM (`"type": "module"` in `package.json`) — relative imports need explicit `.js` extensions even though the source is `.ts` (e.g. `import { AppService } from './app.service.js'`).
-- Swagger is mounted at `/docs`, global `ValidationPipe({ whitelist: true, transform: true })` is set in `main.ts`.
+- `src/app.setup.ts` — `configureApp()` applies the global `ValidationPipe({ whitelist: true, transform: true })` and mounts Swagger at `/docs` (JSON at `/docs-json`). Both `main.ts` and the e2e tests call it; put new global app config there, not in `main.ts`.
 
 ## Frontend architecture
 
