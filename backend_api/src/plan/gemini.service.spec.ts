@@ -6,6 +6,7 @@ import { ActivityLevel } from './enums/activity-level.enum.js';
 import { Gender } from './enums/gender.enum.js';
 import { Goal } from './enums/goal.enum.js';
 import { GeminiService, GeminiTimeoutError } from './gemini.service.js';
+import { generateWithRetry } from './gemini-retry.js';
 
 const target = { bmi: 22, bmr: 1399, tdee: 1924, target_calories: 1624, protein_g: 102, carbs_g: 183, fat_g: 54 };
 const SECRET = 'BENH-NEN-BI-MAT-123';
@@ -74,4 +75,72 @@ describe('GeminiService — SDK thật, server Gemini giả', () => {
     expect(error).toBeInstanceOf(Error);
     expect((error as Error).message).toBe('Gemini trả về chuỗi không phải JSON hợp lệ');
   });
+
+  it('turns thinking off by default — measured: 8–13 s instead of 37–42 s for a plan', async () => {
+    fake.reply({ kind: 'json', body: { days: [] } });
+    await gemini.generateJson('prompt');
+    expect(fake.requests[0]).toContain('"thinkingConfig":{"thinkingBudget":0}');
+  });
+
+  it('sends no thinking config with GEMINI_THINKING=default, so the model decides', async () => {
+    const tuned = service({ GEMINI_API_KEY: 'test-key', GEMINI_BASE_URL: fake.url, GEMINI_THINKING: 'default' });
+    fake.reply({ kind: 'json', body: { days: [] } });
+    await tuned.generateJson('prompt');
+    expect(fake.requests[0]).not.toContain('thinkingConfig');
+  });
+
+  it('uses gemini-3.5-flash unless GEMINI_MODEL says otherwise', async () => {
+    fake.reply({ kind: 'json', body: { days: [] } });
+    await gemini.generateJson('prompt');
+    const tuned = service({ GEMINI_API_KEY: 'test-key', GEMINI_BASE_URL: fake.url, GEMINI_MODEL: 'gemini-3.8-flash' });
+    await tuned.generateJson('prompt');
+    expect(fake.paths).toEqual(['/v1beta/models/gemini-3.5-flash:generateContent', '/v1beta/models/gemini-3.8-flash:generateContent']);
+  });
+
+  it.each([
+    ['low', '"thinkingConfig":{"thinkingLevel":"LOW"}'],
+    ['off', '"thinkingConfig":{"thinkingBudget":0}'],
+  ])('sends GEMINI_THINKING=%s to the API', async (level, expected) => {
+    const tuned = service({ GEMINI_API_KEY: 'test-key', GEMINI_BASE_URL: fake.url, GEMINI_THINKING: level });
+    fake.reply({ kind: 'json', body: { days: [] } });
+    await tuned.generateJson('prompt');
+    expect(fake.requests[0]).toContain(expected);
+  });
+
+  it('refuses to start with an unknown GEMINI_THINKING', () => {
+    expect(() => service({ GEMINI_THINKING: 'fast' })).toThrow(/GEMINI_THINKING/);
+  });
+
+  it('reads the per-call and total time limits, never letting the total be shorter than one call', () => {
+    expect(service({}).budget).toEqual({ perCallMs: 20_000, totalMs: 40_000 });
+    expect(service({ GEMINI_TIMEOUT_MS: '30000', GEMINI_TOTAL_TIMEOUT_MS: '20000' }).budget).toEqual({
+      perCallMs: 30_000,
+      totalMs: 30_000,
+    });
+  });
+
+  it('uses the timeout it is given for one call', async () => {
+    fake.reply({ kind: 'hang' });
+    await expect(gemini.generateJson('prompt', 100)).rejects.toThrow('Gemini không phản hồi sau 100 ms');
+  });
+
+  it('gives a retry only the time left in the total budget (NFR-1)', async () => {
+    fake.reply({ kind: 'hang' });
+    const timeouts: number[] = [];
+    const logger = { warn: vi.fn(), error: vi.fn() };
+    const started = Date.now();
+    await generateWithRetry(
+      logger as never,
+      'thử',
+      { perCallMs: 300, totalMs: 450 },
+      (timeoutMs) => {
+        timeouts.push(timeoutMs);
+        return gemini.generateJson('prompt', timeoutMs);
+      },
+      () => ({ value: null, errors: ['sai'] }),
+    );
+    expect(timeouts).toEqual([300]); // hết giờ → không gọi lại (#15)
+    expect(Date.now() - started).toBeLessThan(450);
+  });
 });
+

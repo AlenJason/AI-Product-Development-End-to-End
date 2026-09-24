@@ -21,7 +21,8 @@
     "test:cov": "vitest run --coverage",
     "test:debug": "vitest --inspect-brk --no-file-parallelism",
     "test:e2e": "vitest run --config ./vitest.config.e2e.ts",
-    "test:smoke": "node scripts/smoke-test.mjs"
+    "test:smoke": "node scripts/smoke-test.mjs",
+    "measure:gemini": "node --env-file=.env scripts/measure-gemini.mjs"
   },
   "dependencies": {
     "@google/genai": "^2.24.0",

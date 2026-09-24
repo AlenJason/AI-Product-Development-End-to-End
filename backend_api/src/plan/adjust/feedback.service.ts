@@ -113,9 +113,11 @@ export class FeedbackService {
     return generateWithRetry(
       this.logger,
       'cân đối món ăn',
-      () =>
+      this.gemini.budget,
+      (timeoutMs) =>
         this.gemini.generateJson(
           buildDayMealsPrompt(context.profile, target.target_calories, dayIndex + 1, dayCalories, range, eating, otherNames),
+          timeoutMs,
         ),
       (raw) => {
         const parsed = parseContent(DayMealsDto, raw);

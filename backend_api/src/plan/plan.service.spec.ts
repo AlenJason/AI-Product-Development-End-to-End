@@ -38,7 +38,8 @@ function geminiAnswering(...answers: unknown[]) {
     if (answer instanceof Error) generatePlanContent.mockRejectedValueOnce(answer);
     else generatePlanContent.mockResolvedValueOnce(answer);
   }
-  const gemini = { isConfigured: true, generatePlanContent } as unknown as GeminiService;
+  const budget = { perCallMs: 20_000, totalMs: 40_000 };
+  const gemini = { isConfigured: true, generatePlanContent, budget } as unknown as GeminiService;
   return { gemini, generatePlanContent };
 }
 
@@ -171,6 +172,6 @@ describe('PlanService — calorie totals and restrictions (v2.5.0)', () => {
   it('passes the feedback note to Gemini for a follow-up plan (FR-5.3)', async () => {
     const { gemini, generatePlanContent } = geminiAnswering(SAMPLE_CONTENT);
     await new PlanService(gemini).generatePlan(profile(), { feedbackNote: 'buổi tập rất mệt' });
-    expect(generatePlanContent).toHaveBeenCalledWith(expect.anything(), expect.anything(), 'buổi tập rất mệt');
+    expect(generatePlanContent).toHaveBeenCalledWith(expect.anything(), expect.anything(), 'buổi tập rất mệt', 20_000);
   });
 });

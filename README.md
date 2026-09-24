@@ -62,6 +62,10 @@ Kết quả build và test tự động của từng commit: tab [Actions](https
 
 Đối chiếu theo phiên bản BRD (mục "Phiên bản" trong [BRD.md](BRD.md)), để giảng viên/trợ giảng theo dõi tiến độ trực tiếp trên repo mà không cần đọc từng commit.
 
+### BRD v2.5.1 — 2026-09-24
+- Thử bằng khoá Gemini thật: tạo kế hoạch mất 37–42 giây vì model "suy nghĩ" trước khi trả lời, vượt giới hạn 15 giây nên gần như luôn rơi về thực đơn mẫu. Sửa: tắt chế độ suy nghĩ mặc định (còn 8–15 giây), giới hạn 20 giây mỗi lần gọi và 40 giây tổng; prompt ghi rõ nguyên liệu và động tác backend sẽ loại (trước đó Gemini cho cá nước ngọt khi người dùng dị ứng hải sản). Qua backend thật: `generate-plan` trả kết quả Gemini sau 14 giây
+- Model mặc định đổi sang `gemini-3.5-flash` (`gemini-3.8-flash` liên tục báo quá tải); gói miễn phí chỉ cho 20 lần gọi mỗi ngày cho mỗi model — hết thì app vẫn chạy bằng dữ liệu soạn sẵn. Thêm `npm run measure:gemini` để đo lại khi đổi model
+
 ### BRD v2.5.0 — 2026-09-24
 - Giai đoạn 4 — đổi món, đổi bài tập, feedback cuối ngày: `POST /api/v1/meals/swap`, `/exercises/swap`, `/feedback` (BRD mục 6.4), chạy được cả khi chưa có khoá nhờ kho 21 món Việt và 39 động tác có mức độ khó. Có khoá thì Gemini đề xuất trước, backend kiểm lại: calo ±10%, cùng nhóm cơ, không nặng hơn, tránh dị ứng và chấn thương
 - Feedback: quy tắc cố định cho buổi tập ngày kế tiếp; dấu hiệu nguy hiểm (chóng mặt, khó thở, đau ngực) → ngày nghỉ kèm khuyến cáo ngừng tập, hỏi ý kiến bác sĩ, gọi 115; feedback ngày 3 tạo plan mới. Đã đăng nhập thì các thao tác này cập nhật lịch sử

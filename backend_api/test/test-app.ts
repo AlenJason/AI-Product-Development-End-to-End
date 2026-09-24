@@ -21,6 +21,8 @@ export async function createTestApp(env: Record<string, string> = {}): Promise<T
     ALLOW_MOCK_AUTH: '',
     GEMINI_API_KEY: '',
     GEMINI_BASE_URL: '',
+    GEMINI_THINKING: '',
+    GEMINI_TOTAL_TIMEOUT_MS: '',
     ...env,
   };
   const saved = Object.fromEntries(Object.keys(pinned).map((key) => [key, process.env[key]]));

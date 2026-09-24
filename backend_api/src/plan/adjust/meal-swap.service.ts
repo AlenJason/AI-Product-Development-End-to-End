@@ -68,7 +68,8 @@ export class MealSwapService {
     return generateWithRetry(
       this.logger,
       'đổi món',
-      () => this.gemini.generateJson(buildMealSwapPrompt(context.profile, original, range, names)),
+      this.gemini.budget,
+      (timeoutMs) => this.gemini.generateJson(buildMealSwapPrompt(context.profile, original, range, names), timeoutMs),
       (raw) => {
         const parsed = parseContent(MealContentDto, raw);
         if (!parsed.value) return parsed;

@@ -20,7 +20,27 @@ Backend gọi Gemini qua SDK `@google/genai` ở đúng một chỗ: `GeminiServ
 
 ## Cấu hình
 
-`GEMINI_API_KEY` (bắt buộc để dùng AI thật), `GEMINI_MODEL` (mặc định `gemini-3.8-flash`), `GEMINI_TIMEOUT_MS` (mặc định 15 000), `GEMINI_BASE_URL` (chỉ dùng khi test — để trống là gọi Google thật). Khoá tạo trên AI Studio trước 28/05/2026 là loại Standard và bị từ chối từ tháng 9/2026 — xem [[reference-materials]] mục 1.4.
+`GEMINI_API_KEY` (bắt buộc để dùng AI thật), `GEMINI_MODEL` (mặc định `gemini-3.5-flash`), `GEMINI_THINKING` (`off` | `low` | `default`, mặc định `off`), `GEMINI_TIMEOUT_MS` (mỗi lần gọi, mặc định 20 000), `GEMINI_TOTAL_TIMEOUT_MS` (cả lần gọi lại, mặc định 40 000), `GEMINI_BASE_URL` (chỉ dùng khi test — để trống là gọi Google thật). `GEMINI_THINKING` sai giá trị → backend không khởi động. Khoá tạo trên AI Studio trước 28/05/2026 là loại Standard và bị từ chối từ tháng 9/2026 — xem [[reference-materials]] mục 1.4.
+
+## Đo với Gemini thật (2026-09-24)
+
+`npm run build && npm run measure:gemini` (`backend_api/scripts/measure-gemini.mjs`) chạy bản build với **đúng** prompt và bước kiểm của backend, ghi thời gian, số token suy nghĩ, kết quả kiểm. Tốn hạn mức — chỉ chạy tay (#17). Kết quả với khoá gói miễn phí, 3 hồ sơ (dị ứng hải sản + đau gối; nam 2806 kcal; đậu phộng + sữa + đau lưng + tiểu đường) và 1 lần đổi món mỗi cấu hình:
+
+| `gemini-3.5-flash` | Tạo plan | Đạt | Đổi món |
+|---|---|---|---|
+| suy nghĩ mặc định (~7000 token suy nghĩ) | 37–42 s | 3/3 | 13 s |
+| `GEMINI_THINKING=low` | 18–27 s | 2/3 | 8 s |
+| `GEMINI_THINKING=off` | 8–13 s | 2/3 (1 JSON bị cắt giữa chừng) | 3 s |
+
+Qua backend thật (`off`, HTTP): `generate-plan` 14,3 s, `source: gemini`; đổi món 2,8 s.
+
+| Điều đã thấy | Hệ quả |
+|---|---|
+| Phần lớn thời gian là "suy nghĩ" trước khi trả lời, không phải do project hay mạng | Mặc định `GEMINI_THINKING=off`, timeout 20 s/lần, tổng 40 s (#15) |
+| Tắt suy nghĩ mà prompt chỉ có chữ người dùng nhập → Gemini cho cá nước ngọt khi dị ứng "hải sản", chống đẩy quỳ gối khi đau gối | Prompt ghi rõ danh sách backend sẽ kiểm (`ingredientAvoidRule()`, `exerciseAvoidRule()`, #23) |
+| `gemini-3.8-flash` liên tục 503 "high demand"; không nhận `thinkingLevel: MINIMAL` (400) | Mặc định đổi sang `gemini-3.5-flash` (#9) |
+| Gói miễn phí: **20 lần gọi/ngày cho mỗi model** (429 `GenerateRequestsPerDayPerProjectPerModel-FreeTier`); cũng có giới hạn theo phút | Hết thì backend dùng dữ liệu soạn sẵn; đổi `GEMINI_MODEL` để có hạn mức riêng của model khác |
+| Lỗi của SDK chứa nguyên khối JSON của Google (dài, có mảng `details`) | `describeGeminiError()` chỉ log mã lỗi + thông báo chính |
 
 ## Test không cần khoá
 

@@ -21,6 +21,8 @@ const server = spawn(process.execPath, ['dist/main.js'], {
     ALLOW_MOCK_AUTH: '',
     GEMINI_API_KEY: '',
     GEMINI_BASE_URL: '',
+    GEMINI_THINKING: '',
+    GEMINI_TOTAL_TIMEOUT_MS: '',
   },
   stdio: ['ignore', 'pipe', 'pipe'],
 });

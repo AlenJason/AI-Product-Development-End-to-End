@@ -2,9 +2,12 @@ import type { CreatePlanDto } from '../dto/create-plan.dto.js';
 import type { ExerciseContentDto, MealContentDto } from '../dto/plan-content.dto.js';
 import { Eating } from '../enums/feedback.enum.js';
 import { MealType } from '../enums/meal-type.enum.js';
+import { matchRestrictions } from '../restriction-matcher.js';
 import {
   EXERCISE_JSON_SHAPE,
+  exerciseAvoidRule,
   exerciseCodeRules,
+  ingredientAvoidRule,
   ingredientCodeRules,
   MACRO_RULE,
   MEAL_JSON_SHAPE,
@@ -37,6 +40,7 @@ export function buildMealSwapPrompt(
     'Quy tắc bắt buộc:',
     '- Món ăn gia đình Việt Nam bình dân, dễ mua, dễ nấu.',
     '- Không dùng nguyên liệu người dùng dị ứng; chọn món phù hợp tình trạng sức khoẻ đã khai.',
+    ...ingredientAvoidRule(matchRestrictions(profile.restrictions)),
     `- meal_type là ${original.meal_type}; calories trong khoảng ${range.min}–${range.max}. ${MACRO_RULE}`,
     `- Không trùng các món đã có: ${avoidNames.join('; ')}.`,
     ...ingredientCodeRules(),
@@ -61,6 +65,7 @@ export function buildExerciseSwapPrompt(
     'Quy tắc bắt buộc:',
     `- Cùng nhóm cơ: muscle_group là ${original.muscle_group}. Bodyweight, không cần dụng cụ.`,
     '- Không chọn động tác gây tải lên vùng chấn thương người dùng đã khai.',
+    ...exerciseAvoidRule(matchRestrictions(profile.restrictions)),
     `- sets không quá ${original.sets}. tags chỉ được chọn trong: ${tags}.`,
     `- Không trùng các động tác đã có trong buổi: ${avoidNames.join('; ')}.`,
     ...exerciseCodeRules(),
@@ -89,6 +94,7 @@ export function buildDayMealsPrompt(
     'Quy tắc bắt buộc:',
     '- Món ăn gia đình Việt Nam bình dân, dễ mua, dễ nấu; 3 món khác tên nhau.',
     '- Không dùng nguyên liệu người dùng dị ứng; chọn món phù hợp tình trạng sức khoẻ đã khai.',
+    ...ingredientAvoidRule(matchRestrictions(profile.restrictions)),
     `- Tổng calo của ngày khoảng ${dayCalories} kcal, trong khoảng ${range.min}–${range.max}.`,
     ...mealRules(planTargetCalories),
     `- Không trùng các món của những ngày khác: ${avoidNames.join('; ')}.`,

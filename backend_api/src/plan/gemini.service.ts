@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { GoogleGenAI } from '@google/genai';
+import { GoogleGenAI, ThinkingLevel, type ThinkingConfig } from '@google/genai';
 import type { CreatePlanDto } from './dto/create-plan.dto.js';
 import type { DailyTargetDto } from './dto/meal-plan-response.dto.js';
 import { ExerciseTag, MuscleGroup } from './enums/exercise.enum.js';
@@ -8,9 +8,43 @@ import { Goal } from './enums/goal.enum.js';
 import { IngredientCategory, IngredientUnit } from './enums/ingredient.enum.js';
 import { MealType } from './enums/meal-type.enum.js';
 import { dayCalorieBounds, MACRO_CALORIE_TOLERANCE, mealCalorieBounds } from './plan-validation.js';
+import { matchRestrictions, type RestrictionMatch } from './restriction-matcher.js';
 import { sanitizeUserText } from './text.util.js';
 
-const DEFAULT_TIMEOUT_MS = 15_000;
+// Đo với Gemini thật (2026-09-24, `npm run measure:gemini`, gemini-3.5-flash): tạo plan 37–42 s khi model tự suy nghĩ
+// (~7000 token suy nghĩ), 18–27 s ở mức low, 8–13 s khi tắt; đổi món 13 / 8 / 3 s. 15 s cũ khiến gần như mọi lần gọi
+// hết giờ. Tắt suy nghĩ + prompt ghi rõ danh sách cần tránh: 2/3 plan đạt ngay, lần gọi lại vẫn nằm trong 40 s.
+const DEFAULT_MODEL = 'gemini-3.5-flash';
+const DEFAULT_TIMEOUT_MS = 20_000;
+const DEFAULT_TOTAL_TIMEOUT_MS = 40_000;
+
+// Mức "suy nghĩ" trước khi trả lời — quyết định phần lớn thời gian chờ (GEMINI_THINKING).
+export enum GeminiThinking {
+  DEFAULT = 'default',
+  LOW = 'low',
+  OFF = 'off',
+}
+const DEFAULT_THINKING = GeminiThinking.OFF;
+const THINKING_CONFIG: Record<GeminiThinking, ThinkingConfig | undefined> = {
+  [GeminiThinking.DEFAULT]: undefined,
+  [GeminiThinking.LOW]: { thinkingLevel: ThinkingLevel.LOW },
+  [GeminiThinking.OFF]: { thinkingBudget: 0 },
+};
+
+export interface GeminiBudget {
+  // Giới hạn một lần gọi.
+  perCallMs: number;
+  // Giới hạn cả lần đầu lẫn lần gọi lại: người dùng không bao giờ chờ Gemini lâu hơn con số này.
+  totalMs: number;
+}
+
+const TAG_LABEL: Record<ExerciseTag, string> = {
+  [ExerciseTag.JUMPING]: 'bật nhảy',
+  [ExerciseTag.KNEELING]: 'quỳ, chống gối',
+  [ExerciseTag.WRIST_LOAD]: 'chống tay',
+  [ExerciseTag.BACK_LOAD]: 'tải lên lưng',
+  [ExerciseTag.OVERHEAD]: 'đưa tay qua đầu',
+};
 
 const GOAL_LABEL: Record<Goal, string> = {
   [Goal.CUT]: 'giảm mỡ',
@@ -40,12 +74,16 @@ export class GeminiTimeoutError extends Error {
 export class GeminiService {
   private readonly client: GoogleGenAI | null;
   private readonly model: string;
-  private readonly timeoutMs: number;
+  private readonly thinking: ThinkingConfig | undefined;
+  readonly budget: GeminiBudget;
 
   constructor(private readonly config: ConfigService) {
     const apiKey = this.config.get<string>('GEMINI_API_KEY');
-    this.model = this.config.get<string>('GEMINI_MODEL') ?? 'gemini-3.8-flash';
-    this.timeoutMs = Number(this.config.get<string>('GEMINI_TIMEOUT_MS')) || DEFAULT_TIMEOUT_MS;
+    this.model = this.config.get<string>('GEMINI_MODEL') || DEFAULT_MODEL;
+    this.thinking = THINKING_CONFIG[parseThinking(this.config.get<string>('GEMINI_THINKING'))];
+    const perCallMs = Number(this.config.get<string>('GEMINI_TIMEOUT_MS')) || DEFAULT_TIMEOUT_MS;
+    const totalMs = Number(this.config.get<string>('GEMINI_TOTAL_TIMEOUT_MS')) || DEFAULT_TOTAL_TIMEOUT_MS;
+    this.budget = { perCallMs, totalMs: Math.max(totalMs, perCallMs) };
     // Chỉ để trỏ SDK sang server Gemini giả khi test; production để trống.
     const baseUrl = this.config.get<string>('GEMINI_BASE_URL');
     this.client = apiKey ? new GoogleGenAI({ apiKey, ...(baseUrl ? { httpOptions: { baseUrl } } : {}) }) : null;
@@ -55,13 +93,18 @@ export class GeminiService {
     return this.client !== null;
   }
 
-  generatePlanContent(profile: CreatePlanDto, target: DailyTargetDto, feedbackNote?: string): Promise<unknown> {
-    return this.generateJson(buildPlanPrompt(profile, target, feedbackNote));
+  generatePlanContent(
+    profile: CreatePlanDto,
+    target: DailyTargetDto,
+    feedbackNote?: string,
+    timeoutMs?: number,
+  ): Promise<unknown> {
+    return this.generateJson(buildPlanPrompt(profile, target, feedbackNote), timeoutMs);
   }
 
   // Trả JSON thô; kiểm tra hợp đồng là việc của nơi gọi.
   // Cố ý không truyền retryOptions: bật lên thì SDK tự gọi lại tới 5 lần, chờ tới 60 giây.
-  async generateJson(prompt: string): Promise<unknown> {
+  async generateJson(prompt: string, timeoutMs: number = this.budget.perCallMs): Promise<unknown> {
     if (!this.client) {
       throw new Error('GEMINI_API_KEY chưa được cấu hình trong .env');
     }
@@ -73,13 +116,14 @@ export class GeminiService {
         contents: prompt,
         config: {
           responseMimeType: 'application/json',
-          httpOptions: { timeout: this.timeoutMs },
+          httpOptions: { timeout: timeoutMs },
+          ...(this.thinking ? { thinkingConfig: this.thinking } : {}),
         },
       });
       text = response.text;
     } catch (error) {
       if (error instanceof Error && error.name === 'AbortError') {
-        throw new GeminiTimeoutError(this.timeoutMs);
+        throw new GeminiTimeoutError(timeoutMs);
       }
       throw error;
     }
@@ -99,6 +143,7 @@ export class GeminiService {
 // feedbackNote: câu tóm tắt feedback do server dựng từ mã cố định (FR-5.3), không chứa chữ người dùng nhập.
 export function buildPlanPrompt(profile: CreatePlanDto, target: DailyTargetDto, feedbackNote?: string): string {
   const day = dayCalorieBounds(target);
+  const match = matchRestrictions(profile.restrictions);
   return [
     PROMPT_ROLE,
     `Nhiệm vụ: lập kế hoạch 3 ngày. Mỗi ngày gồm đúng 3 bữa (${Object.values(MealType).join(', ')}) và 1 buổi tập bodyweight tại nhà.`,
@@ -110,6 +155,8 @@ export function buildPlanPrompt(profile: CreatePlanDto, target: DailyTargetDto, 
     'Quy tắc bắt buộc:',
     '- Chỉ dùng món ăn gia đình Việt Nam bình dân, dễ mua, dễ nấu; không lặp lại tên món trong cả 3 ngày.',
     '- Không dùng nguyên liệu người dùng dị ứng; không chọn động tác gây tải lên vùng chấn thương; chọn món phù hợp tình trạng sức khoẻ đã khai.',
+    ...ingredientAvoidRule(match),
+    ...exerciseAvoidRule(match),
     `- Tổng calo mỗi ngày: ${day.min}–${day.max} kcal.`,
     ...mealRules(target.target_calories),
     '- Buổi tập không cần dụng cụ, 15–25 phút.',
@@ -118,6 +165,22 @@ export function buildPlanPrompt(profile: CreatePlanDto, target: DailyTargetDto, 
     'Chỉ trả về JSON, không kèm giải thích, đúng cấu trúc:',
     PLAN_JSON_SHAPE,
   ].join('\n');
+}
+
+// Điều backend sẽ kiểm bằng bộ khớp từ khoá, nói rõ để Gemini không phải đoán nghĩa của "hải sản", "đau gối".
+// Danh sách dựng từ restriction-keywords.json, không phải chữ người dùng nhập (NFR-8).
+export function ingredientAvoidRule(match: RestrictionMatch): string[] {
+  if (match.avoidIngredients.length === 0) return [];
+  return [
+    `- Tuyệt đối không dùng món hay nguyên liệu có các từ sau (kể cả trong tên món): ${match.avoidIngredients.join(', ')}. Hiểu theo nghĩa rộng: "cá" là mọi loại cá, kể cả cá nước ngọt; "mắm" gồm cả nước mắm.`,
+  ];
+}
+
+export function exerciseAvoidRule(match: RestrictionMatch): string[] {
+  if (match.avoidTags.length === 0) return [];
+  return [
+    `- Không dùng động tác có tags: ${match.avoidTags.map((tag) => `${tag} (${TAG_LABEL[tag]})`).join(', ')}. Ghi đủ tags cho mọi động tác.`,
+  ];
 }
 
 export const PROMPT_ROLE = 'Bạn là chuyên gia dinh dưỡng và huấn luyện thể lực cho người Việt.';
@@ -159,4 +222,12 @@ export function exerciseCodeRules(): string[] {
     `- exercises[].muscle_group chỉ được là: ${Object.values(MuscleGroup).join(', ')}.`,
     `- exercises[].tags chọn trong: ${Object.values(ExerciseTag).join(', ')} (để mảng rỗng nếu không có).`,
   ];
+}
+
+function parseThinking(value: string | undefined): GeminiThinking {
+  const level = value?.trim() || DEFAULT_THINKING;
+  if (!(Object.values(GeminiThinking) as string[]).includes(level)) {
+    throw new Error(`GEMINI_THINKING phải là ${Object.values(GeminiThinking).join(' | ')} (đang là "${level}").`);
+  }
+  return level as GeminiThinking;
 }

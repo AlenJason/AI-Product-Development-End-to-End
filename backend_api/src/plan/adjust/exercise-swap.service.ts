@@ -69,7 +69,8 @@ export class ExerciseSwapService {
     return generateWithRetry(
       this.logger,
       'đổi bài tập',
-      () => this.gemini.generateJson(buildExerciseSwapPrompt(context.profile, original, names)),
+      this.gemini.budget,
+      (timeoutMs) => this.gemini.generateJson(buildExerciseSwapPrompt(context.profile, original, names), timeoutMs),
       (raw) => {
         const parsed = parseContent(ExerciseContentDto, raw);
         if (!parsed.value) return parsed;

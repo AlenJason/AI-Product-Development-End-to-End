@@ -59,7 +59,8 @@ export class PlanService {
     const content = await generateWithRetry(
       this.logger,
       'tạo kế hoạch',
-      () => this.gemini.generatePlanContent(profile, target, feedbackNote),
+      this.gemini.budget,
+      (timeoutMs) => this.gemini.generatePlanContent(profile, target, feedbackNote, timeoutMs),
       (raw) => {
         const { plan, errors } = parsePlanContent(raw, target);
         if (!plan) return { value: null, errors };

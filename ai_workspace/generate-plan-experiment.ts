@@ -11,7 +11,14 @@ const MEAL_CALORIE_SHARE: Record<string, { min: number; max: number }> = {
 };
 const DAY_CALORIE_SHARE = { min: 0.85, max: 1.1 };
 const MACRO_TOLERANCE = 0.15;
-const BACKEND_TIMEOUT_MS = 15_000;
+const BACKEND_TIMEOUT_MS = 20_000;
+// Mức suy nghĩ giống GEMINI_THINKING của backend: default (model tự quyết) | low | off.
+const THINKING_CONFIG: Record<string, object | undefined> = {
+  default: undefined,
+  low: { thinkingLevel: 'LOW' },
+  off: { thinkingBudget: 0 },
+};
+const THINKING = process.env.GEMINI_THINKING || 'off';
 
 const TARGET = { target_calories: 1624, bmr: 1399, protein_g: 102, carbs_g: 183, fat_g: 54 };
 const MEAL_BOUNDS = Object.fromEntries(
@@ -45,6 +52,9 @@ function buildPrompt(): string {
     'Quy tắc bắt buộc:',
     '- Chỉ dùng món ăn gia đình Việt Nam bình dân, dễ mua, dễ nấu; không lặp lại tên món trong cả 3 ngày.',
     '- Không dùng nguyên liệu người dùng dị ứng; không chọn động tác gây tải lên vùng chấn thương; chọn món phù hợp tình trạng sức khoẻ đã khai.',
+    // Backend dựng hai dòng dưới từ bộ khớp từ khoá (ingredientAvoidRule/exerciseAvoidRule) cho "Hải sản", "Đau gối".
+    `- Tuyệt đối không dùng món hay nguyên liệu có các từ sau (kể cả trong tên món): tôm, tép, cua, ghẹ, mực, bạch tuộc, nghêu, ngao, sò, ốc, hến, cá, mắm. Hiểu theo nghĩa rộng: "cá" là mọi loại cá, kể cả cá nước ngọt; "mắm" gồm cả nước mắm.`,
+    `- Không dùng động tác có tags: jumping (bật nhảy), kneeling (quỳ, chống gối). Ghi đủ tags cho mọi động tác.`,
     `- Tổng calo mỗi ngày: ${DAY_BOUNDS.min}–${DAY_BOUNDS.max} kcal.`,
     `- Calo từng bữa: ${Object.entries(MEAL_BOUNDS).map(([mealType, { min, max }]) => `${mealType} ${min}–${max}`).join(', ')}. calories phải lệch không quá 15% so với 4×protein_g + 4×carbs_g + 9×fat_g.`,
     '- ingredients[].category chỉ được là: protein (thịt, cá, trứng, đậu phụ, sữa), produce (rau, củ, quả), pantry (gạo, bún, mì, gia vị, dầu ăn).',
@@ -104,9 +114,12 @@ async function main() {
 
   const startedAt = Date.now();
   const response = await client.models.generateContent({
-    model: process.env.GEMINI_MODEL ?? 'gemini-3.8-flash',
+    model: process.env.GEMINI_MODEL || 'gemini-3.5-flash',
     contents: prompt,
-    config: { responseMimeType: 'application/json' },
+    config: {
+      responseMimeType: 'application/json',
+      ...(THINKING_CONFIG[THINKING] ? { thinkingConfig: THINKING_CONFIG[THINKING] } : {}),
+    },
   });
   const elapsedMs = Date.now() - startedAt;
 
@@ -117,7 +130,7 @@ async function main() {
   const plan = JSON.parse(text);
   console.log('--- RESPONSE JSON ---');
   console.log(JSON.stringify(plan, null, 2));
-  console.log(`\n--- THỜI GIAN PHẢN HỒI: ${elapsedMs} ms (backend giới hạn ${BACKEND_TIMEOUT_MS} ms mỗi lần gọi) ---`);
+  console.log(`\n--- THỜI GIAN PHẢN HỒI: ${elapsedMs} ms, suy nghĩ ${response.usageMetadata?.thoughtsTokenCount ?? 0} token (GEMINI_THINKING=${THINKING}; backend giới hạn ${BACKEND_TIMEOUT_MS} ms mỗi lần gọi) ---`);
 
   const problems = checkPlan(plan);
   console.log('\n--- KIỂM TRA (một phần NFR-4; backend còn kiểm cấu trúc bằng class-validator) ---');

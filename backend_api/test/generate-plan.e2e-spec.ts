@@ -98,3 +98,9 @@ describe('POST /api/v1/generate-plan (e2e, SDK thật + server Gemini giả)', (
     expect(res.body.components.schemas).toHaveProperty('MealPlanResponseDto');
   });
 });
+
+describe('Cấu hình Gemini lúc khởi động (e2e)', () => {
+  it('refuses to start with an unknown GEMINI_THINKING', async () => {
+    await expect(createTestApp({ GEMINI_THINKING: 'fast' })).rejects.toThrow(/GEMINI_THINKING/);
+  });
+});

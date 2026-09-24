@@ -31,10 +31,17 @@ Mở `backend_api/.env` và điền:
 
 ```
 GEMINI_API_KEY=<key vừa copy>
-GEMINI_MODEL=gemini-3.8-flash
+GEMINI_MODEL=gemini-3.5-flash
+GEMINI_THINKING=off
+GEMINI_TIMEOUT_MS=20000
+GEMINI_TOTAL_TIMEOUT_MS=40000
 ```
 
-Tuỳ chọn: `GEMINI_TIMEOUT_MS=15000` — giới hạn thời gian mỗi lần gọi Gemini (ms). Hết giờ thì backend dùng thực đơn mẫu ngay.
+Ba dòng cuối là giá trị mặc định, bỏ đi cũng được — nhưng nếu `.env` của bạn copy từ bản cũ có `GEMINI_MODEL=gemini-3.8-flash` hay `GEMINI_TIMEOUT_MS=15000` thì phải sửa hoặc xoá, vì giá trị trong `.env` thắng giá trị mặc định:
+
+- `GEMINI_THINKING` — mức "suy nghĩ" của model trước khi trả lời: `off` (mặc định, tạo plan 8–15 giây), `low` (18–27 giây), `default` (model tự quyết, 37–42 giây). Số đo ngày 24/09/2026 với `gemini-3.5-flash`.
+- `GEMINI_TIMEOUT_MS` — giới hạn mỗi lần gọi (ms); `GEMINI_TOTAL_TIMEOUT_MS` — giới hạn tổng cả lần gọi lại. Hết giờ thì backend dùng dữ liệu soạn sẵn ngay.
+- **Hạn mức gói miễn phí: 20 lần gọi mỗi ngày cho mỗi model.** Tạo plan tốn 1–2 lần, đổi món/đổi bài/feedback mỗi thao tác 1–2 lần. Hết hạn mức thì app vẫn chạy bằng dữ liệu soạn sẵn.
 
 `GEMINI_BASE_URL` trong `.env.example` chỉ dùng khi chạy test với server Gemini giả — **để trống** khi dùng thật, nếu không backend sẽ gửi request (kèm khoá) tới địa chỉ đó thay vì Google.
 
@@ -70,16 +77,30 @@ Script in ra prompt, JSON Gemini trả về, và kết quả kiểm tra khoảng
 | `/health` vẫn báo `"fallback"` | Chưa khởi động lại backend; file `.env` đặt sai chỗ (phải là `backend_api/.env`); gõ sai tên biến | Kiểm tra lại đường dẫn và tên biến, khởi động lại |
 | Log báo `API key not valid` | Copy thiếu ký tự, hoặc key đã bị xoá | Copy lại hoặc tạo key mới |
 | Log báo lỗi xác thực/quyền truy cập dù key copy đúng | Key loại *Standard* đã bị từ chối (xem lưu ý ở mục 1.1) | Tạo key mới trên AI Studio |
-| Log báo `RESOURCE_EXHAUSTED` (429) | Hết hạn mức miễn phí | Đợi hạn mức hồi lại hoặc dùng project khác; trong lúc đó backend vẫn trả dữ liệu mẫu |
+| Log báo `429 RESOURCE_EXHAUSTED` … `limit: 20` | Hết 20 lần gọi/ngày của model đó (gói miễn phí) | Đợi sang ngày hôm sau, hoặc đổi `GEMINI_MODEL` sang model khác (hạn mức tính riêng từng model), hoặc bật thanh toán cho project; trong lúc đó backend vẫn trả dữ liệu soạn sẵn |
+| Log báo `429` nhưng vài phút sau lại chạy | Vượt giới hạn số lần gọi mỗi phút | Chờ khoảng 1 phút |
+| Log báo `503 UNAVAILABLE` … `high demand` | Model đang quá tải phía Google (gặp nhiều với `gemini-3.8-flash`) | Thử lại sau, hoặc dùng `GEMINI_MODEL=gemini-3.5-flash` |
+| Log báo `400` … `Thinking level … is not supported` | Model không hỗ trợ mức suy nghĩ đã chọn | Đổi `GEMINI_THINKING` (ví dụ `off`) |
 | Log báo model không tồn tại | `GEMINI_MODEL` sai tên | Xem tên model tại [ai.google.dev/gemini-api/docs/models](https://ai.google.dev/gemini-api/docs/models) |
-| Log báo `Gemini không phản hồi sau 15000 ms` | Mạng chậm hoặc model phản hồi chậm | Thử lại; nếu thường xuyên xảy ra, tăng `GEMINI_TIMEOUT_MS` trong `.env` rồi khởi động lại backend |
+| Log báo `Gemini không phản hồi sau 20000 ms` | Model suy nghĩ lâu (`GEMINI_THINKING` khác `off`) hoặc mạng chậm | Đặt `GEMINI_THINKING=off`; nếu vẫn thường xuyên hết giờ, tăng `GEMINI_TIMEOUT_MS` và `GEMINI_TOTAL_TIMEOUT_MS` rồi khởi động lại backend |
 | Log báo `Kết quả Gemini không đạt hợp đồng` lặp lại nhiều lần | Prompt chưa đủ chặt với model đang dùng | Thử prompt bằng `ai_workspace/` (mục 1.4), chỉnh rồi chép sang `backend_api/src/plan/gemini.service.ts` |
 
-### 1.6. Quay lại chế độ giả lập
+### 1.6. Đo lại khi đổi model hoặc mức suy nghĩ
+
+```bash
+cd backend_api
+npm run build
+npm run measure:gemini                                              # mặc định: gemini-3.5-flash × default/low/off
+MEASURE_MODELS=gemini-3.8-flash MEASURE_THINKING=off npm run measure:gemini   # chọn model/mức khác
+```
+
+Script dùng đúng prompt và bước kiểm của backend, in thời gian và kết quả từng lần gọi. Mỗi cấu hình tốn 4 lần gọi — để ý hạn mức 20 lần/ngày.
+
+### 1.7. Quay lại chế độ giả lập
 
 Để trống `GEMINI_API_KEY=` trong `.env`, khởi động lại backend. `/health` sẽ báo `"fallback"`.
 
-### 1.7. Bảo mật key
+### 1.8. Bảo mật key
 
 - Key chỉ được nằm trong `backend_api/.env` và `ai_workspace/.env`. Cả hai file đã nằm trong `.gitignore`; trước khi commit vẫn nên chạy `git status` để chắc `.env` không xuất hiện.
 - **Không bao giờ đặt key trong app Flutter.** App gọi backend, backend mới gọi Gemini. Key đặt trong app web/mobile có thể bị lấy ra từ file cài đặt.
@@ -163,6 +184,6 @@ Khởi động lại backend. Thiếu `GOOGLE_CLIENT_ID`, hoặc `JWT_SECRET` ng
 
 ### 2.7. Bảo mật
 
-- `JWT_SECRET` bảo vệ giống khoá Gemini (mục 1.7): chỉ nằm trong `.env`, không commit; khi deploy thì khai báo trên trang cấu hình của host.
+- `JWT_SECRET` bảo vệ giống khoá Gemini (mục 1.8): chỉ nằm trong `.env`, không commit; khi deploy thì khai báo trên trang cấu hình của host.
 - Không commit file DB (`*.sqlite`) — nó chứa email và tên người dùng thật.
 - JWT chỉ chứa id người dùng. Log của backend không ghi token hay email khi từ chối đăng nhập.

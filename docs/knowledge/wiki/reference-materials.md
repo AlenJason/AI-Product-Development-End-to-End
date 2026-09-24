@@ -31,6 +31,8 @@ Hiện `gemini.service.ts` chỉ dùng `responseMimeType: 'application/json'` v�
 
 Model mặc định từng là `gemini-2.5-flash` (đã cũ). Theo [Models | Gemini API](https://ai.google.dev/gemini-api/docs/models), model workhorse hiện tại (09/2026) là **`gemini-3.8-flash`** (GA từ 02/09/2026, cửa sổ input ~1M token, hỗ trợ computer use/file search/grounding). Đã cập nhật làm giá trị mặc định ở `backend_api/.env.example`, `ai_workspace/.env.example`, `gemini.service.ts`, `generate-plan-experiment.ts`, và BRD.md mục 4.
 
+**Cập nhật 2026-09-24:** mặc định đổi sang `gemini-3.5-flash` sau khi đo bằng khoá thật — `gemini-3.8-flash` liên tục báo quá tải (503) và gói miễn phí chỉ cho 20 lần gọi/ngày mỗi model. Chi tiết số đo: [[gemini-integration]].
+
 ### 1.4. Loại API key — auth key thay cho standard key (xác minh 2026-09-24)
 
 Theo [Using Gemini API keys](https://ai.google.dev/gemini-api/docs/api-key): từ 28/05/2026 mọi key mới tạo trên AI Studio là *auth key* (gắn với service account, cho phép phân quyền chi tiết); trong tháng 9/2026 Gemini API bắt đầu từ chối key loại *Standard*. Cách dùng trong code không đổi (`new GoogleGenAI({ apiKey })`), chỉ cần thay giá trị key. Xem loại key ở cột **Key Type** trên trang API Keys. Hướng dẫn cho người dùng: `docs/SETUP_CREDENTIALS.md` mục 1.1.
