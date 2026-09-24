@@ -49,9 +49,11 @@ describe('GoogleIdTokenVerifier', () => {
 
   beforeEach(() => {
     const client = new OAuth2Client();
+    // `format` có kiểu enum CertificateFormat mà google-auth-library không export, nên phải ép kiểu qua unknown.
     vi.spyOn(client, 'getFederatedSignonCertsAsync').mockResolvedValue({
       certs: { 'test-key': publicKey.export({ type: 'spki', format: 'pem' }).toString() },
-    } as Awaited<ReturnType<OAuth2Client['getFederatedSignonCertsAsync']>>);
+      format: 'PEM',
+    } as unknown as Awaited<ReturnType<OAuth2Client['getFederatedSignonCertsAsync']>>);
     verifier = new GoogleIdTokenVerifier(CLIENT_IDS, client);
   });
 

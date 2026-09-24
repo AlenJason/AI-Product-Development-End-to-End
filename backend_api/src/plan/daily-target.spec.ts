@@ -54,7 +54,20 @@ const PROFILES = {
 
 // Số liệu tính độc lập bằng script Python trong docs/superpowers/plans/phase-2-backend-tests/specs/F01-daily-target-matrix.md
 // [hồ sơ, mức vận động, mục tiêu, bị nâng lên BMR, bmi, bmr, tdee, target_calories, protein_g, carbs_g, fat_g]
-const MATRIX = [
+type MatrixRow = [
+  keyof typeof PROFILES,
+  ActivityLevel,
+  Goal,
+  boolean,
+  number,
+  number,
+  number,
+  number,
+  number,
+  number,
+  number,
+];
+const MATRIX: MatrixRow[] = [
   ['FEMALE', ActivityLevel.SEDENTARY, Goal.CUT, true, 22, 1399, 1679, 1399, 87, 157, 47],
   ['FEMALE', ActivityLevel.SEDENTARY, Goal.MAINTAIN, false, 22, 1399, 1679, 1679, 105, 189, 56],
   ['FEMALE', ActivityLevel.SEDENTARY, Goal.BULK, false, 22, 1399, 1679, 1929, 121, 217, 64],
@@ -73,7 +86,7 @@ const MATRIX = [
   ['MALE', ActivityLevel.ACTIVE, Goal.CUT, false, 22.9, 1649, 2556, 2256, 141, 254, 75],
   ['MALE', ActivityLevel.ACTIVE, Goal.MAINTAIN, false, 22.9, 1649, 2556, 2556, 160, 288, 85],
   ['MALE', ActivityLevel.ACTIVE, Goal.BULK, false, 22.9, 1649, 2556, 2806, 175, 316, 94],
-] as const;
+];
 
 describe('computeDailyTarget — nam/nữ × mức vận động × mục tiêu', () => {
   it.each(MATRIX)(
