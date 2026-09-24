@@ -2,7 +2,7 @@
 
 Prompt dùng thật nằm ở `buildPlanPrompt()` trong `backend_api/src/plan/gemini.service.ts`; `generate-plan-experiment.ts` chép y nguyên để thử. Sửa prompt ở đây → thử bằng `npm run experiment` → chép sang backend.
 
-Trong backend, khoảng calo, danh sách mã hợp lệ và các nhãn lấy thẳng từ code (enum, `CALORIE_BOUNDS`), nên đổi hợp đồng ở code là prompt tự đổi theo. Văn bản người dùng nhập đã được bỏ `<` `>` và xuống dòng trước khi chèn vào khối `<du_lieu_nguoi_dung>` (BRD NFR-8).
+Trong backend, khoảng calo, danh sách mã hợp lệ và các nhãn lấy thẳng từ code (enum, `mealCalorieBounds()` / `dayCalorieBounds()` — tính theo tỉ lệ mục tiêu ngày từ BRD v2.5.0), nên đổi hợp đồng ở code là prompt tự đổi theo. Ví dụ dưới ứng với mục tiêu 1624 kcal, BMR 1399. Prompt của đổi món, đổi bài tập, cân đối món ăn sau feedback nằm ở `backend_api/src/plan/adjust/adjust-prompts.ts`. Văn bản người dùng nhập đã được bỏ `<` `>` và xuống dòng trước khi chèn vào khối `<du_lieu_nguoi_dung>` (BRD NFR-8).
 
 ```
 Bạn là chuyên gia dinh dưỡng và huấn luyện thể lực cho người Việt.
@@ -19,10 +19,11 @@ Tình trạng sức khoẻ / bệnh nền: {{health_conditions | không có}}
 Quy tắc bắt buộc:
 - Chỉ dùng món ăn gia đình Việt Nam bình dân, dễ mua, dễ nấu; không lặp lại tên món trong cả 3 ngày.
 - Không dùng nguyên liệu người dùng dị ứng; không chọn động tác gây tải lên vùng chấn thương; chọn món phù hợp tình trạng sức khoẻ đã khai.
-- Calo từng bữa: breakfast 250–600, lunch 400–800, dinner 400–800. calories phải lệch không quá 15% so với 4×protein_g + 4×carbs_g + 9×fat_g.
-- Buổi tập không cần dụng cụ, 15–25 phút.
+- Tổng calo mỗi ngày: {{max(0,85 × target_calories, bmr)}}–{{1,1 × target_calories}} kcal.
+- Calo từng bữa: breakfast {{15–35%}}, lunch {{25–45%}}, dinner {{25–45%}} của target_calories. calories phải lệch không quá 15% so với 4×protein_g + 4×carbs_g + 9×fat_g.
 - ingredients[].category chỉ được là: protein (thịt, cá, trứng, đậu phụ, sữa), produce (rau, củ, quả), pantry (gạo, bún, mì, gia vị, dầu ăn).
 - ingredients[].unit chỉ được là: g, ml, piece, tbsp, tsp.
+- Buổi tập không cần dụng cụ, 15–25 phút.
 - exercises[].muscle_group chỉ được là: legs, chest, back, core, shoulders, arms, full_body, cardio.
 - exercises[].tags chọn trong: jumping, kneeling, wrist_load, back_load, overhead (để mảng rỗng nếu không có).
 

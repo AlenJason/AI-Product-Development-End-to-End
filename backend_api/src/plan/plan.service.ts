@@ -6,13 +6,22 @@ import type { DailyTargetDto, MealPlanResponseDto } from './dto/meal-plan-respon
 import type { PlanContentDto } from './dto/plan-content.dto.js';
 import { computeDailyTarget } from './daily-target.js';
 import { PlanSource } from './enums/plan-source.enum.js';
-import { GeminiService, GeminiTimeoutError } from './gemini.service.js';
+import { GeminiService } from './gemini.service.js';
+import { generateWithRetry } from './gemini-retry.js';
+import { scaleMealsToTotal } from './meal-scaling.js';
 import { assemblePlan } from './plan-assembly.js';
-import { parsePlanContent } from './plan-validation.js';
-import { WARNINGS } from './plan-warnings.js';
+import { parsePlanContent, parsePlanStructure } from './plan-validation.js';
+import { hasRestrictions, profileWarnings, WARNINGS } from './plan-warnings.js';
+import { filterPlanByRestrictions, findRestrictionViolations } from './restriction-filter.js';
+import { matchRestrictions, type RestrictionMatch } from './restriction-matcher.js';
 
 const SAMPLE_PLAN_PATH = fileURLToPath(new URL('./data/sample-plan.json', import.meta.url));
-const MAX_GEMINI_ATTEMPTS = 2;
+const SAMPLE_CONTENT = loadSampleContent();
+
+export interface GeneratePlanOptions {
+  // Tóm tắt feedback ngày cuối của plan trước (FR-5.3), dựng từ mã cố định — không chứa chữ người dùng nhập.
+  feedbackNote?: string;
+}
 
 @Injectable()
 export class PlanService {
@@ -20,55 +29,68 @@ export class PlanService {
 
   constructor(private readonly gemini: GeminiService) {}
 
-  async generatePlan(profile: CreatePlanDto): Promise<MealPlanResponseDto> {
+  async generatePlan(profile: CreatePlanDto, options: GeneratePlanOptions = {}): Promise<MealPlanResponseDto> {
     const { target, flooredToBmr } = computeDailyTarget(profile);
-    const warnings: string[] = [];
-    if (flooredToBmr) warnings.push(WARNINGS.bmrFloor(target.bmr));
-    if (profile.restrictions.health_conditions) warnings.push(WARNINGS.healthConditions);
+    const warnings = profileWarnings(profile, flooredToBmr, target.bmr);
+    const match = matchRestrictions(profile.restrictions);
 
-    const content = await this.generateWithGemini(profile, target);
+    const content = await this.generateWithGemini(profile, target, match, options.feedbackNote);
     if (content) {
       return assemblePlan(content, target, PlanSource.GEMINI, warnings);
     }
 
-    if (hasRestrictions(profile)) warnings.push(WARNINGS.sampleNotFiltered);
-    return assemblePlan(loadSampleContent(), target, PlanSource.SAMPLE, warnings);
+    const sample = buildSampleContent(target, match);
+    if (hasRestrictions(profile)) warnings.push(WARNINGS.sampleKeywordFiltered);
+    if (match.hasUnrecognized || sample.incomplete) warnings.push(WARNINGS.restrictionsIncomplete);
+    return assemblePlan(sample.plan, target, PlanSource.SAMPLE, warnings);
   }
 
   // Log chỉ ghi thông báo lỗi và vi phạm hợp đồng, không ghi request hay nội dung Gemini (NFR-7).
   private async generateWithGemini(
     profile: CreatePlanDto,
     target: DailyTargetDto,
+    match: RestrictionMatch,
+    feedbackNote: string | undefined,
   ): Promise<PlanContentDto | null> {
     if (!this.gemini.isConfigured) {
       this.logger.warn('GEMINI_API_KEY chưa cấu hình — dùng thực đơn mẫu (BRD NFR-2).');
       return null;
     }
-
-    for (let attempt = 1; attempt <= MAX_GEMINI_ATTEMPTS; attempt++) {
-      try {
-        const { plan, errors } = parsePlanContent(await this.gemini.generatePlanContent(profile, target));
-        if (plan) return plan;
-        this.logger.warn(`Kết quả Gemini không đạt hợp đồng (lần ${attempt}): ${errors.slice(0, 5).join('; ')}`);
-      } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
-        this.logger.error(`Lỗi khi gọi Gemini (lần ${attempt}): ${message}`);
-        if (error instanceof GeminiTimeoutError) break;
-      }
-    }
-
-    this.logger.warn('Dùng thực đơn mẫu sau khi Gemini không trả được kết quả hợp lệ.');
-    return null;
+    const content = await generateWithRetry(
+      this.logger,
+      'tạo kế hoạch',
+      () => this.gemini.generatePlanContent(profile, target, feedbackNote),
+      (raw) => {
+        const { plan, errors } = parsePlanContent(raw, target);
+        if (!plan) return { value: null, errors };
+        const violations = findRestrictionViolations(plan.days, match);
+        return violations.length > 0 ? { value: null, errors: violations } : { value: plan, errors: [] };
+      },
+    );
+    if (!content) this.logger.warn('Dùng thực đơn mẫu sau khi Gemini không trả được kết quả hợp lệ.');
+    return content;
   }
 }
 
-function hasRestrictions(profile: CreatePlanDto): boolean {
-  const { allergies, injuries, health_conditions } = profile.restrictions;
-  return Boolean(allergies || injuries || health_conditions);
+// Thực đơn mẫu: lọc theo hạn chế đã nhận ra → nhân khẩu phần từng ngày cho khớp mục tiêu → kiểm đầy đủ.
+// Soạn cho khoảng 1550 kcal/ngày; không nhân lên thì người có mục tiêu cao ăn dưới BMR (BRD NFR-4, v2.5.0).
+export function buildSampleContent(
+  target: DailyTargetDto,
+  match: RestrictionMatch,
+): { plan: PlanContentDto; incomplete: boolean } {
+  const filtered = filterPlanByRestrictions(SAMPLE_CONTENT, match);
+  const scaled = {
+    days: filtered.plan.days.map((day) => ({ ...day, meals: scaleMealsToTotal(day.meals, target.target_calories) })),
+  };
+  const { plan, errors } = parsePlanContent(scaled, target);
+  if (!plan) {
+    throw new Error(`Thực đơn mẫu sau khi lọc và nhân khẩu phần không đạt hợp đồng: ${errors.join('; ')}`);
+  }
+  return { plan, incomplete: filtered.incomplete };
 }
 
 function loadSampleContent(): PlanContentDto {
-  const { plan, errors } = parsePlanContent(JSON.parse(readFileSync(SAMPLE_PLAN_PATH, 'utf-8')));
+  const { plan, errors } = parsePlanStructure(JSON.parse(readFileSync(SAMPLE_PLAN_PATH, 'utf-8')));
   if (!plan) {
     throw new Error(`sample-plan.json không đạt hợp đồng: ${errors.join('; ')}`);
   }

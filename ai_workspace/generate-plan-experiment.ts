@@ -3,15 +3,27 @@
 import 'dotenv/config';
 import { GoogleGenAI } from '@google/genai';
 
-const CALORIE_BOUNDS: Record<string, { min: number; max: number }> = {
-  breakfast: { min: 250, max: 600 },
-  lunch: { min: 400, max: 800 },
-  dinner: { min: 400, max: 800 },
+// Chép từ backend_api/src/plan/plan-validation.ts (BRD NFR-4, v2.5.0): calo tính theo tỉ lệ mục tiêu ngày.
+const MEAL_CALORIE_SHARE: Record<string, { min: number; max: number }> = {
+  breakfast: { min: 0.15, max: 0.35 },
+  lunch: { min: 0.25, max: 0.45 },
+  dinner: { min: 0.25, max: 0.45 },
 };
+const DAY_CALORIE_SHARE = { min: 0.85, max: 1.1 };
 const MACRO_TOLERANCE = 0.15;
 const BACKEND_TIMEOUT_MS = 15_000;
 
-const TARGET = { target_calories: 1624, protein_g: 102, carbs_g: 183, fat_g: 54 };
+const TARGET = { target_calories: 1624, bmr: 1399, protein_g: 102, carbs_g: 183, fat_g: 54 };
+const MEAL_BOUNDS = Object.fromEntries(
+  Object.entries(MEAL_CALORIE_SHARE).map(([mealType, share]) => [
+    mealType,
+    { min: Math.round(share.min * TARGET.target_calories), max: Math.round(share.max * TARGET.target_calories) },
+  ]),
+);
+const DAY_BOUNDS = {
+  min: Math.max(Math.round(DAY_CALORIE_SHARE.min * TARGET.target_calories), TARGET.bmr),
+  max: Math.round(DAY_CALORIE_SHARE.max * TARGET.target_calories),
+};
 const USER_TEXT = { allergies: 'Hải sản', injuries: 'Đau gối', health_conditions: '' };
 
 const PLAN_JSON_SHAPE =
@@ -33,10 +45,11 @@ function buildPrompt(): string {
     'Quy tắc bắt buộc:',
     '- Chỉ dùng món ăn gia đình Việt Nam bình dân, dễ mua, dễ nấu; không lặp lại tên món trong cả 3 ngày.',
     '- Không dùng nguyên liệu người dùng dị ứng; không chọn động tác gây tải lên vùng chấn thương; chọn món phù hợp tình trạng sức khoẻ đã khai.',
-    '- Calo từng bữa: breakfast 250–600, lunch 400–800, dinner 400–800. calories phải lệch không quá 15% so với 4×protein_g + 4×carbs_g + 9×fat_g.',
-    '- Buổi tập không cần dụng cụ, 15–25 phút.',
+    `- Tổng calo mỗi ngày: ${DAY_BOUNDS.min}–${DAY_BOUNDS.max} kcal.`,
+    `- Calo từng bữa: ${Object.entries(MEAL_BOUNDS).map(([mealType, { min, max }]) => `${mealType} ${min}–${max}`).join(', ')}. calories phải lệch không quá 15% so với 4×protein_g + 4×carbs_g + 9×fat_g.`,
     '- ingredients[].category chỉ được là: protein (thịt, cá, trứng, đậu phụ, sữa), produce (rau, củ, quả), pantry (gạo, bún, mì, gia vị, dầu ăn).',
     '- ingredients[].unit chỉ được là: g, ml, piece, tbsp, tsp.',
+    '- Buổi tập không cần dụng cụ, 15–25 phút.',
     '- exercises[].muscle_group chỉ được là: legs, chest, back, core, shoulders, arms, full_body, cardio.',
     '- exercises[].tags chọn trong: jumping, kneeling, wrist_load, back_load, overhead (để mảng rỗng nếu không có).',
     '',
@@ -52,9 +65,13 @@ function checkPlan(plan: any): string[] {
   }
   const seenNames = new Set<string>();
   (plan?.days ?? []).forEach((day: any, index: number) => {
+    const dayCalories = (day.meals ?? []).reduce((sum: number, meal: any) => sum + meal.calories, 0);
+    if (dayCalories < DAY_BOUNDS.min || dayCalories > DAY_BOUNDS.max) {
+      problems.push(`Ngày ${index + 1}: tổng ${dayCalories} kcal ngoài khoảng ${DAY_BOUNDS.min}–${DAY_BOUNDS.max}`);
+    }
     for (const meal of day.meals ?? []) {
       const label = `Ngày ${index + 1} ${meal.meal_type}`;
-      const bounds = CALORIE_BOUNDS[meal.meal_type];
+      const bounds = MEAL_BOUNDS[meal.meal_type];
       if (!bounds) {
         problems.push(`${label}: meal_type không hợp lệ`);
         continue;

@@ -80,6 +80,30 @@ describe('HistoryService', () => {
     await expect(service.findOne(binh.id, plan.plan_id)).rejects.toBeInstanceOf(NotFoundException);
   });
 
+  it("updates a saved plan in place, but never another user's", async () => {
+    const plan = fakePlan(1624);
+    await service.save(an.id, plan);
+    const edited = { ...plan, warnings: ['đã đổi món'] } as MealPlanResponseDto;
+
+    expect(await service.update(binh.id, edited)).toBe(true);
+    await expect(service.findOne(an.id, plan.plan_id)).resolves.toEqual(plan);
+
+    expect(await service.update(an.id, edited)).toBe(true);
+    await expect(service.findOne(an.id, plan.plan_id)).resolves.toEqual(edited);
+    expect(await plans.count()).toBe(1);
+  });
+
+  it('ignores an update for a plan that was never saved', async () => {
+    expect(await service.update(an.id, fakePlan())).toBe(true);
+    expect(await plans.count()).toBe(0);
+  });
+
+  it('returns false instead of throwing when the update fails', async () => {
+    vi.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
+    await dataSource.query('DROP TABLE plan_records');
+    expect(await service.update(an.id, fakePlan())).toBe(false);
+  });
+
   it('answers an unknown id with 404', async () => {
     await expect(service.findOne(an.id, randomUUID())).rejects.toBeInstanceOf(NotFoundException);
   });

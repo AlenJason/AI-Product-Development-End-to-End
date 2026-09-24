@@ -10,7 +10,8 @@ const SECRET = 'BENH-NEN-BI-MAT-123';
 const BASE = { age: 22, gender: 'female', height_cm: 168, weight_kg: 62, activity_level: 'light', goal: 'cut' };
 const body = (overrides: object = {}) => ({
   ...BASE,
-  restrictions: { allergies: 'Hải sản', injuries: '', health_conditions: SECRET },
+  // Thực đơn mẫu (dùng làm "đầu ra Gemini") không có đậu phộng, nên vẫn qua bước kiểm dị ứng.
+  restrictions: { allergies: 'Đậu phộng', injuries: '', health_conditions: SECRET },
   ...overrides,
 });
 
@@ -59,6 +60,14 @@ describe('POST /api/v1/generate-plan (e2e, SDK thật + server Gemini giả)', (
     expect(res.body.source).toBe('sample');
     expect(fake.requests).toHaveLength(2);
     expect(res.body.warnings.some((warning: string) => warning.startsWith('Đang dùng thực đơn mẫu'))).toBe(true);
+  });
+
+  it('rejects Gemini output that contains a recognised allergen, then serves the filtered sample', async () => {
+    fake.reply({ kind: 'json', body: SAMPLE_CONTENT }); // thực đơn mẫu có "Nước mắm"
+    const res = await post(body({ restrictions: { allergies: 'Hải sản' } })).expect(200);
+    expect(fake.requests).toHaveLength(2);
+    expect(res.body.source).toBe('sample');
+    expect(JSON.stringify(res.body.days)).not.toMatch(/mắm|tôm/i);
   });
 
   it('serves the sample after one timed-out call, without retrying', async () => {

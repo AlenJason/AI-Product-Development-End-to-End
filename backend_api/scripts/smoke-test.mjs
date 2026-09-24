@@ -77,7 +77,19 @@ try {
   const detail = await call('GET', `/api/v1/plans/history/${plan.body.plan_id}`, { token });
   expect(detail.status === 200 && detail.body.plan_id === plan.body.plan_id, `Xem lại plan lỗi: ${detail.status}`);
 
-  console.log('Smoke test đạt: /health, đăng nhập giả lập, generate-plan, lịch sử.');
+  // Giai đoạn 4: ba endpoint này đọc swap-meals.json, swap-exercises.json, restriction-keywords.json từ dist/.
+  const adjust = { profile, plan: plan.body };
+  const meal = await call('POST', '/api/v1/meals/swap', { token, body: { ...adjust, meal_id: 'm1_2' } });
+  expect(meal.status === 200 && meal.body.plan.plan_id === plan.body.plan_id, `Đổi món lỗi: ${meal.status}`);
+  const exercise = await call('POST', '/api/v1/exercises/swap', { token, body: { ...adjust, exercise_id: 'e1_2' } });
+  expect(exercise.status === 200, `Đổi bài tập lỗi: ${exercise.status}`);
+  const feedback = await call('POST', '/api/v1/feedback', {
+    token,
+    body: { ...adjust, day_number: 1, intensity: 'hard', body_states: ['danger_sign'], eating: 'on_plan' },
+  });
+  expect(feedback.status === 200 && feedback.body.safety_warning, `Feedback lỗi: ${feedback.status}`);
+
+  console.log('Smoke test đạt: /health, đăng nhập giả lập, generate-plan, lịch sử, đổi món, đổi bài tập, feedback.');
 } catch (error) {
   console.error(`Smoke test thất bại: ${error.message}\n--- log server ---\n${output}`);
   process.exitCode = 1;

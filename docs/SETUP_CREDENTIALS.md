@@ -46,7 +46,9 @@ Sau đó **khởi động lại backend** (Ctrl+C rồi chạy lại `npm run st
    Trường này chỉ cho biết backend **đã thấy** key, chưa chắc key hợp lệ.
 2. Gọi thử `POST /api/v1/generate-plan` trên Swagger (`http://localhost:3000/docs`) và xem trường `source` trong kết quả:
    - `"source": "gemini"` → Gemini thật đã trả kết quả hợp lệ.
-   - `"source": "sample"` → backend đã dùng thực đơn mẫu. Xem terminal đang chạy backend để biết lý do: dòng `Lỗi khi gọi Gemini (lần 1): …` (khoá sai, hết hạn mức, model sai, hết giờ) hoặc `Kết quả Gemini không đạt hợp đồng (lần 1): …` (Gemini trả sai định dạng hay số liệu; backend tự gọi lại một lần). App vẫn chạy bình thường vì backend tự dùng dữ liệu mẫu.
+   - `"source": "sample"` → backend đã dùng thực đơn mẫu. Xem terminal đang chạy backend để biết lý do: dòng `Lỗi khi gọi Gemini (lần 1, tạo kế hoạch): …` (khoá sai, hết hạn mức, model sai, hết giờ) hoặc `Kết quả Gemini không đạt hợp đồng (lần 1, tạo kế hoạch): …` (Gemini trả sai định dạng hay số liệu; backend tự gọi lại một lần). App vẫn chạy bình thường vì backend tự dùng dữ liệu mẫu.
+
+   Đổi món, đổi bài tập và cân đối món ăn sau feedback ghi log cùng dạng, với tên thao tác tương ứng (`đổi món`, `đổi bài tập`, `cân đối món ăn`). Khi Gemini không dùng được, đổi món và đổi bài tập lấy từ kho soạn sẵn; cân đối món ăn thì giữ nguyên món và app nhận một câu cảnh báo.
 
 ### 1.4. Thử key nhanh bằng `ai_workspace/`
 

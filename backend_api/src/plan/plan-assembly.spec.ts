@@ -45,7 +45,7 @@ function content() {
       day(2, [rice(100), { name: 'Dầu ăn', amount: 1, unit: 'tbsp', category: 'pantry' }]),
       day(3, [rice(100), { name: 'dầu ăn ', amount: 1, unit: 'tsp', category: 'pantry' }]),
     ],
-  });
+  }, target);
   if (!plan) throw new Error(`fixture không hợp lệ: ${errors.join('; ')}`);
   return plan;
 }

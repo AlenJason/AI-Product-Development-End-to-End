@@ -1,6 +1,6 @@
 # Kế hoạch triển khai SmartFit AI
 
-Plan này chia [BRD.md](../BRD.md) (v2.4.0) thành các bước làm được theo thứ tự. BRD vẫn là nguồn yêu cầu; plan chỉ trả lời "làm gì trước, làm gì sau, xong khi nào".
+Plan này chia [BRD.md](../BRD.md) (v2.5.0) thành các bước làm được theo thứ tự. BRD vẫn là nguồn yêu cầu; plan chỉ trả lời "làm gì trước, làm gì sau, xong khi nào".
 
 **Thứ tự tổng thể:** hoàn thiện backend trước (kiểm thử toàn bộ qua Swagger), sau đó mới làm frontend bám theo hợp đồng API đã chốt.
 
@@ -29,8 +29,8 @@ Cả hai dịch vụ bên ngoài đều có chế độ giả lập, nên toàn 
 
 ## Hiện trạng (đã xong)
 
-- [x] BRD v2.4.0 (MVP, tính năng nâng cao, tài khoản & lịch sử, hợp đồng API đầy đủ)
-- [x] Backend: `GET /health`, `POST /api/v1/generate-plan` (tính BMR/TDEE, gọi Gemini, kiểm tra khoảng calo, fallback), đăng nhập Google (giả lập mặc định), lịch sử kế hoạch (SQLite), validate DTO, Swagger UI
+- [x] BRD v2.5.0 (MVP, tính năng nâng cao, tài khoản & lịch sử, hợp đồng API đầy đủ)
+- [x] Backend: `GET /health`, `POST /api/v1/generate-plan` (tính BMR/TDEE, gọi Gemini, kiểm tra khoảng calo, fallback), đổi món, đổi bài tập, feedback, đăng nhập Google (giả lập mặc định), lịch sử kế hoạch (SQLite), validate DTO, Swagger UI
 - [x] `ai_workspace/`: script thử prompt Gemini
 - [x] Frontend: giao diện Onboarding, Loading, Dashboard, Grocery, bảng Feedback — dùng dữ liệu mẫu, **chưa nối API**
 - [x] Wiki nội bộ `docs/knowledge/`, `CLAUDE.md`
@@ -117,14 +117,18 @@ Chi tiết: brainstorm `docs/superpowers/brainstorms/phase-2-backend-tests.md`, 
 
 Chi tiết: brainstorm `docs/superpowers/brainstorms/phase-3-auth-history.md` (quyết định Q1–Q4 ở mục 8), plan `docs/superpowers/plans/phase-3-auth-history/`.
 
-## Giai đoạn 4 — Backend: Đổi món, đổi bài tập, feedback (FR-4, FR-5) · M
+## Giai đoạn 4 — Backend: Đổi món, đổi bài tập, feedback (FR-4, FR-5) · L
 
-- [ ] **4.1** Bộ khớp từ khoá cho chế độ giả lập (`data/restriction-keywords.json`): nhận diện từ khoá dị ứng/chấn thương phổ biến trong văn bản tự do, trả về danh sách phần **không nhận ra** để app cảnh báo (D4)
-- [ ] **4.2** `POST /api/v1/meals/swap`: Gemini sinh món thay thế lệch không quá ±10% calo, tránh các hạn chế người dùng nhập, không trùng món đã có trong plan. Backend tự cập nhật `grocery_list` theo `source_meal_ids` (để logic nằm ở nơi test được). Fallback: kho món Việt soạn sẵn `data/swap-meals.json` lọc bằng bộ khớp từ khoá, nhờ đó chế độ giả lập vẫn đổi món được
-- [ ] **4.3** `POST /api/v1/exercises/swap`: động tác nhẹ hơn, cùng nhóm cơ, tránh động tác gây hại cho chấn thương đã khai báo. Fallback: `data/swap-exercises.json`
-- [ ] **4.4** `POST /api/v1/feedback` theo D2: bài tập điều chỉnh bằng quy tắc cố định (không cần Gemini, nên chế độ giả lập vẫn thấy tác dụng); món ăn nhờ Gemini, không có key thì giữ nguyên món. Chọn dấu hiệu nguy hiểm → trả cờ `safety_warning` và ngày kế tiếp chỉ nghỉ hoặc đi bộ nhẹ. **Không bao giờ hạ calo mục tiêu xuống dưới BMR**
-- [ ] **4.5** Test cả 4 phần trên, chạy được khi không có key; riêng dấu hiệu nguy hiểm phải có test riêng
-- [ ] **4.6** *(Tuỳ chọn)* Dùng `responseSchema` của Gemini để ép JSON đúng cấu trúc ngay từ API
+- [x] **4.1** Bộ khớp từ khoá cho chế độ giả lập (`data/restriction-keywords.json`, `restriction-matcher.ts`): nhận ra dị ứng/chấn thương phổ biến, gõ có dấu hay không dấu; phần không nhận ra → cảnh báo chung, không nhắc lại chữ người dùng (D4). Lọc luôn thực đơn mẫu của `generate-plan` và kiểm lại mọi kết quả Gemini
+- [x] **4.2** `POST /api/v1/meals/swap`: Gemini sinh món thay thế lệch không quá ±10% calo, tránh các hạn chế người dùng nhập, không trùng món đã có trong plan; backend tính lại toàn bộ `grocery_list` (#7). Fallback: kho món Việt `data/swap-meals.json` lọc bằng bộ khớp từ khoá, nhân khẩu phần về đúng calo món cũ; hết món phù hợp → 422
+- [x] **4.3** `POST /api/v1/exercises/swap` *(quyết định Q2: Gemini trước)*: động tác nhẹ hơn, cùng nhóm cơ, tránh chấn thương — kết quả Gemini phải qua điều kiện đo được (số hiệp không tăng, không thêm kiểu tải). Fallback: `data/swap-exercises.json` có mức khó 1–3; đã nhẹ nhất → 422
+- [x] **4.4** `POST /api/v1/feedback` theo D2: bài tập điều chỉnh bằng quy tắc cố định; món ăn nhờ Gemini *(quyết định Q3)* — ăn nhiều → ngày kế tiếp ~90% mục tiêu, ăn ít → giữ mục tiêu, không có key thì giữ nguyên món kèm cảnh báo. Dấu hiệu nguy hiểm → `safety_warning` và ngày kế tiếp chỉ nghỉ hoặc đi bộ nhẹ. **Không bao giờ hạ calo mục tiêu xuống dưới BMR.** Ngày 3 → plan mới
+- [x] **4.5** Test cả 4 phần trên, chạy được khi không có key; dấu hiệu nguy hiểm có test riêng. E2E qua HTTP thật, một đường qua SDK Gemini thật + server giả; smoke test gọi 3 endpoint trên bản build
+- [ ] **4.6** *(Tuỳ chọn, để sau)* Dùng `responseSchema` của Gemini để ép JSON đúng cấu trúc ngay từ API — cần khoá thật để đo nó giảm lỗi bao nhiêu (thử bằng `ai_workspace/`); bước kiểm hợp đồng vẫn phải giữ
+- [x] **4.7** *(bổ sung, quyết định Q1)* Khoảng calo theo tỉ lệ mục tiêu, kiểm tổng calo ngày (≥ BMR), nhân khẩu phần thực đơn mẫu cho khớp mục tiêu — sửa lỗi thực đơn thấp hơn BMR của nhiều người (BRD NFR-4, v2.5.0)
+- [x] **4.8** *(bổ sung, quyết định Q4)* Đã đăng nhập: đổi món, đổi bài, feedback cập nhật plan đã lưu; plan từ feedback ngày 3 lưu mới
+
+Chi tiết: brainstorm `docs/superpowers/brainstorms/phase-4-swap-feedback.md` (quyết định Q1–Q4 ở mục 8), plan `docs/superpowers/plans/phase-4-swap-feedback/`.
 
 → **Mốc: backend hoàn chỉnh.** Mọi endpoint kiểm thử được trên Swagger ở chế độ giả lập.
 
@@ -149,9 +153,9 @@ Chi tiết: brainstorm `docs/superpowers/brainstorms/phase-3-auth-history.md` (q
 
 ## Giai đoạn 7 — Frontend: tính năng nâng cao (FR-4, FR-5) · M
 
-- [ ] **7.1** Nút "Đổi món" gọi API (hiện đang xoay vòng trong danh sách món viết cứng); cập nhật plan và checklist
+- [ ] **7.1** Nút "Đổi món" gọi API (hiện đang xoay vòng trong danh sách món viết cứng); thay cả plan và checklist bằng plan server trả về. 409 → báo hồ sơ đã đổi, gợi ý tạo plan mới; 422 → báo không còn món thay thế phù hợp
 - [ ] **7.2** Nút "Đổi bài" gọi API
-- [ ] **7.3** Làm lại bảng feedback theo D2 (3 câu hỏi, câu tình trạng cơ thể chọn nhiều); gọi API, cập nhật ngày kế tiếp; nhận `safety_warning` → hiện khuyến cáo ngừng tập, hỏi ý kiến bác sĩ
+- [ ] **7.3** Làm lại bảng feedback theo D2 (3 câu hỏi, câu tình trạng cơ thể chọn nhiều); gọi API, cập nhật ngày kế tiếp; nhận `safety_warning` → hiện khuyến cáo ngừng tập, hỏi ý kiến bác sĩ. **Khoá nút sau khi đã gửi feedback cho một ngày** — backend không lưu trạng thái, gửi lại sẽ điều chỉnh thêm lần nữa
 
 ## Giai đoạn 8 — Frontend: Tài khoản & Lịch sử (FR-6, FR-7) · M
 

@@ -35,8 +35,18 @@ describe('buildPlanPrompt', () => {
 
   it('takes calorie bounds, target and allowed codes from code', () => {
     const prompt = buildPlanPrompt(profile({}), target);
-    expect(prompt).toContain('breakfast 250–600, lunch 400–800, dinner 400–800');
+    expect(prompt).toContain('breakfast 244–568, lunch 406–731, dinner 406–731');
+    expect(prompt).toContain('Tổng calo mỗi ngày: 1399–1786 kcal');
     expect(prompt).toContain('1624 kcal');
     expect(prompt).toContain('unit chỉ được là: g, ml, piece, tbsp, tsp');
+  });
+});
+
+describe('buildPlanPrompt — follow-up plan (FR-5.3)', () => {
+  it('adds the feedback note only when there is one', () => {
+    expect(buildPlanPrompt(profile({}), target)).not.toContain('Phản hồi của người dùng');
+    expect(buildPlanPrompt(profile({}), target, 'buổi tập rất mệt')).toContain(
+      'Phản hồi của người dùng về ngày cuối kế hoạch trước: buổi tập rất mệt',
+    );
   });
 });

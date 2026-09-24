@@ -12,7 +12,7 @@ import { MealType } from './enums/meal-type.enum.js';
 import type { PlanSource } from './enums/plan-source.enum.js';
 import { normalizeKey } from './text.util.js';
 
-const MEAL_ORDER = [MealType.BREAKFAST, MealType.LUNCH, MealType.DINNER];
+export const MEAL_ORDER = [MealType.BREAKFAST, MealType.LUNCH, MealType.DINNER];
 const CATEGORY_ORDER = [IngredientCategory.PROTEIN, IngredientCategory.PRODUCE, IngredientCategory.PANTRY];
 
 interface GroceryEntry {
@@ -27,6 +27,8 @@ export function assemblePlan(
   dailyTarget: DailyTargetDto,
   source: PlanSource,
   warnings: string[],
+  // Đổi món/đổi bài/feedback ngày 1–2 giữ nguyên plan_id; tạo plan mới thì sinh UUID mới.
+  planId: string = randomUUID(),
 ): MealPlanResponseDto {
   const days: DayPlanDto[] = content.days.map((day, dayIndex) => {
     const dayNumber = dayIndex + 1;
@@ -52,7 +54,7 @@ export function assemblePlan(
   });
 
   return {
-    plan_id: randomUUID(),
+    plan_id: planId,
     source,
     warnings,
     daily_target: dailyTarget,

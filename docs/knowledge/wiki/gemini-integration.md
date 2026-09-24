@@ -5,7 +5,7 @@ tags: [gemini, sdk, kiem-thu]
 
 # Tích hợp Gemini
 
-Backend gọi Gemini qua SDK `@google/genai` ở đúng một chỗ: `GeminiService` (`backend_api/src/plan/gemini.service.ts`). Bài này ghi hành vi thật của SDK — đã kiểm ngày 2026-09-24 bằng SDK 2.24 chạy với server Gemini giả cục bộ, không cần khoá — và cách test phần này mà không bao giờ gọi Google. Ràng buộc liên quan: [[critical-constraints]] #8, #9, #12, #15, #17. Hợp đồng dữ liệu: [[plan-data-contract]].
+Backend gọi Gemini qua SDK `@google/genai` ở đúng một chỗ: `GeminiService` (`backend_api/src/plan/gemini.service.ts`). `generateJson(prompt)` dùng chung cho tạo plan, đổi món, đổi bài tập, cân đối món ăn; vòng gọi lại chung là `generateWithRetry()` (`gemini-retry.ts`). Bài này ghi hành vi thật của SDK — đã kiểm ngày 2026-09-24 bằng SDK 2.24 chạy với server Gemini giả cục bộ, không cần khoá — và cách test phần này mà không bao giờ gọi Google. Ràng buộc liên quan: [[critical-constraints]] #8, #9, #12, #15, #17. Hợp đồng dữ liệu: [[plan-data-contract]].
 
 ## Hành vi SDK đã kiểm chứng
 
@@ -27,10 +27,10 @@ Backend gọi Gemini qua SDK `@google/genai` ở đúng một chỗ: `GeminiServ
 `backend_api/test/fake-gemini-server.ts` dựng server HTTP cục bộ trả phản hồi đúng định dạng Gemini, đếm và lưu request, có chế độ trả JSON / văn bản / lỗi HTTP / không trả lời. SDK thật được trỏ vào đó qua `GEMINI_BASE_URL`:
 
 - `src/plan/gemini.service.spec.ts` — hành vi bảng trên, gồm cả đếm request khi lỗi 500.
-- `test/generate-plan.e2e-spec.ts` — trọn đường HTTP → `PlanService` → `GeminiService` → SDK → server giả. Ghim biến môi trường **trước** khi nạp `AppModule` vì máy dev có thể có khoá thật trong `.env`.
+- `test/generate-plan.e2e-spec.ts`, `test/adjust.e2e-spec.ts` — trọn đường HTTP → service → `GeminiService` → SDK → server giả. App tạo bằng `createTestApp()` (`test/test-app.ts`), hàm này ghim `GEMINI_*` (cùng DB và chế độ đăng nhập) **trước** khi nạp `AppModule`, vì máy dev có thể có khoá thật trong `.env`.
 
-Tầng `PlanService` (`src/plan/plan.service.spec.ts`) dùng object `GeminiService` giả bằng `vi.fn()` để test logic gọi lại cho nhanh.
+Tầng `PlanService` (`src/plan/plan.service.spec.ts`) dùng object `GeminiService` giả bằng `vi.fn()` để test logic gọi lại cho nhanh. Các service của giai đoạn 4 dùng `geminiAnswering()` trong `test/plan-fixtures.ts` (giả `generateJson()`).
 
 ## Thử prompt với Gemini thật
 
-`ai_workspace/` (`npm run experiment`) chép y nguyên prompt của `buildPlanPrompt()` và in thời gian phản hồi. Khi sửa prompt ở backend, sửa cả bản trong `ai_workspace/generate-plan-experiment.ts`.
+`ai_workspace/` (`npm run experiment`) chép y nguyên prompt của `buildPlanPrompt()` và in thời gian phản hồi. Khi sửa prompt ở backend, sửa cả bản trong `ai_workspace/generate-plan-experiment.ts`. Prompt của đổi món, đổi bài tập, cân đối món ăn (`src/plan/adjust/adjust-prompts.ts`) chưa có bản trong `ai_workspace/`.

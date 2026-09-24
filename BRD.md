@@ -3,7 +3,7 @@
 **Tên sản phẩm:** Trợ lý AI Gợi ý & Điều chỉnh Thực đơn, Lịch tập Thông minh  
 **Môn học:** AI Product Development End-to-End (Đồ án Kỹ sư / Cử nhân Năm 4)  
 **Đơn vị thực hiện:** Trường Đại học Công nghệ Thông tin và Truyền thông Việt - Hàn (VKU)  
-**Phiên bản:** 2.4.0 (Dành cho Sinh viên thực hành: Flutter & NestJS)  
+**Phiên bản:** 2.5.0 (Dành cho Sinh viên thực hành: Flutter & NestJS)  
 **Ngày cập nhật:** 24/09/2026  
 **Trạng thái:** Đã phê duyệt (Approved)  
 
@@ -120,8 +120,8 @@ sequenceDiagram
 * **FR-1.1:** Giao diện Form nhập: Tuổi, giới tính, chiều cao (cm), cân nặng (kg).
 * **FR-1.2:** Chọn mức độ vận động hằng ngày (Activity Level) — bắt buộc để tính TDEE đúng công thức: *Ít vận động (Sedentary, dân văn phòng)*, *Vận động nhẹ (1–3 buổi tập/tuần)*, *Vận động nhiều (4–5 buổi tập/tuần)*.
 * **FR-1.3:** Chọn mục tiêu: *Giảm mỡ (Cut)* — thâm hụt 300 kcal/ngày, *Tăng cơ (Bulk)* — dư 250 kcal/ngày, hoặc *Duy trì vóc dáng (Maintain)*.
-* **FR-1.4:** Ba ô nhập tự do, tối đa 300 ký tự mỗi ô: *Dị ứng / thực phẩm cần tránh*, *Chấn thương / vùng cơ thể cần tránh*, *Tình trạng sức khoẻ / bệnh nền* (ví dụ tiểu đường, cao huyết áp, gout). Có chip gợi ý bấm nhanh (hải sản, trứng, sữa, đậu phộng, đau gối, đau lưng…); bấm vào chỉ điền sẵn chữ vào ô. Màn hình ghi rõ: gợi ý chỉ mang tính tham khảo, không thay thế tư vấn y tế.
-* **FR-1.5 (Logic Deterministic):** Backend tự tính BMI, BMR (công thức Mifflin-St Jeor), TDEE = BMR × hệ số hoạt động (FR-1.2), và calo mục tiêu = TDEE + mức điều chỉnh theo mục tiêu (FR-1.3), **nhưng không bao giờ thấp hơn BMR**. Khi phải nâng lên bằng BMR, response có câu giải thích để app hiển thị.
+* **FR-1.4:** Ba ô nhập tự do, tối đa 300 ký tự mỗi ô: *Dị ứng / thực phẩm cần tránh*, *Chấn thương / vùng cơ thể cần tránh*, *Tình trạng sức khoẻ / bệnh nền* (ví dụ tiểu đường, cao huyết áp, gout). Có chip gợi ý bấm nhanh (hải sản, trứng, sữa, đậu phộng, đau gối, đau lưng…); bấm vào chỉ điền sẵn chữ vào ô. Màn hình ghi rõ: gợi ý chỉ mang tính tham khảo, không thay thế tư vấn y tế. Ở chế độ giả lập (chưa có khoá Gemini), backend nhận ra các dị ứng, chấn thương phổ biến bằng từ khoá (gõ có dấu hay không dấu đều được) để lọc thực đơn mẫu; có phần không nhận ra thì app nhận một câu cảnh báo chung, không nhắc lại chữ người dùng đã nhập. *(bổ sung bản 2.5.0)*
+* **FR-1.5 (Logic Deterministic):** Backend tự tính BMI, BMR (công thức Mifflin-St Jeor), TDEE = BMR × hệ số hoạt động (FR-1.2), và calo mục tiêu = TDEE + mức điều chỉnh theo mục tiêu (FR-1.3), **nhưng không bao giờ thấp hơn BMR**. Khi phải nâng lên bằng BMR, response có câu giải thích để app hiển thị. **Tổng calo thực đơn mỗi ngày** cũng phải nằm trong khoảng từ 85% mục tiêu (và không thấp hơn BMR) tới 110% mục tiêu; thực đơn mẫu được nhân khẩu phần cho khớp mục tiêu của từng người. *(bổ sung bản 2.5.0)*
 * **FR-1.6:** Tab "Cá nhân" cho xem và sửa hồ sơ (chỉ số cơ thể, mục tiêu, ba ô ở FR-1.4) bất cứ lúc nào. Hồ sơ chỉ lưu trên máy (`shared_preferences`) và gửi kèm từng request, **không lưu ở server**. Sửa xong, app gợi ý tạo lại plan.
 
 #### FR-2: Khởi tạo kế hoạch 3 ngày (Rolling 3-Day Plan)
@@ -138,8 +138,8 @@ sequenceDiagram
 ### Giai đoạn 2: Tính năng Nâng cao (Điểm cộng & Đánh giá cao khi bảo vệ)
 
 #### FR-4: Đổi món & Đổi bài tập (Interactive Swap)
-* **FR-4.1:** Nhấn nút "Đổi món" tại một bữa ăn $\rightarrow$ Backend gọi AI sinh 1 món khác cùng bữa, calo lệch không quá $\pm 10\%$, tránh các hạn chế người dùng đã nhập, không trùng tên món khác trong plan. **Đồng bộ checklist:** backend tính lại toàn bộ danh sách đi chợ từ thực đơn mới, nên checklist luôn khớp thực đơn.
-* **FR-4.2:** Nhấn nút "Đổi bài tập" $\rightarrow$ gợi ý động tác khác nhẹ hơn, **cùng nhóm cơ**, tránh động tác gây hại cho chấn thương đã khai (ví dụ bỏ bật nhảy, chống quỳ khi đau gối).
+* **FR-4.1:** Nhấn nút "Đổi món" tại một bữa ăn $\rightarrow$ Backend gọi AI sinh 1 món khác cùng bữa, calo lệch không quá $\pm 10\%$, tránh các hạn chế người dùng đã nhập, không trùng tên món khác trong plan. **Đồng bộ checklist:** backend tính lại toàn bộ danh sách đi chợ từ thực đơn mới, nên checklist luôn khớp thực đơn. Không có khoá Gemini, hoặc AI trả kết quả không đạt → lấy món từ kho món Việt soạn sẵn, lọc theo từ khoá dị ứng, nhân khẩu phần về đúng calo món cũ. Không còn món phù hợp → báo lỗi, app giữ plan cũ. *(bổ sung bản 2.5.0)*
+* **FR-4.2:** Nhấn nút "Đổi bài tập" $\rightarrow$ gợi ý động tác khác nhẹ hơn, **cùng nhóm cơ**, tránh động tác gây hại cho chấn thương đã khai (ví dụ bỏ bật nhảy, chống quỳ khi đau gối). Có khoá Gemini: AI đề xuất, backend kiểm các điều kiện đo được — cùng nhóm cơ, số hiệp không tăng, không thêm kiểu tải mới (bật nhảy, chống quỳ, chống tay…), không vướng chấn thương đã khai. Không đạt hoặc không có khoá → kho động tác soạn sẵn có mức khó 1–3, lấy động tác mức thấp hơn. Động tác đã ở mức nhẹ nhất → báo lỗi. *(bổ sung bản 2.5.0)*
 
 #### FR-5: Đánh giá thích ứng cuối ngày (Adaptive Feedback)
 * **FR-5.1:** Form đánh giá nhanh cuối ngày (1 phút), gồm 3 câu hỏi:
@@ -151,8 +151,8 @@ sequenceDiagram
 | Ăn uống (chọn 1) | Đúng thực đơn / Ăn nhiều hơn / Ăn ít hơn hoặc bỏ bữa |
 
 * **FR-5.2:** Điều chỉnh ngày kế tiếp:
-  * Bài tập theo quy tắc cố định (không cần AI): Nhẹ nhàng → tăng tối đa 1 hiệp; Rất mệt hoặc uể oải → giảm khối lượng, rút ngắn buổi tập; Căng mỏi cơ → giảm hiệp cho nhóm cơ đã tập, thêm giãn cơ; Đau khớp → bỏ động tác bật nhảy, chống quỳ.
-  * Món ăn cân đối lại theo câu trả lời về ăn uống (cần AI), không bao giờ hạ calo mục tiêu xuống dưới BMR.
+  * Bài tập theo quy tắc cố định (không cần AI): Nhẹ nhàng và cơ thể bình thường → mỗi động tác tăng 1 hiệp (tối đa 6); Rất mệt hoặc uể oải → mỗi động tác giảm 1 hiệp, buổi tập ngắn đi 25%; Căng mỏi cơ → giảm hiệp cho nhóm cơ vừa tập, thêm giãn cơ; Đau khớp → thay động tác bật nhảy, chống quỳ bằng động tác cùng nhóm cơ không có kiểu tải đó.
+  * Món ăn cân đối lại theo câu trả lời về ăn uống (cần AI): ăn nhiều hơn → ngày kế tiếp nhẹ hơn (khoảng 90% mục tiêu); ăn ít hơn hoặc bỏ bữa → giữ mục tiêu, không ăn bù. Không bao giờ hạ calo xuống dưới BMR. Chế độ giả lập giữ nguyên món và báo cho người dùng biết. *(chi tiết hoá ở bản 2.5.0)*
   * **⚠️ Dấu hiệu nguy hiểm** (chóng mặt, khó thở bất thường, đau ngực): không tự điều chỉnh như trên. App hiện khuyến cáo ngừng tập và hỏi ý kiến bác sĩ; ngày kế tiếp chỉ nghỉ hoặc đi bộ nhẹ.
 * **FR-5.3:** Feedback của ngày 3 (ngày cuối plan) tạo luôn plan 3 ngày mới có tính tới feedback đó (cuốn chiếu).
 
@@ -169,7 +169,7 @@ sequenceDiagram
 * **FR-6.4** *(bổ sung bản 2.4.0)*: Người dùng tự xoá được tài khoản của mình: backend xoá tài khoản cùng toàn bộ lịch sử kế hoạch (`DELETE /api/v1/me`). Đây là quyền yêu cầu xoá dữ liệu cá nhân theo Nghị định 13/2023/NĐ-CP.
 
 #### FR-7: Lịch sử kế hoạch (Plan History)
-* **FR-7.1:** Mỗi lần `/api/v1/generate-plan` thành công **và** request có kèm JWT hợp lệ, Backend lưu lại plan đó vào bảng lịch sử, gắn với `user_id`.
+* **FR-7.1:** Mỗi lần `/api/v1/generate-plan` thành công **và** request có kèm JWT hợp lệ, Backend lưu lại plan đó vào bảng lịch sử, gắn với `user_id`. Khi đã đăng nhập, đổi món, đổi bài tập và feedback cũng cập nhật plan đã lưu; plan mới tạo từ feedback ngày 3 được lưu thành một mục mới. *(bổ sung bản 2.5.0)*
 * **FR-7.2:** Màn hình "Lịch sử" trong Flutter (thay cho placeholder "Thống kê" hiện tại) hiển thị danh sách các plan đã tạo trước đó (ngày tạo, calo mục tiêu), bấm vào xem lại chi tiết từng plan.
 * **FR-7.3:** Đăng nhập cùng tài khoản Google trên thiết bị khác vẫn thấy đầy đủ lịch sử — vì dữ liệu gắn với `user_id` trong DB, không gắn với thiết bị.
 * **Lưu ý:** Nếu gọi `/api/v1/generate-plan` mà không đăng nhập (không có JWT), API vẫn hoạt động bình thường như bản 2.1.0 (không lưu lịch sử) — đăng nhập là tuỳ chọn, không bắt buộc để dùng tính năng cốt lõi.
@@ -394,6 +394,14 @@ Giá trị cho feedback:
 * `day_number` 1–2 → điều chỉnh ngày kế tiếp trong plan; `day_number` 3 → trả plan 3 ngày mới với `plan_id` mới (FR-5.3).
 * Có `danger_sign` → `safety_warning` = `{ "message": "…" }`; ngày kế tiếp (hoặc ngày 1 của plan mới) chỉ nghỉ hoặc đi bộ nhẹ. Không có → `safety_warning` = `null`.
 
+**Chi tiết (bổ sung bản 2.5.0):**
+
+* Đăng nhập tuỳ chọn như `generate-plan`: không gửi header `Authorization` → chạy như khách; token hợp lệ → cập nhật plan đã lưu (feedback ngày 3: lưu mới); token sai → 401.
+* `plan_id` giữ nguyên, trừ feedback ngày 3.
+* Lỗi: **400** — request sai, hoặc plan không còn đúng như server đã trả (ID sai vị trí, calo vô lý, trùng món); **409** — plan được tạo cho hồ sơ khác (mục tiêu calo đã đổi), cần tạo plan mới; **422** — không còn món hoặc động tác thay thế phù hợp.
+* `body_states` tối đa 5 giá trị; trùng thì bỏ trùng.
+* Endpoint không lưu trạng thái, nên gửi feedback hai lần cho cùng một ngày sẽ điều chỉnh hai lần — app khoá nút sau khi gửi.
+
 ---
 
 ## 7. YÊU CẦU PHI CHỨC NĂNG THỰC TẾ (STUDENT-FRIENDLY NFRS)
@@ -408,9 +416,10 @@ Giá trị cho feedback:
    * Backend chạy trực tiếp trên máy cá nhân bằng lệnh `npm run start:dev` (Node.js 18+ LTS), Nest CLI dùng để scaffold module/controller/service (`nest generate ...`).
    * Flutter chạy mượt mà trên Chrome (Flutter Web) hoặc máy ảo Android / điện thoại thật qua cáp USB.
 4. **Độ tin cậy dữ liệu dinh dưỡng (Nutrition Data Sanity Check):**
-   * Gemini có thể "bịa" calo/macro không nhất quán. Mọi kết quả Gemini (và cả thực đơn mẫu) phải qua cùng một bộ kiểm tra trước khi trả cho Flutter:
+   * Gemini có thể "bịa" calo/macro không nhất quán. Mọi kết quả Gemini (thực đơn, món thay thế, ngày cân đối lại), thực đơn mẫu và plan client gửi lại phải qua cùng một bộ kiểm tra trước khi trả cho Flutter:
      * đúng cấu trúc mục 6.2, kiểm bằng `class-validator` — giá trị ngoài danh sách mã cố định bị coi là sai, không được bỏ qua;
-     * calo từng bữa trong khoảng hợp lý: Bữa sáng 250–600 kcal, Bữa trưa/tối 400–800 kcal;
+     * calo từng bữa theo tỉ lệ mục tiêu ngày: bữa sáng 15–35%, bữa trưa/tối 25–45%; tổng calo mỗi ngày từ 85% mục tiêu (không thấp hơn BMR) tới 110% mục tiêu *(bản 2.5.0 — khoảng cố định cũ sáng 250–600, trưa/tối 400–800 kcal chặn tổng ngày ở 2200 kcal, thấp hơn mục tiêu của nhiều người)*;
+     * không chứa nguyên liệu người dùng dị ứng mà backend nhận ra được bằng từ khoá *(bản 2.5.0)*;
      * calo khai báo lệch không quá 15% so với 4 × protein + 4 × carbs + 9 × fat;
      * không trùng tên món trong 3 ngày.
    * Không đạt thì gọi lại Gemini (tối đa 1 lần), sau đó dùng thực đơn mẫu, thay vì hiển thị số liệu sai cho người dùng.

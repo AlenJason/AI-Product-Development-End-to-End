@@ -32,6 +32,22 @@ export class HistoryService {
     }
   }
 
+  // Đổi món/đổi bài/feedback ngày 1–2 cập nhật plan đã lưu (BRD FR-7, v2.5.0). plan_id của người khác,
+  // hoặc plan tạo lúc chưa đăng nhập → không có dòng nào khớp, bỏ qua. Chỉ trả false khi DB lỗi.
+  async update(userId: string, plan: MealPlanResponseDto): Promise<boolean> {
+    try {
+      await this.plans.update(
+        { id: plan.plan_id, user_id: userId },
+        { plan_json: plan, target_calories: plan.daily_target.target_calories },
+      );
+      return true;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.logger.error(`Không cập nhật được kế hoạch trong lịch sử: ${message}`);
+      return false;
+    }
+  }
+
   async list(userId: string): Promise<PlanHistoryResponseDto> {
     const records = await this.plans.find({
       select: { id: true, created_at: true, target_calories: true },

@@ -16,7 +16,7 @@
 
 ```
 frontend_app/    Ứng dụng Flutter (đang phát triển UI, dùng dữ liệu mẫu)
-backend_api/     API NestJS — /health, generate-plan (Gemini hoặc thực đơn mẫu), đăng nhập Google, lịch sử kế hoạch (SQLite)
+backend_api/     API NestJS — generate-plan (Gemini hoặc thực đơn mẫu), đổi món, đổi bài tập, feedback, đăng nhập Google, lịch sử (SQLite)
 ai_workspace/    Script Node/TS thử nghiệm prompt & schema Gemini, độc lập với backend
 docs/            Kế hoạch triển khai, hướng dẫn gắn khoá, wiki nội bộ
 BRD.md           Tài liệu đặc tả yêu cầu (nguồn spec chính thức)
@@ -61,6 +61,12 @@ Kết quả build và test tự động của từng commit: tab [Actions](https
 ## Nhật ký thay đổi (Changelog)
 
 Đối chiếu theo phiên bản BRD (mục "Phiên bản" trong [BRD.md](BRD.md)), để giảng viên/trợ giảng theo dõi tiến độ trực tiếp trên repo mà không cần đọc từng commit.
+
+### BRD v2.5.0 — 2026-09-24
+- Giai đoạn 4 — đổi món, đổi bài tập, feedback cuối ngày: `POST /api/v1/meals/swap`, `/exercises/swap`, `/feedback` (BRD mục 6.4), chạy được cả khi chưa có khoá nhờ kho 21 món Việt và 39 động tác có mức độ khó. Có khoá thì Gemini đề xuất trước, backend kiểm lại: calo ±10%, cùng nhóm cơ, không nặng hơn, tránh dị ứng và chấn thương
+- Feedback: quy tắc cố định cho buổi tập ngày kế tiếp; dấu hiệu nguy hiểm (chóng mặt, khó thở, đau ngực) → ngày nghỉ kèm khuyến cáo ngừng tập, hỏi ý kiến bác sĩ, gọi 115; feedback ngày 3 tạo plan mới. Đã đăng nhập thì các thao tác này cập nhật lịch sử
+- Sửa lỗi dinh dưỡng: trước đây tổng calo thực đơn mỗi ngày không được kiểm, còn thực đơn mẫu cố định khoảng 1550 kcal/ngày — thấp hơn mức chuyển hoá cơ bản (BMR) của mọi hồ sơ nam trong bộ test. Nay khoảng calo tính theo mục tiêu của từng người và thực đơn mẫu được nhân khẩu phần cho khớp (BRD NFR-4)
+- Chế độ giả lập nhận ra dị ứng, chấn thương phổ biến (gõ có dấu hay không dấu) để lọc thực đơn mẫu; kết quả Gemini có nguyên liệu người dùng dị ứng bị loại. Kiểm thử: thêm 114 unit test và 22 e2e; smoke test gọi thêm 3 endpoint mới trên bản build
 
 ### BRD v2.4.0 — 2026-09-24
 - Giai đoạn 3 — tài khoản & lịch sử: đăng nhập Google (`POST /api/v1/auth/google`), JWT hết hạn sau 7 ngày, lịch sử 50 kế hoạch mới nhất xem lại được trên mọi thiết bị (`GET /api/v1/plans/history`, `/:id`), dữ liệu lưu bằng SQLite + TypeORM với migration. Mặc định chạy chế độ đăng nhập giả lập (`mock:<email>`), không cần tài khoản Google Cloud; cách gắn Client ID thật ở [docs/SETUP_CREDENTIALS.md](docs/SETUP_CREDENTIALS.md) mục 2

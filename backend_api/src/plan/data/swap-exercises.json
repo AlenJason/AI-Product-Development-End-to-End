@@ -1,0 +1,358 @@
+[
+  {
+    "name": "Cầu mông (Glute bridge)",
+    "muscle_group": "legs",
+    "level": 1,
+    "sets": 3,
+    "reps_or_duration": "15 lần",
+    "tags": []
+  },
+  {
+    "name": "Nhón gót (Calf raise)",
+    "muscle_group": "legs",
+    "level": 1,
+    "sets": 3,
+    "reps_or_duration": "15-20 lần",
+    "tags": []
+  },
+  {
+    "name": "Squat tay không",
+    "muscle_group": "legs",
+    "level": 2,
+    "sets": 3,
+    "reps_or_duration": "12-15 lần",
+    "tags": []
+  },
+  {
+    "name": "Lunge lùi",
+    "muscle_group": "legs",
+    "level": 2,
+    "sets": 3,
+    "reps_or_duration": "10 lần mỗi chân",
+    "tags": []
+  },
+  {
+    "name": "Ngồi dựa tường (Wall sit)",
+    "muscle_group": "legs",
+    "level": 2,
+    "sets": 3,
+    "reps_or_duration": "30 giây",
+    "tags": []
+  },
+  {
+    "name": "Squat nhảy",
+    "muscle_group": "legs",
+    "level": 3,
+    "sets": 3,
+    "reps_or_duration": "10 lần",
+    "tags": [
+      "jumping"
+    ]
+  },
+  {
+    "name": "Bulgarian split squat (chân sau gác ghế)",
+    "muscle_group": "legs",
+    "level": 3,
+    "sets": 3,
+    "reps_or_duration": "8 lần mỗi chân",
+    "tags": []
+  },
+  {
+    "name": "Chống đẩy tường",
+    "muscle_group": "chest",
+    "level": 1,
+    "sets": 3,
+    "reps_or_duration": "12-15 lần",
+    "tags": []
+  },
+  {
+    "name": "Chống đẩy nghiêng trên ghế",
+    "muscle_group": "chest",
+    "level": 2,
+    "sets": 3,
+    "reps_or_duration": "10-12 lần",
+    "tags": [
+      "wrist_load"
+    ]
+  },
+  {
+    "name": "Chống đẩy khuỵu gối",
+    "muscle_group": "chest",
+    "level": 2,
+    "sets": 3,
+    "reps_or_duration": "10-12 lần",
+    "tags": [
+      "kneeling",
+      "wrist_load"
+    ]
+  },
+  {
+    "name": "Chống đẩy tiêu chuẩn",
+    "muscle_group": "chest",
+    "level": 3,
+    "sets": 3,
+    "reps_or_duration": "8-12 lần",
+    "tags": [
+      "wrist_load"
+    ]
+  },
+  {
+    "name": "Nằm sấp nâng tay chữ Y-T",
+    "muscle_group": "back",
+    "level": 1,
+    "sets": 3,
+    "reps_or_duration": "10 lần",
+    "tags": []
+  },
+  {
+    "name": "Nằm sấp vẽ thiên thần (Reverse snow angel)",
+    "muscle_group": "back",
+    "level": 1,
+    "sets": 3,
+    "reps_or_duration": "10 lần",
+    "tags": []
+  },
+  {
+    "name": "Superman",
+    "muscle_group": "back",
+    "level": 2,
+    "sets": 3,
+    "reps_or_duration": "12 lần",
+    "tags": [
+      "back_load"
+    ]
+  },
+  {
+    "name": "Superman giữ tư thế",
+    "muscle_group": "back",
+    "level": 3,
+    "sets": 3,
+    "reps_or_duration": "30 giây",
+    "tags": [
+      "back_load"
+    ]
+  },
+  {
+    "name": "Dead bug",
+    "muscle_group": "core",
+    "level": 1,
+    "sets": 3,
+    "reps_or_duration": "10 lần mỗi bên",
+    "tags": []
+  },
+  {
+    "name": "Gập bụng chạm gót",
+    "muscle_group": "core",
+    "level": 1,
+    "sets": 3,
+    "reps_or_duration": "20 lần",
+    "tags": []
+  },
+  {
+    "name": "Bird-dog",
+    "muscle_group": "core",
+    "level": 1,
+    "sets": 3,
+    "reps_or_duration": "10 lần mỗi bên",
+    "tags": [
+      "kneeling",
+      "wrist_load"
+    ]
+  },
+  {
+    "name": "Plank cẳng tay",
+    "muscle_group": "core",
+    "level": 2,
+    "sets": 3,
+    "reps_or_duration": "30 giây",
+    "tags": []
+  },
+  {
+    "name": "Plank nghiêng",
+    "muscle_group": "core",
+    "level": 2,
+    "sets": 3,
+    "reps_or_duration": "20 giây mỗi bên",
+    "tags": []
+  },
+  {
+    "name": "Leo núi (Mountain climber)",
+    "muscle_group": "core",
+    "level": 3,
+    "sets": 3,
+    "reps_or_duration": "30 giây",
+    "tags": [
+      "wrist_load"
+    ]
+  },
+  {
+    "name": "Xoay tay tròn (Arm circles)",
+    "muscle_group": "shoulders",
+    "level": 1,
+    "sets": 2,
+    "reps_or_duration": "30 giây mỗi chiều",
+    "tags": []
+  },
+  {
+    "name": "Trượt tay trên tường (Wall slide)",
+    "muscle_group": "shoulders",
+    "level": 1,
+    "sets": 3,
+    "reps_or_duration": "10 lần",
+    "tags": [
+      "overhead"
+    ]
+  },
+  {
+    "name": "Giữ tay ngang vai",
+    "muscle_group": "shoulders",
+    "level": 2,
+    "sets": 3,
+    "reps_or_duration": "30 giây",
+    "tags": []
+  },
+  {
+    "name": "Pike push-up",
+    "muscle_group": "shoulders",
+    "level": 3,
+    "sets": 3,
+    "reps_or_duration": "8 lần",
+    "tags": [
+      "overhead",
+      "wrist_load"
+    ]
+  },
+  {
+    "name": "Co tay với chai nước",
+    "muscle_group": "arms",
+    "level": 1,
+    "sets": 3,
+    "reps_or_duration": "15 lần",
+    "tags": []
+  },
+  {
+    "name": "Duỗi tay sau đầu với chai nước",
+    "muscle_group": "arms",
+    "level": 2,
+    "sets": 3,
+    "reps_or_duration": "12 lần",
+    "tags": [
+      "overhead"
+    ]
+  },
+  {
+    "name": "Dip ghế (Bench dip)",
+    "muscle_group": "arms",
+    "level": 2,
+    "sets": 3,
+    "reps_or_duration": "10 lần",
+    "tags": [
+      "wrist_load"
+    ]
+  },
+  {
+    "name": "Chống đẩy kim cương",
+    "muscle_group": "arms",
+    "level": 3,
+    "sets": 3,
+    "reps_or_duration": "8 lần",
+    "tags": [
+      "wrist_load"
+    ]
+  },
+  {
+    "name": "Xoay khớp vai và tay (khởi động)",
+    "muscle_group": "full_body",
+    "level": 1,
+    "sets": 1,
+    "reps_or_duration": "2 phút",
+    "tags": []
+  },
+  {
+    "name": "Inchworm (đi bộ bằng tay)",
+    "muscle_group": "full_body",
+    "level": 2,
+    "sets": 3,
+    "reps_or_duration": "6 lần",
+    "tags": [
+      "wrist_load"
+    ]
+  },
+  {
+    "name": "Squat kết hợp giơ tay",
+    "muscle_group": "full_body",
+    "level": 2,
+    "sets": 3,
+    "reps_or_duration": "12 lần",
+    "tags": [
+      "overhead"
+    ]
+  },
+  {
+    "name": "Burpee",
+    "muscle_group": "full_body",
+    "level": 3,
+    "sets": 3,
+    "reps_or_duration": "8 lần",
+    "tags": [
+      "jumping",
+      "wrist_load"
+    ]
+  },
+  {
+    "name": "Đi bộ tại chỗ",
+    "muscle_group": "cardio",
+    "level": 1,
+    "sets": 2,
+    "reps_or_duration": "1 phút",
+    "tags": []
+  },
+  {
+    "name": "Đi bộ tại chỗ nâng cao gối (khởi động)",
+    "muscle_group": "cardio",
+    "level": 1,
+    "sets": 2,
+    "reps_or_duration": "45 giây",
+    "tags": []
+  },
+  {
+    "name": "Bước sang ngang giơ tay (Step jack)",
+    "muscle_group": "cardio",
+    "level": 1,
+    "sets": 2,
+    "reps_or_duration": "30 giây",
+    "tags": [
+      "overhead"
+    ]
+  },
+  {
+    "name": "Jumping Jacks (khởi động)",
+    "muscle_group": "cardio",
+    "level": 2,
+    "sets": 2,
+    "reps_or_duration": "30 giây",
+    "tags": [
+      "jumping"
+    ]
+  },
+  {
+    "name": "Chạy tại chỗ nâng cao gối",
+    "muscle_group": "cardio",
+    "level": 2,
+    "sets": 2,
+    "reps_or_duration": "30 giây",
+    "tags": [
+      "jumping"
+    ]
+  },
+  {
+    "name": "Nhảy dây không dây",
+    "muscle_group": "cardio",
+    "level": 3,
+    "sets": 2,
+    "reps_or_duration": "45 giây",
+    "tags": [
+      "jumping"
+    ]
+  }
+]

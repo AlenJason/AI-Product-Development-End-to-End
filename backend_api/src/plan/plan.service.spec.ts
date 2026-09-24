@@ -56,7 +56,7 @@ describe('PlanService.generatePlan without a Gemini key', () => {
     const plan = await new PlanService(geminiOff).generatePlan(
       profile({}, { allergies: 'Hải sản', health_conditions: 'Tiểu đường' }),
     );
-    expect(plan.warnings).toContain(WARNINGS.sampleNotFiltered);
+    expect(plan.warnings).toContain(WARNINGS.sampleKeywordFiltered);
     expect(plan.warnings).toContain(WARNINGS.healthConditions);
   });
 
@@ -74,10 +74,10 @@ describe('PlanService.generatePlan with Gemini configured', () => {
 
   it('uses Gemini output that follows the contract', async () => {
     const { gemini, generatePlanContent } = geminiAnswering(SAMPLE_CONTENT);
-    const plan = await new PlanService(gemini).generatePlan(profile({}, { allergies: 'Hải sản' }));
+    const plan = await new PlanService(gemini).generatePlan(profile({}, { allergies: 'Đậu phộng' }));
     expect(plan.source).toBe('gemini');
     expect(generatePlanContent).toHaveBeenCalledTimes(1);
-    expect(plan.warnings).not.toContain(WARNINGS.sampleNotFiltered);
+    expect(plan.warnings).not.toContain(WARNINGS.sampleKeywordFiltered);
   });
 
   it('retries once when the first answer breaks the contract', async () => {
@@ -92,7 +92,7 @@ describe('PlanService.generatePlan with Gemini configured', () => {
     const plan = await new PlanService(gemini).generatePlan(profile({}, { allergies: 'Hải sản' }));
     expect(plan.source).toBe('sample');
     expect(generatePlanContent).toHaveBeenCalledTimes(2);
-    expect(plan.warnings).toContain(WARNINGS.sampleNotFiltered);
+    expect(plan.warnings).toContain(WARNINGS.sampleKeywordFiltered);
   });
 
   it('does not retry after a timeout', async () => {
@@ -120,5 +120,57 @@ describe('PlanService.generatePlan with Gemini configured', () => {
     const logged = [...warn.mock.calls, ...error.mock.calls].flat().map(String).join('\n');
     expect(warn).toHaveBeenCalled();
     expect(logged).not.toContain(SECRET);
+  });
+});
+
+describe('PlanService — calorie totals and restrictions (v2.5.0)', () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  const mealNames = (plan: { days: { meals: { name: string; ingredients: { name: string }[] }[] }[] }) =>
+    plan.days.flatMap((day) => day.meals.flatMap((meal) => [meal.name, ...meal.ingredients.map((i) => i.name)])).join('|');
+
+  it('scales the sample to a high target instead of serving ~1550 kcal', async () => {
+    const plan = await new PlanService(geminiOff).generatePlan(
+      profile({ age: 30, gender: Gender.MALE, height_cm: 175, weight_kg: 70, activity_level: ActivityLevel.ACTIVE, goal: Goal.BULK }),
+    );
+    expect(plan.daily_target).toMatchObject({ bmr: 1649, target_calories: 2806 });
+    for (const day of plan.days) {
+      const total = day.meals.reduce((sum, meal) => sum + meal.calories, 0);
+      expect(total).toBeGreaterThanOrEqual(2803);
+      expect(total).toBeLessThanOrEqual(2809);
+    }
+  });
+
+  it('removes recognised allergens and injury-unsafe exercises from the sample', async () => {
+    const plan = await new PlanService(geminiOff).generatePlan(profile({}, { allergies: 'hai san', injuries: 'Đau đầu gối' }));
+    expect(mealNames(plan)).not.toMatch(/tôm|cá |cá$|mắm|cua/i);
+    const tags = plan.days.flatMap((day) => day.workout.exercises.flatMap((exercise) => exercise.tags));
+    expect(tags).not.toContain('jumping');
+    expect(tags).not.toContain('kneeling');
+    expect(plan.warnings).toContain(WARNINGS.sampleKeywordFiltered);
+    expect(plan.warnings).not.toContain(WARNINGS.restrictionsIncomplete);
+  });
+
+  it('warns without echoing the text when part of the restrictions is not recognised', async () => {
+    const plan = await new PlanService(geminiOff).generatePlan(profile({}, { allergies: `Hải sản, ${SECRET}` }));
+    expect(plan.warnings).toContain(WARNINGS.restrictionsIncomplete);
+    expect(JSON.stringify(plan)).not.toContain(SECRET);
+  });
+
+  it('rejects Gemini output containing a recognised allergen, without logging which one (#12)', async () => {
+    const warn = vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined);
+    const { gemini, generatePlanContent } = geminiAnswering(SAMPLE_CONTENT, SAMPLE_CONTENT);
+    const plan = await new PlanService(gemini).generatePlan(profile({}, { allergies: 'Hải sản' }));
+    expect(generatePlanContent).toHaveBeenCalledTimes(2);
+    expect(plan.source).toBe('sample');
+    const logged = warn.mock.calls.flat().map(String).join('\n');
+    expect(logged).toContain('có nguyên liệu người dùng cần tránh');
+    expect(logged).not.toMatch(/mắm|hải sản/i);
+  });
+
+  it('passes the feedback note to Gemini for a follow-up plan (FR-5.3)', async () => {
+    const { gemini, generatePlanContent } = geminiAnswering(SAMPLE_CONTENT);
+    await new PlanService(gemini).generatePlan(profile(), { feedbackNote: 'buổi tập rất mệt' });
+    expect(generatePlanContent).toHaveBeenCalledWith(expect.anything(), expect.anything(), 'buổi tập rất mệt');
   });
 });

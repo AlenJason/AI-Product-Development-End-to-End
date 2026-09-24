@@ -12,6 +12,7 @@ _Cập nhật lần cuối: 2026-09-24_
 | [[plan-data-contract]]      | Hợp đồng dữ liệu plan: luồng generate-plan, hai lớp DTO, mã cố định, danh sách đi chợ |
 | [[gemini-integration]]      | Hành vi thật của SDK Gemini (hết giờ, lỗi, không tự gọi lại), cách test không cần khoá |
 | [[auth-and-history]]        | Đăng nhập Google/giả lập, JWT, guard, SQLite + migration, lịch sử kế hoạch; hành vi thư viện đã kiểm chứng |
+| [[swap-and-feedback]]       | Đổi món, đổi bài tập, feedback cuối ngày; bộ khớp từ khoá dị ứng/chấn thương; kho món và động tác soạn sẵn |
 | [[log]]                     | Nhật ký thay đổi wiki theo thời gian                                   |
 
 ## Tra cứu nhanh
