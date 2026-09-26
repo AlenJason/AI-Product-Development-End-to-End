@@ -1,47 +1,35 @@
 import 'dart:async';
+
 import 'package:flutter/material.dart';
 
-class LoadingScreen extends StatefulWidget {
-  final VoidCallback onDone;
+import '../services/api_exception.dart';
+import '../theme/app_colors.dart';
 
-  const LoadingScreen({super.key, required this.onDone});
+// Chờ backend tạo plan (NFR-1): chế độ giả lập trả ngay, có Gemini thường 8–15 s, tối đa khoảng 40 s. Câu chờ
+// không bịa số liệu. [error] khác null → báo lỗi và cho thử lại (NFR-2).
+class LoadingScreen extends StatefulWidget {
+  const LoadingScreen({super.key, this.error, required this.onRetry, required this.onEditProfile, this.onBack});
+
+  final ApiException? error;
+  final VoidCallback onRetry;
+  final VoidCallback onEditProfile;
+  // Có plan cũ thì cho quay về plan đó thay vì kẹt ở màn lỗi.
+  final VoidCallback? onBack;
 
   @override
   State<LoadingScreen> createState() => _LoadingScreenState();
 }
 
 class _LoadingScreenState extends State<LoadingScreen> {
-  int _step = 0;
-  Timer? _timer;
+  static const slowAfter = Duration(seconds: 15);
 
-  final List<String> _loadingSteps = [
-    'Tính toán chỉ số TDEE và thâm hụt calo...',
-    'Lựa chọn món ăn Việt phù hợp ngân sách...',
-    'Cân đối Macro: 140g Carbs, 65g Protein, 32g Fat...',
-    'Tự động bóc tách danh sách nguyên liệu đi chợ...',
-  ];
+  Timer? _timer;
+  bool _slow = false;
 
   @override
   void initState() {
     super.initState();
-    _startSteps();
-  }
-
-  void _startSteps() {
-    _timer = Timer.periodic(const Duration(milliseconds: 900), (timer) {
-      if (_step < _loadingSteps.length - 1) {
-        setState(() {
-          _step++;
-        });
-      } else {
-        timer.cancel();
-        Future.delayed(const Duration(milliseconds: 500), () {
-          if (mounted) {
-            widget.onDone();
-          }
-        });
-      }
-    });
+    _timer = Timer(slowAfter, () => setState(() => _slow = true));
   }
 
   @override
@@ -52,67 +40,74 @@ class _LoadingScreenState extends State<LoadingScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFFDFBF7),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 32),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                width: 70,
-                height: 70,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFECFDF5),
-                  shape: BoxShape.circle,
-                  border: Border.all(color: const Color(0xFFA7F3D0)),
-                ),
-                child: const Center(
-                  child: CircularProgressIndicator(
-                    strokeWidth: 3,
-                    valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF10B981)),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 24),
-              const Text(
-                'SmartFit AI đang tối ưu kế hoạch',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF0F172A),
-                ),
-              ),
-              const SizedBox(height: 8),
-              AnimatedSwitcher(
-                duration: const Duration(milliseconds: 300),
-                child: Text(
-                  _loadingSteps[_step],
-                  key: ValueKey<int>(_step),
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    color: Color(0xFF64748B),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 24),
-              TextButton(
-                onPressed: widget.onDone,
-                child: const Text(
-                  'Xem trước kế hoạch ngay',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Color(0xFF10B981),
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ],
+    final error = widget.error;
+    return PopScope(
+      canPop: false,
+      child: Scaffold(
+        backgroundColor: AppColors.page,
+        body: SafeArea(
+          child: Center(
+            child: Padding(padding: const EdgeInsets.all(24), child: error == null ? _waiting() : _failed(error)),
           ),
         ),
       ),
     );
   }
+
+  Widget _waiting() => Column(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      const SizedBox(width: 56, height: 56, child: CircularProgressIndicator(color: AppColors.primaryBright)),
+      const SizedBox(height: 24),
+      const Text(
+        'Đang lập kế hoạch 3 ngày cho bạn',
+        textAlign: TextAlign.center,
+        style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.ink),
+      ),
+      const SizedBox(height: 8),
+      Text(
+        _slow
+            ? 'AI đang chọn món và bài tập, có thể mất tới 40 giây. Vui lòng không tắt ứng dụng.'
+            : 'Tính mục tiêu calo, chọn món Việt và bài tập tại nhà phù hợp với bạn…',
+        textAlign: TextAlign.center,
+        style: const TextStyle(fontSize: 13, color: AppColors.muted),
+      ),
+    ],
+  );
+
+  Widget _failed(ApiException error) => Column(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      const Icon(Icons.cloud_off_rounded, size: 48, color: AppColors.warning),
+      const SizedBox(height: 16),
+      const Text(
+        'Chưa tạo được kế hoạch',
+        textAlign: TextAlign.center,
+        style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.ink),
+      ),
+      const SizedBox(height: 8),
+      Text(
+        error.message,
+        textAlign: TextAlign.center,
+        style: const TextStyle(fontSize: 13, color: AppColors.muted),
+      ),
+      const SizedBox(height: 24),
+      SizedBox(
+        width: double.infinity,
+        child: ElevatedButton(
+          onPressed: widget.onRetry,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.primaryBright,
+            foregroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(vertical: 14),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          ),
+          child: const Text('Thử lại', style: TextStyle(fontWeight: FontWeight.w700)),
+        ),
+      ),
+      const SizedBox(height: 8),
+      TextButton(onPressed: widget.onEditProfile, child: const Text('Sửa hồ sơ')),
+      if (widget.onBack != null) TextButton(onPressed: widget.onBack, child: const Text('Về kế hoạch đang có')),
+    ],
+  );
 }

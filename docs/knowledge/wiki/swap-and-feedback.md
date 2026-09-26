@@ -1,5 +1,5 @@
 ---
-last_updated: 2026-09-24
+last_updated: 2026-09-27
 tags: [doi-mon, doi-bai-tap, feedback, di-ung, kho-soan-san]
 ---
 
@@ -33,8 +33,9 @@ Ba endpoint của BRD mục 6.4 — `POST /api/v1/meals/swap`, `/exercises/swap`
   - `sets` ≤ cũ;
   - `tags` ⊆ tag cũ;
   - không vướng chấn thương;
-  - không trùng động tác trong buổi.
-- **Kho:** `data/swap-exercises.json` (39 động tác, `level` 1–3), lấy mức thấp hơn động tác cũ, gần mức cũ nhất. Động tác không có trong kho coi như khó nhất.
+  - không trùng động tác trong buổi;
+  - không vượt mức khó cho phép của hồ sơ (`maxExerciseLevel()`, v2.6.0).
+- **Kho:** `data/swap-exercises.json` (39 động tác, `level` 1–3), lấy mức thấp hơn động tác cũ và không quá mức của hồ sơ, gần mức cũ nhất. Động tác không có trong kho coi như khó nhất.
 - **Đã nhẹ nhất** → 422.
 
 ## Feedback (`FeedbackService`, `workout-rules.ts`)
@@ -42,7 +43,7 @@ Ba endpoint của BRD mục 6.4 — `POST /api/v1/meals/swap`, `/exercises/swap`
 | Điều kiện | Buổi tập ngày kế tiếp |
 |---|---|
 | `danger_sign` | Ngày nghỉ (`REST_WORKOUT`), bỏ qua mọi quy tắc khác kể cả ăn uống; `safety_warning` (#14) |
-| `joint_pain` | Thay động tác `jumping`/`kneeling` bằng động tác cùng nhóm cơ trong kho |
+| `joint_pain` | Thay động tác `jumping`/`kneeling` bằng động tác cùng nhóm cơ trong kho, mức không quá mức của hồ sơ |
 | `hard` hoặc `fatigued` | −1 hiệp mỗi động tác, thời lượng ×0,75 (≥ 10 phút) |
 | `sore` | −1 hiệp cho nhóm cơ vừa tập (không cộng dồn), thêm giãn cơ |
 | `easy`, chỉ `normal` | +1 hiệp (≤ 6) |

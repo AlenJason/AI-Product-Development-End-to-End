@@ -27,6 +27,12 @@ num readNum(Json json, String field) {
   throw FormatException('"$field" phải là số');
 }
 
+bool readBool(Json json, String field) {
+  final value = json[field];
+  if (value is bool) return value;
+  throw FormatException('"$field" phải là true/false');
+}
+
 int readInt(Json json, String field) {
   final value = json[field];
   if (value is int) return value;

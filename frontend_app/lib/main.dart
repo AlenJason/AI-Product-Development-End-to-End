@@ -1,34 +1,45 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
 import 'config/api_config.dart';
+import 'models/api/profile.dart';
 import 'providers/auth_provider.dart';
+import 'providers/grocery_provider.dart';
 import 'providers/plan_provider.dart';
-import 'screens/onboarding_screen.dart';
-import 'screens/loading_screen.dart';
 import 'screens/dashboard_screen.dart';
 import 'screens/grocery_screen.dart';
+import 'screens/loading_screen.dart';
+import 'screens/onboarding_screen.dart';
+import 'screens/profile_screen.dart';
 import 'services/api_client.dart';
-import 'widgets/feedback_bottom_sheet.dart';
+import 'services/api_exception.dart';
+import 'theme/app_colors.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // Vẽ dưới thanh trạng thái (màn hình dùng SafeArea) — không còn dải đen trên nền sáng.
+  await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
   // Đọc hết dữ liệu đã lưu một lần trước khi vẽ màn đầu — MainShell biết ngay có plan hay chưa, không cần màn chờ.
   final prefs = await SharedPreferences.getInstance();
   final api = ApiClient(baseUrl: resolveApiBaseUrl());
-  runApp(SmartFitApp(
-    auth: AuthProvider(api: api, prefs: prefs),
-    plans: PlanProvider(api: api, prefs: prefs),
-  ));
+  final plans = PlanProvider(api: api, prefs: prefs);
+  runApp(
+    SmartFitApp(
+      auth: AuthProvider(api: api, prefs: prefs),
+      plans: plans,
+      grocery: GroceryProvider(prefs: prefs, plans: plans),
+    ),
+  );
 }
 
-enum AppScreen { onboarding, loading, dashboard, grocery }
-
 class SmartFitApp extends StatelessWidget {
-  const SmartFitApp({super.key, required this.auth, required this.plans});
+  const SmartFitApp({super.key, required this.auth, required this.plans, required this.grocery});
 
   final AuthProvider auth;
   final PlanProvider plans;
+  final GroceryProvider grocery;
 
   @override
   Widget build(BuildContext context) {
@@ -36,24 +47,36 @@ class SmartFitApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider.value(value: auth),
         ChangeNotifierProvider.value(value: plans),
+        ChangeNotifierProvider.value(value: grocery),
       ],
-      child: MaterialApp(
-        title: 'SmartFit AI',
-        debugShowCheckedModeBanner: false,
-        theme: ThemeData(
-          useMaterial3: true,
-          scaffoldBackgroundColor: const Color(0xFFF8F9FA),
-          colorScheme: ColorScheme.fromSeed(
-            seedColor: const Color(0xFF00875A),
-            primary: const Color(0xFF00875A),
-            surface: const Color(0xFFF8F9FA),
-          ),
+      child: AnnotatedRegion<SystemUiOverlayStyle>(
+        value: const SystemUiOverlayStyle(
+          statusBarColor: Colors.transparent,
+          statusBarIconBrightness: Brightness.dark,
+          statusBarBrightness: Brightness.light,
+          systemNavigationBarColor: Colors.white,
+          systemNavigationBarIconBrightness: Brightness.dark,
         ),
-        home: const MainShell(),
+        child: MaterialApp(
+          title: 'SmartFit AI',
+          debugShowCheckedModeBanner: false,
+          theme: ThemeData(
+            useMaterial3: true,
+            scaffoldBackgroundColor: const Color(0xFFF8F9FA),
+            colorScheme: ColorScheme.fromSeed(
+              seedColor: const Color(0xFF00875A),
+              primary: const Color(0xFF00875A),
+              surface: const Color(0xFFF8F9FA),
+            ),
+          ),
+          home: const MainShell(),
+        ),
       ),
     );
   }
 }
+
+enum AppScreen { onboarding, loading, home }
 
 class MainShell extends StatefulWidget {
   const MainShell({super.key});
@@ -62,86 +85,117 @@ class MainShell extends StatefulWidget {
   State<MainShell> createState() => _MainShellState();
 }
 
-class _MainShellState extends State<MainShell> {
-  // Chưa có plan → bắt đầu từ Onboarding; đã có plan đã lưu → vào thẳng Dashboard, không cần mạng (NFR-2).
-  late AppScreen _currentScreen =
-      context.read<PlanProvider>().hasPlan ? AppScreen.dashboard : AppScreen.onboarding;
-  int _currentBottomNavIndex = 0; // 0: Kế hoạch, 1: Đi chợ, 2: Thống kê, 3: Cá nhân
+class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
+  // Chưa có plan → bắt đầu từ Onboarding; đã có plan đã lưu → vào thẳng màn chính, không cần mạng (NFR-2).
+  late AppScreen _screen = context.read<PlanProvider>().hasPlan ? AppScreen.home : AppScreen.onboarding;
+  int _tab = 0; // 0: Kế hoạch, 1: Đi chợ, 2: Lịch sử, 3: Cá nhân
+  // Hồ sơ của lần tạo plan gần nhất — để thử lại hoặc sửa khi lỗi.
+  Profile? _requested;
+  ApiException? _error;
 
-  void _openFeedbackModal() {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) => FeedbackBottomSheet(
-        onClose: () => Navigator.pop(ctx),
-        onSubmitted: () {
-          Navigator.pop(ctx);
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Đã ghi nhận phản hồi. AI đã cân đối lại thực đơn Ngày 2!'),
-              behavior: SnackBarBehavior.floating,
-              backgroundColor: Color(0xFF059669),
-            ),
-          );
-        },
-      ),
-    );
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
   }
 
-  void _setScreen(AppScreen screen) {
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  // Mở lại app sau nửa đêm → Dashboard tính lại ngày hôm nay của plan (D6-B1).
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) setState(() {});
+  }
+
+  Future<void> _generate(Profile profile) async {
+    final plans = context.read<PlanProvider>();
     setState(() {
-      _currentScreen = screen;
-      if (screen == AppScreen.dashboard) {
-        _currentBottomNavIndex = 0;
-      } else if (screen == AppScreen.grocery) {
-        _currentBottomNavIndex = 1;
-      }
+      _screen = AppScreen.loading;
+      _requested = profile;
+      _error = null;
     });
-  }
-
-  Widget _buildBody() {
-    switch (_currentScreen) {
-      case AppScreen.onboarding:
-        return OnboardingScreen(
-          onNext: () => _setScreen(AppScreen.loading),
-        );
-      case AppScreen.loading:
-        return LoadingScreen(
-          onDone: () => _setScreen(AppScreen.dashboard),
-        );
-      case AppScreen.dashboard:
-        if (_currentBottomNavIndex == 1) {
-          return const GroceryScreen();
-        }
-        if (_currentBottomNavIndex == 2) {
-          return _buildPlaceholderScreen(
-            icon: Icons.bar_chart_rounded,
-            title: 'Thống kê dinh dưỡng 3 ngày',
-            subtitle: 'Theo dõi lượng Calo tiêu thụ thực tế và độ lệch so với mục tiêu 1.850 kcal.',
-          );
-        }
-        if (_currentBottomNavIndex == 3) {
-          return _buildPlaceholderScreen(
-            icon: Icons.person_outline_rounded,
-            title: 'Hồ sơ người dùng',
-            subtitle: '168 cm • 62 kg • Mục tiêu: Giảm mỡ & Giữ cơ.',
-          );
-        }
-        return DashboardScreen(
-          onOpenFeedback: _openFeedbackModal,
-        );
-      case AppScreen.grocery:
-        return const GroceryScreen();
+    try {
+      await plans.generate(profile);
+      if (mounted) {
+        setState(() {
+          _screen = AppScreen.home;
+          _tab = 0;
+        });
+      }
+    } on ApiException catch (error) {
+      if (mounted) setState(() => _error = error);
     }
   }
 
-  Widget _buildPlaceholderScreen({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-  }) {
-    return Center(
+  @override
+  Widget build(BuildContext context) {
+    final plans = context.watch<PlanProvider>();
+    final screen = _screen == AppScreen.home && !plans.hasPlan ? AppScreen.onboarding : _screen;
+    return switch (screen) {
+      AppScreen.onboarding => OnboardingScreen(initial: _requested ?? plans.editableProfile, onSubmit: _generate),
+      AppScreen.loading => LoadingScreen(
+        error: _error,
+        onRetry: () => _generate(_requested!),
+        onEditProfile: () => setState(() => _screen = AppScreen.onboarding),
+        onBack: plans.hasPlan ? () => setState(() => _screen = AppScreen.home) : null,
+      ),
+      AppScreen.home => _home(plans),
+    };
+  }
+
+  Widget _home(PlanProvider plans) => Scaffold(
+    body: switch (_tab) {
+      // Khoá theo plan_id: plan mới thì Dashboard mở lại đúng ngày hôm nay.
+      0 => DashboardScreen(key: ValueKey(plans.plan?.planId), onCreatePlan: () => _generate(plans.editableProfile!)),
+      1 => const GroceryScreen(),
+      2 => _placeholder(
+        icon: Icons.history_rounded,
+        title: 'Lịch sử kế hoạch',
+        subtitle: 'Đăng nhập để xem lại các kế hoạch đã tạo — tính năng sắp có.',
+      ),
+      _ => ProfileScreen(onCreatePlan: _generate),
+    },
+    bottomNavigationBar: Container(
+      decoration: const BoxDecoration(
+        border: Border(top: BorderSide(color: AppColors.border, width: 0.8)),
+      ),
+      child: BottomNavigationBar(
+        currentIndex: _tab,
+        onTap: (index) => setState(() => _tab = index),
+        type: BottomNavigationBarType.fixed,
+        backgroundColor: Colors.white,
+        selectedItemColor: const Color(0xFF00875A),
+        unselectedItemColor: AppColors.faint,
+        selectedLabelStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700),
+        unselectedLabelStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500),
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.assignment_outlined),
+            activeIcon: Icon(Icons.assignment),
+            label: 'Kế hoạch',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.shopping_cart_outlined),
+            activeIcon: Icon(Icons.shopping_cart),
+            label: 'Đi chợ',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.history_outlined),
+            activeIcon: Icon(Icons.history),
+            label: 'Lịch sử',
+          ),
+          BottomNavigationBarItem(icon: Icon(Icons.person_outline), activeIcon: Icon(Icons.person), label: 'Cá nhân'),
+        ],
+      ),
+    ),
+  );
+
+  Widget _placeholder({required IconData icon, required String title, required String subtitle}) => SafeArea(
+    child: Center(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 24),
         child: Column(
@@ -149,89 +203,24 @@ class _MainShellState extends State<MainShell> {
           children: [
             Container(
               padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF1F5F9),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Icon(icon, size: 36, color: const Color(0xFF64748B)),
+              decoration: BoxDecoration(color: const Color(0xFFF1F5F9), borderRadius: BorderRadius.circular(20)),
+              child: Icon(icon, size: 36, color: AppColors.muted),
             ),
             const SizedBox(height: 16),
             Text(
               title,
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                color: Color(0xFF0F172A),
-              ),
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.ink),
             ),
             const SizedBox(height: 6),
             Text(
               subtitle,
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 12,
-                color: Color(0xFF64748B),
-              ),
+              style: const TextStyle(fontSize: 12, color: AppColors.muted),
             ),
           ],
         ),
       ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final showBottomBar = _currentScreen == AppScreen.dashboard || _currentScreen == AppScreen.grocery;
-
-    return Scaffold(
-      body: _buildBody(),
-      bottomNavigationBar: showBottomBar
-          ? Container(
-              decoration: const BoxDecoration(
-                border: Border(
-                  top: BorderSide(color: Color(0xFFE2E8F0), width: 0.8),
-                ),
-              ),
-              child: BottomNavigationBar(
-                currentIndex: _currentBottomNavIndex,
-                onTap: (index) {
-                  setState(() {
-                    _currentBottomNavIndex = index;
-                    _currentScreen = AppScreen.dashboard;
-                  });
-                },
-                type: BottomNavigationBarType.fixed,
-                backgroundColor: Colors.white,
-                selectedItemColor: const Color(0xFF00875A),
-                unselectedItemColor: const Color(0xFF94A3B8),
-                selectedLabelStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700),
-                unselectedLabelStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500),
-                items: const [
-                  BottomNavigationBarItem(
-                    icon: Icon(Icons.assignment_outlined),
-                    activeIcon: Icon(Icons.assignment),
-                    label: 'Kế hoạch',
-                  ),
-                  BottomNavigationBarItem(
-                    icon: Icon(Icons.shopping_cart_outlined),
-                    activeIcon: Icon(Icons.shopping_cart),
-                    label: 'Đi chợ',
-                  ),
-                  BottomNavigationBarItem(
-                    icon: Icon(Icons.bar_chart_outlined),
-                    activeIcon: Icon(Icons.bar_chart),
-                    label: 'Thống kê',
-                  ),
-                  BottomNavigationBarItem(
-                    icon: Icon(Icons.person_outline),
-                    activeIcon: Icon(Icons.person),
-                    label: 'Cá nhân',
-                  ),
-                ],
-              ),
-            )
-          : null,
-    );
-  }
+    ),
+  );
 }

@@ -14,6 +14,7 @@ import { dayCalorieBounds, findPlanViolations, parseContent } from '../plan-vali
 import { PlanService } from '../plan.service.js';
 import { SAFETY_WARNING_MESSAGE, WARNINGS } from '../plan-warnings.js';
 import { findRestrictionViolations } from '../restriction-filter.js';
+import { maxExerciseLevel } from '../exercise-level.js';
 import { matchRestrictions } from '../restriction-matcher.js';
 import { buildDayMealsPrompt } from './adjust-prompts.js';
 import { type ClientPlanContext, readClientPlan, rebuildPlan } from './client-plan.js';
@@ -63,7 +64,7 @@ export class FeedbackService {
     const days: DayContentDto[] = context.plan.days.map((day) => ({ meals: day.meals, workout: day.workout }));
     days[nextIndex] = {
       ...days[nextIndex],
-      workout: adjustWorkout(days[nextIndex].workout, feedback, trainedMuscles, context.match.avoidTags),
+      workout: adjustWorkout(days[nextIndex].workout, feedback, trainedMuscles, context.match.avoidTags, maxExerciseLevel(context.profile)),
     };
 
     const extra: string[] = [];
@@ -86,7 +87,7 @@ export class FeedbackService {
     const avoidTags = matchRestrictions(context.profile.restrictions).avoidTags;
     const days: DayContentDto[] = next.days.map((day, index) => ({
       meals: day.meals,
-      workout: index === 0 ? adjustWorkout(day.workout, feedback, trainedMuscles, avoidTags) : day.workout,
+      workout: index === 0 ? adjustWorkout(day.workout, feedback, trainedMuscles, avoidTags, maxExerciseLevel(context.profile)) : day.workout,
     }));
     const warnings = [...next.warnings];
     if (next.source === PlanSource.SAMPLE && feedback.eating !== Eating.ON_PLAN && !hasDangerSign(feedback)) {

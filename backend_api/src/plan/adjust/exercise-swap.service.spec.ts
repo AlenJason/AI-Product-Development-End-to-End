@@ -1,7 +1,9 @@
 import { UnprocessableEntityException } from '@nestjs/common';
 import { firstPick, geminiAnswering, geminiOff, makeProfile, samplePlan } from '../../../test/plan-fixtures.js';
 import type { MealPlanResponseDto } from '../dto/meal-plan-response.dto.js';
-import { ExerciseTag } from '../enums/exercise.enum.js';
+import { ActivityLevel } from '../enums/activity-level.enum.js';
+import { ExerciseTag, MuscleGroup } from '../enums/exercise.enum.js';
+import { Goal } from '../enums/goal.enum.js';
 import { exerciseLevel } from '../swap-pools.js';
 import { ExerciseSwapService } from './exercise-swap.service.js';
 
@@ -68,5 +70,20 @@ describe('ExerciseSwapService', () => {
       expect(generateJson).toHaveBeenCalledTimes(2);
       expect(exerciseLevel(swapped.days[0].workout.exercises[1].name)).toBe(1);
     });
+  });
+});
+
+describe('ExerciseSwapService — exercise level of the profile (v2.6.0)', () => {
+  it('rejects a Gemini suggestion above the level allowed for the profile', async () => {
+    const elderly = makeProfile({ age: 65, activity_level: ActivityLevel.SEDENTARY, goal: Goal.MAINTAIN });
+    const elderlyPlan = await samplePlan(elderly);
+    // "Lunge lùi" (mức 2) thoả mọi điều kiện cũ: cùng nhóm cơ, ít hiệp hơn, không thêm tag.
+    const lunge = { name: 'Lunge lùi', sets: 2, reps_or_duration: '10 lần mỗi chân', muscle_group: MuscleGroup.LEGS, tags: [] };
+    const { gemini, generateJson } = geminiAnswering(lunge, lunge);
+
+    await expect(
+      new ExerciseSwapService(gemini, firstPick).swap({ profile: elderly, plan: elderlyPlan, exercise_id: 'e1_2' }),
+    ).rejects.toBeInstanceOf(UnprocessableEntityException);
+    expect(generateJson).toHaveBeenCalledTimes(2);
   });
 });

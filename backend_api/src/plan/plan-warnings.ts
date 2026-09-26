@@ -7,6 +7,8 @@ export const WARNINGS = {
     `Calo mục tiêu đã được nâng lên bằng mức chuyển hoá cơ bản (BMR ${bmr} kcal), vì mức thâm hụt đã chọn sẽ khiến bạn ăn thấp hơn BMR. Không nên ăn thấp hơn mức này nếu không có hướng dẫn của chuyên gia.`,
   healthConditions:
     'Bạn có khai báo tình trạng sức khoẻ: kế hoạch chỉ mang tính tham khảo, không thay thế tư vấn y tế. Hãy hỏi ý kiến bác sĩ trước khi áp dụng.',
+  pregnancy:
+    'Bạn đang mang thai hoặc cho con bú: nhu cầu năng lượng và dưỡng chất khác người thường, bài tập đã giới hạn ở mức nhẹ nhất. Kế hoạch chỉ mang tính tham khảo — hãy hỏi ý kiến bác sĩ trước khi áp dụng.',
   sampleKeywordFiltered:
     'Đang dùng thực đơn mẫu: món ăn và bài tập chỉ được lọc theo các dị ứng, chấn thương phổ biến (ví dụ hải sản, đậu phộng, đau gối); tình trạng sức khoẻ chưa được xét. Hãy tự kiểm tra lại trước khi áp dụng.',
   restrictionsIncomplete:
@@ -22,6 +24,7 @@ export function profileWarnings(profile: CreatePlanDto, flooredToBmr: boolean, b
   const warnings: string[] = [];
   if (flooredToBmr) warnings.push(WARNINGS.bmrFloor(bmr));
   if (profile.restrictions.health_conditions) warnings.push(WARNINGS.healthConditions);
+  if (profile.pregnant_or_breastfeeding) warnings.push(WARNINGS.pregnancy);
   return warnings;
 }
 

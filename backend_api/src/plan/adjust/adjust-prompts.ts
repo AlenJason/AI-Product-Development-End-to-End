@@ -2,11 +2,13 @@ import type { CreatePlanDto } from '../dto/create-plan.dto.js';
 import type { ExerciseContentDto, MealContentDto } from '../dto/plan-content.dto.js';
 import { Eating } from '../enums/feedback.enum.js';
 import { MealType } from '../enums/meal-type.enum.js';
+import { maxExerciseLevel } from '../exercise-level.js';
 import { matchRestrictions } from '../restriction-matcher.js';
 import {
   EXERCISE_JSON_SHAPE,
   exerciseAvoidRule,
   exerciseCodeRules,
+  exerciseLevelRule,
   ingredientAvoidRule,
   ingredientCodeRules,
   MACRO_RULE,
@@ -66,6 +68,7 @@ export function buildExerciseSwapPrompt(
     `- Cùng nhóm cơ: muscle_group là ${original.muscle_group}. Bodyweight, không cần dụng cụ.`,
     '- Không chọn động tác gây tải lên vùng chấn thương người dùng đã khai.',
     ...exerciseAvoidRule(matchRestrictions(profile.restrictions)),
+    ...exerciseLevelRule(maxExerciseLevel(profile)),
     `- sets không quá ${original.sets}. tags chỉ được chọn trong: ${tags}.`,
     `- Không trùng các động tác đã có trong buổi: ${avoidNames.join('; ')}.`,
     ...exerciseCodeRules(),

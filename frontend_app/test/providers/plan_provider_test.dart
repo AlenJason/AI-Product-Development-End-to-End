@@ -19,12 +19,17 @@ void main() {
     PlanProvider.planKey: jsonEncode(loadFixture('generate_plan')),
   };
 
+  // Đồng hồ giả: test đổi `now` để sang ngày khác.
+  var now = DateTime(2026, 9, 26, 9);
+
   Future<(PlanProvider, FakeBackend, SharedPreferences)> create([Map<String, Object> values = const {}]) async {
     SharedPreferences.setMockInitialValues(values);
     final prefs = await SharedPreferences.getInstance();
     final backend = FakeBackend();
-    return (PlanProvider(api: backend.api, prefs: prefs), backend, prefs);
+    return (PlanProvider(api: backend.api, prefs: prefs, now: () => now), backend, prefs);
   }
+
+  setUp(() => now = DateTime(2026, 9, 26, 9));
 
   test('máy chưa có gì → chưa có plan', () async {
     final (provider, _, _) = await create();
@@ -116,5 +121,84 @@ void main() {
     expect(provider.hasPlan, isFalse);
     expect(provider.profile, isNotNull);
     expect(prefs.getKeys(), {PlanProvider.profileKey});
+  });
+
+  group('ngày trong plan (D6-B1)', () {
+    test('tạo plan → bắt đầu hôm nay, lưu lại; mở app hôm sau là ngày 2, quá 3 ngày là > 3', () async {
+      final (provider, _, prefs) = await create();
+      await provider.generate(profile);
+      expect(provider.todayNumber, 1);
+      expect(jsonDecode(prefs.getString(PlanProvider.scheduleKey)!),
+          {'plan_id': provider.plan!.planId, 'start_date': '2026-09-26'});
+
+      now = DateTime(2026, 9, 27, 7);
+      expect(PlanProvider(api: FakeBackend().api, prefs: prefs, now: () => now).todayNumber, 2);
+      now = DateTime(2026, 9, 29, 7);
+      expect(provider.todayNumber, 4);
+    });
+
+    test('đổi món giữ ngày bắt đầu; feedback ngày 3 trả plan mới → plan mới bắt đầu từ ngày mai', () async {
+      final (provider, backend, _) = await create();
+      await provider.generate(profile);
+      now = DateTime(2026, 9, 28, 21);
+      await provider.swapMeal('m3_2');
+      expect(provider.todayNumber, 3);
+
+      final next = loadFixture('generate_plan')..['plan_id'] = '00000000-0000-4000-8000-0000000000ff';
+      backend.responses['/api/v1/feedback'] = {'plan': next, 'safety_warning': null};
+      await provider.submitFeedback(const FeedbackAnswers(
+          dayNumber: 3, intensity: Intensity.moderate, bodyStates: {BodyState.normal}, eating: Eating.onPlan));
+      expect(provider.plan!.planId, next['plan_id']);
+      expect(provider.todayNumber, 0);
+      now = DateTime(2026, 9, 29, 7);
+      expect(provider.todayNumber, 1);
+    });
+
+    test('plan lưu từ giai đoạn 5 (chưa có lịch) → coi như bắt đầu hôm nay', () async {
+      final (provider, _, _) = await create(saved);
+      expect(provider.schedule!.planId, provider.plan!.planId);
+      expect(provider.todayNumber, 1);
+    });
+  });
+
+  group('hồ sơ đang sửa ở tab Cá nhân (bản nháp)', () {
+    test('lưu nháp khác hồ sơ của plan → chờ áp dụng; đổi món vẫn gửi hồ sơ cũ (không bị 409)', () async {
+      final (provider, backend, prefs) = await create(saved);
+      final edited = Profile.fromJson({...loadFixture('profile'), 'goal': 'bulk'});
+      await provider.saveDraft(edited);
+
+      expect(provider.hasPendingProfile, isTrue);
+      expect(provider.editableProfile!.goal, Goal.bulk);
+      expect(prefs.containsKey(PlanProvider.draftKey), isTrue);
+
+      await provider.swapMeal('m1_2');
+      final body = jsonDecode(utf8.decode(backend.requests.last.bodyBytes)) as Map<String, dynamic>;
+      expect(body['profile'], loadFixture('profile'));
+    });
+
+    test('lưu nháp giống hồ sơ của plan → không còn gì chờ; tạo plan mới → bỏ nháp', () async {
+      final (provider, _, prefs) = await create(saved);
+      await provider.saveDraft(Profile.fromJson({...loadFixture('profile'), 'goal': 'bulk'}));
+      await provider.saveDraft(profile);
+      expect(provider.hasPendingProfile, isFalse);
+      expect(prefs.containsKey(PlanProvider.draftKey), isFalse);
+
+      final edited = Profile.fromJson({...loadFixture('profile'), 'goal': 'maintain'});
+      await provider.saveDraft(edited);
+      await provider.generate(edited);
+      expect(provider.hasPendingProfile, isFalse);
+      expect(provider.profile!.goal, Goal.maintain);
+      expect(prefs.containsKey(PlanProvider.draftKey), isFalse);
+    });
+  });
+
+  test('hồ sơ đã lưu nay bị luật v2.6.0 chặn (17 tuổi) → bỏ plan, giữ hồ sơ để sửa ở Onboarding', () async {
+    final (provider, _, prefs) = await create({
+      ...saved,
+      PlanProvider.profileKey: jsonEncode({...loadFixture('profile'), 'age': 17}),
+    });
+    expect(provider.hasPlan, isFalse);
+    expect(provider.editableProfile!.age, 17);
+    expect(prefs.containsKey(PlanProvider.planKey), isFalse);
   });
 }

@@ -5,6 +5,7 @@ import { type DayContentDto, ExerciseContentDto } from '../dto/plan-content.dto.
 import { GeminiService } from '../gemini.service.js';
 import { generateWithRetry } from '../gemini-retry.js';
 import { parseContent } from '../plan-validation.js';
+import { exceedsLevel, maxExerciseLevel } from '../exercise-level.js';
 import { WARNINGS } from '../plan-warnings.js';
 import { hasAvoidedTag } from '../restriction-matcher.js';
 import { exerciseCandidates, exerciseLevel, EXERCISE_LEVELS, toPlanExercise } from '../swap-pools.js';
@@ -32,8 +33,11 @@ export class ExerciseSwapService {
     if (!original) throw new BadRequestException(`exercise_id ${dto.exercise_id} không có trong plan`);
 
     const dayNames = new Set(context.plan.days[dayIndex].workout.exercises.map((exercise) => normalizeKey(exercise.name)));
-    // "Nhẹ hơn" đo được bằng code: cùng nhóm cơ, không thêm hiệp, không thêm kiểu tải mới, không vướng chấn thương.
+    const profileMaxLevel = maxExerciseLevel(context.profile);
+    // "Nhẹ hơn" đo được bằng code: cùng nhóm cơ, không thêm hiệp, không thêm kiểu tải mới, không vướng chấn thương,
+    // không vượt mức cho phép của hồ sơ (FR-2.2, v2.6.0).
     const violations = (exercise: ExerciseContentDto): string[] => [
+      ...(exceedsLevel(exercise, profileMaxLevel) ? ['động tác vượt mức khó cho phép của hồ sơ'] : []),
       ...(exercise.muscle_group === original.muscle_group ? [] : [`muscle_group phải là ${original.muscle_group}`]),
       ...(exercise.sets <= original.sets ? [] : [`sets không được quá ${original.sets}`]),
       ...(exercise.tags.every((tag) => original.tags.includes(tag)) ? [] : ['tags thêm kiểu tải mà động tác cũ không có']),
@@ -42,7 +46,7 @@ export class ExerciseSwapService {
     ];
 
     const fromGemini = await this.fromGemini(context, original, violations);
-    const replacement = fromGemini ?? this.fromPool(context, original, dayNames, violations);
+    const replacement = fromGemini ?? this.fromPool(context, original, dayNames, violations, profileMaxLevel);
     if (!replacement) {
       throw new UnprocessableEntityException(
         'Không tìm được động tác nhẹ hơn cùng nhóm cơ phù hợp với bạn — động tác này có thể đã là mức nhẹ nhất.',
@@ -86,8 +90,9 @@ export class ExerciseSwapService {
     original: ExerciseContentDto,
     dayNames: Set<string>,
     violations: (exercise: ExerciseContentDto) => string[],
+    profileMaxLevel: number,
   ): ExerciseContentDto | null {
-    const maxLevel = (exerciseLevel(original.name) ?? UNKNOWN_LEVEL) - 1;
+    const maxLevel = Math.min((exerciseLevel(original.name) ?? UNKNOWN_LEVEL) - 1, profileMaxLevel);
     const candidates = exerciseCandidates(original.muscle_group, {
       avoidTags: context.match.avoidTags,
       excludeNames: dayNames,

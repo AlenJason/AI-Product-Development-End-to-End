@@ -1,6 +1,6 @@
 # Kế hoạch triển khai SmartFit AI
 
-Plan này chia [BRD.md](../BRD.md) (v2.5.1) thành các bước làm được theo thứ tự. BRD vẫn là nguồn yêu cầu; plan chỉ trả lời "làm gì trước, làm gì sau, xong khi nào".
+Plan này chia [BRD.md](../BRD.md) (v2.6.0) thành các bước làm được theo thứ tự. BRD vẫn là nguồn yêu cầu; plan chỉ trả lời "làm gì trước, làm gì sau, xong khi nào".
 
 **Thứ tự tổng thể:** hoàn thiện backend trước (kiểm thử toàn bộ qua Swagger), sau đó mới làm frontend bám theo hợp đồng API đã chốt.
 
@@ -29,10 +29,10 @@ Cả hai dịch vụ bên ngoài đều có chế độ giả lập, nên toàn 
 
 ## Hiện trạng (đã xong)
 
-- [x] BRD v2.5.1 (MVP, tính năng nâng cao, tài khoản & lịch sử, hợp đồng API đầy đủ)
+- [x] BRD v2.6.0 (MVP, tính năng nâng cao, tài khoản & lịch sử, hợp đồng API đầy đủ)
 - [x] Backend: `GET /health`, `POST /api/v1/generate-plan` (tính BMR/TDEE, gọi Gemini, kiểm tra khoảng calo, fallback), đổi món, đổi bài tập, feedback, đăng nhập Google (giả lập mặc định), lịch sử kế hoạch (SQLite), validate DTO, Swagger UI, CORS cho bản web
 - [x] `ai_workspace/`: script thử prompt Gemini
-- [x] Frontend: giao diện Onboarding, Loading, Dashboard, Grocery, bảng Feedback (dữ liệu mẫu); tầng kết nối API — model theo hợp đồng, `ApiClient`, provider, lưu trên máy (giai đoạn 5). Màn hình **chưa nối API** (giai đoạn 6)
+- [x] Frontend: Onboarding 3 bước, màn chờ, kế hoạch 3 ngày (đổi món, đổi bài), đi chợ, hồ sơ — đọc/ghi qua provider, không còn dữ liệu viết cứng (giai đoạn 6). Chưa có: bảng feedback cuối ngày (giai đoạn 7), đăng nhập và lịch sử (giai đoạn 8)
 - [x] Wiki nội bộ `docs/knowledge/`, `CLAUDE.md`
 
 ---
@@ -83,7 +83,7 @@ Giao diện Flutter (thiết kế từ Figma) và backend/BRD từng lệch nhau
 | B1 | Plan chỉ có ngày 1–3, không có ngày bắt đầu: hôm sau mở app vẫn "Ngày 1", bỏ dùng lâu thì plan cũ nằm mãi | App lưu ngày bắt đầu trên máy, tự chuyển ngày theo lịch; hết 3 ngày → gợi ý tạo plan mới |
 | B2 | Onboarding sẽ có khoảng 10 trường; trên màn hình 720×1280 nút tạo kế hoạch đã nằm dưới mép màn hình | Chia 3 bước (chỉ số cơ thể → mục tiêu & vận động → hạn chế), thanh tiến trình, nút luôn ở đáy |
 
-A1–A4 đổi hợp đồng và luật dinh dưỡng → BRD v2.6.0 ở giai đoạn 6 (FR-1.1, FR-1.4, FR-1.5, FR-2.2, NFR an toàn). **Để sau** (đã cân nhắc, chưa làm): đi chợ theo số người nấu; tuỳ chọn ăn chay (cần thêm món chay và nhóm từ khoá); đánh dấu bữa ăn ngoài (phải đổi cách backend tính danh sách đi chợ); cảnh báo nhẹ khi BMI ≥ 30 chọn "Tăng cơ".
+A1–A4 đổi hợp đồng và luật dinh dưỡng → BRD v2.6.0 ở giai đoạn 6 (FR-1.1, FR-1.4, FR-1.5, FR-2.2, NFR an toàn). **Để sau** (đã cân nhắc, chưa làm): đi chợ theo số người nấu; tuỳ chọn ăn chay (cần thêm món chay và nhóm từ khoá); đánh dấu bữa ăn ngoài (phải đổi cách backend tính danh sách đi chợ); cảnh báo nhẹ khi BMI ≥ 30 chọn "Tăng cơ"; cân macro của thực đơn mẫu (phát hiện khi chạy thử giai đoạn 6: thực đơn mẫu chỉ được nhân khẩu phần theo calo nên tinh bột ~120%, chất béo ~70% mục tiêu; backend chưa kiểm tỉ lệ macro).
 
 ---
 
@@ -170,24 +170,26 @@ Chi tiết: brainstorm `docs/superpowers/brainstorms/phase-4-swap-feedback.md` (
 
 Chi tiết: brainstorm `docs/superpowers/brainstorms/phase-5-frontend-foundation.md` (quyết định Q1–Q4 ở mục 8), plan `docs/superpowers/plans/phase-5-frontend-foundation/`.
 
-## Giai đoạn 6 — Frontend: nối MVP (FR-1 → FR-3) · M
+## Giai đoạn 6 — Frontend: nối MVP (FR-1 → FR-3) · L
 
-- [ ] **6.1** Onboarding chia 3 bước (D6-B2): thêm tuổi (≥ 18), giới tính, mức vận động (FR-1.1, FR-1.2 — backend bắt buộc nhưng giao diện chưa có); khoá "Giảm mỡ" khi BMI < 18,5 hoặc mang thai / cho con bú (D6-A1, A3); nhập hạn chế theo D5 + dòng khuyến cáo y tế (D4); validate cùng giới hạn với backend, báo lỗi ngay khi nhập. Bỏ giá trị điền sẵn 168 / 62; nút tiếp tục phải mang hồ sơ đi (hiện `onNext` không truyền dữ liệu nào)
-- [ ] **6.2** Tab "Cá nhân": xem và sửa hồ sơ, lưu trên máy (FR-1.6); sửa xong thì gợi ý tạo lại plan (hiện ghi cứng "168 cm • 62 kg • Giảm mỡ", không theo Onboarding)
-- [ ] **6.3** Loading: gọi API thật thay cho bộ đếm giờ giả; lỗi → nút thử lại (NFR-1, NFR-2). Có Gemini thì chờ thật khoảng 10–15 giây, tối đa khoảng 40 giây — câu chờ và thanh tiến trình phải hợp với khoảng này; HTTP client của app để timeout dài hơn 40 giây. Bỏ nút "Xem trước kế hoạch ngay" và các câu chờ bịa số liệu ("Cân đối Macro: 140g Carbs, 65g Protein…", "phù hợp ngân sách")
-- [ ] **6.4** Dashboard: hiển thị đủ 3 ngày, 3 bữa/ngày, bài tập, calo và macro (FR-2.3); hiện cảnh báo khi chế độ giả lập chưa kiểm tra được hết hạn chế. Thấy khi chạy trên máy ảo (giai đoạn 5): ngày ghi cứng "Thứ Ba, 15/9/2026"; thiếu bữa sáng; bộ chọn S1–S5 là 5 ngày và bấm không đổi nội dung; món/động tác không theo hạn chế đã chọn (vẫn có cá khi dị ứng hải sản); chưa hiện tổng calo và macro mỗi ngày (FR-2.3) — widget `macro_ring.dart` có sẵn nhưng chưa dùng; nhãn "Dễ", "Không tạ", chữ "T", "3 ngày" ghi cứng; hiện `warnings` của plan
-- [ ] **6.5** Grocery: dựng từ `grocery_list`; trạng thái tích chọn lưu cục bộ (FR-3.2). Tên nhóm theo BRD FR-3.1 (*Đạm*, *Rau củ quả*, *Gạo, bún & gia vị* — hiện là "Thịt & Thủy hải sản", "Gia vị & nguyên liệu khác"); thêm thao tác xoá món đã có sẵn trong tủ lạnh (FR-3.2); quyết định giữ hay bỏ nút "Thêm nguyên liệu" (không có trong BRD)
-- [ ] **6.6** Widget test dùng backend giả `test/fake_backend.dart` (có từ giai đoạn 5)
-- [ ] **6.7** Màn hình đọc/ghi qua `PlanProvider`/`AuthProvider` và model `lib/models/api/`; xoá view-model cũ `lib/models/meal_plan.dart`. Thao tác lại toàn luồng trên máy ảo Android và chạy `flutter test integration_test`
-- [ ] **6.8** Tên app hiển thị "my_ai_app" (Android, web) và "My Ai App" (iOS) → "SmartFit AI"; icon vẫn là icon mặc định của Flutter; màn khởi động còn logo Flutter; thanh trạng thái màu đen trên nền app sáng
-- [ ] **6.9** *(D6-A1, A2, A3)* Backend: tuổi tối thiểu 18; BMI < 18,5 hoặc mang thai / cho con bú mà chọn `cut` → 400 kèm câu tiếng Việt; test + fixture hợp đồng xuất lại; BRD v2.6.0
-- [ ] **6.10** *(D6-A4)* Backend: chọn mức động tác theo tuổi và `activity_level` cho thực đơn mẫu và kho đổi bài; prompt Gemini cùng luật; đo lại bằng `npm run measure:gemini` nếu đổi prompt
-- [ ] **6.11** *(D6-B1)* App lưu ngày bắt đầu plan, Dashboard mở đúng ngày theo lịch; quá 3 ngày → gợi ý tạo plan mới
+- [x] **6.1** Onboarding chia 3 bước (D6-B2): thêm tuổi (≥ 18), giới tính, mức vận động (FR-1.1, FR-1.2 — backend bắt buộc nhưng giao diện chưa có); khoá "Giảm mỡ" khi BMI < 18,5 hoặc mang thai / cho con bú (D6-A1, A3); nhập hạn chế theo D5 + dòng khuyến cáo y tế (D4); validate cùng giới hạn với backend, báo lỗi ngay khi nhập. Bỏ giá trị điền sẵn 168 / 62; nút tiếp tục phải mang hồ sơ đi (hiện `onNext` không truyền dữ liệu nào)
+- [x] **6.2** Tab "Cá nhân": xem và sửa hồ sơ, lưu trên máy (FR-1.6); sửa xong thì gợi ý tạo lại plan (hiện ghi cứng "168 cm • 62 kg • Giảm mỡ", không theo Onboarding)
+- [x] **6.3** Loading: gọi API thật thay cho bộ đếm giờ giả; lỗi → nút thử lại (NFR-1, NFR-2). Có Gemini thì chờ thật khoảng 10–15 giây, tối đa khoảng 40 giây — câu chờ và thanh tiến trình phải hợp với khoảng này; HTTP client của app để timeout dài hơn 40 giây. Bỏ nút "Xem trước kế hoạch ngay" và các câu chờ bịa số liệu ("Cân đối Macro: 140g Carbs, 65g Protein…", "phù hợp ngân sách")
+- [x] **6.4** Dashboard: hiển thị đủ 3 ngày, 3 bữa/ngày, bài tập, calo và macro (FR-2.3); hiện cảnh báo khi chế độ giả lập chưa kiểm tra được hết hạn chế. Thấy khi chạy trên máy ảo (giai đoạn 5): ngày ghi cứng "Thứ Ba, 15/9/2026"; thiếu bữa sáng; bộ chọn S1–S5 là 5 ngày và bấm không đổi nội dung; món/động tác không theo hạn chế đã chọn (vẫn có cá khi dị ứng hải sản); chưa hiện tổng calo và macro mỗi ngày (FR-2.3) — widget `macro_ring.dart` có sẵn nhưng chưa dùng; nhãn "Dễ", "Không tạ", chữ "T", "3 ngày" ghi cứng; hiện `warnings` của plan
+- [x] **6.5** Grocery: dựng từ `grocery_list`; trạng thái tích chọn lưu cục bộ (FR-3.2). Tên nhóm theo BRD FR-3.1 (*Đạm*, *Rau củ quả*, *Gạo, bún & gia vị* — hiện là "Thịt & Thủy hải sản", "Gia vị & nguyên liệu khác"); thêm thao tác xoá món đã có sẵn trong tủ lạnh (FR-3.2); quyết định giữ hay bỏ nút "Thêm nguyên liệu" (không có trong BRD)
+- [x] **6.6** Widget test dùng backend giả `test/fake_backend.dart` (có từ giai đoạn 5)
+- [x] **6.7** Màn hình đọc/ghi qua `PlanProvider`/`AuthProvider` và model `lib/models/api/`; xoá view-model cũ `lib/models/meal_plan.dart`. Thao tác lại toàn luồng trên máy ảo Android và chạy `flutter test integration_test`
+- [x] **6.8** Tên app hiển thị "my_ai_app" (Android, web) và "My Ai App" (iOS) → "SmartFit AI"; icon vẫn là icon mặc định của Flutter; màn khởi động còn logo Flutter; thanh trạng thái màu đen trên nền app sáng
+- [x] **6.9** *(D6-A1, A2, A3)* Backend: tuổi tối thiểu 18; BMI < 18,5 hoặc mang thai / cho con bú mà chọn `cut` → 400 kèm câu tiếng Việt; test + fixture hợp đồng xuất lại; BRD v2.6.0
+- [x] **6.10** *(D6-A4)* Backend: chọn mức động tác theo tuổi và `activity_level` cho thực đơn mẫu và kho đổi bài; prompt Gemini cùng luật; đo lại bằng `npm run measure:gemini` nếu đổi prompt
+- [x] **6.11** *(D6-B1)* App lưu ngày bắt đầu plan, Dashboard mở đúng ngày theo lịch; quá 3 ngày → gợi ý tạo plan mới
+
+Chi tiết: brainstorm `docs/superpowers/brainstorms/phase-6-connect-mvp.md` (quyết định Q1–Q4 ở mục 8), plan `docs/superpowers/plans/phase-6-connect-mvp/`. Nút đổi món, đổi bài làm luôn ở giai đoạn này (7.1, 7.2 — quyết định Q3); nút feedback ẩn tới giai đoạn 7.
 
 ## Giai đoạn 7 — Frontend: tính năng nâng cao (FR-4, FR-5) · M
 
-- [ ] **7.1** Nút "Đổi món" gọi API (hiện đang xoay vòng trong danh sách món viết cứng); thay cả plan và checklist bằng plan server trả về. 409 → báo hồ sơ đã đổi, gợi ý tạo plan mới; 422 → báo không còn món thay thế phù hợp
-- [ ] **7.2** Nút "Đổi bài" gọi API
+- [x] **7.1** Nút "Đổi món" gọi API (hiện đang xoay vòng trong danh sách món viết cứng); thay cả plan và checklist bằng plan server trả về. 409 → báo hồ sơ đã đổi, gợi ý tạo plan mới; 422 → báo không còn món thay thế phù hợp *(làm ở giai đoạn 6, quyết định Q3)*
+- [x] **7.2** Nút "Đổi bài" gọi API *(làm ở giai đoạn 6, quyết định Q3)*
 - [ ] **7.3** Làm lại bảng feedback theo D2 (3 câu hỏi, câu tình trạng cơ thể chọn nhiều); gọi API, cập nhật ngày kế tiếp; nhận `safety_warning` → hiện khuyến cáo ngừng tập, hỏi ý kiến bác sĩ. **Khoá nút sau khi đã gửi feedback cho một ngày** — backend không lưu trạng thái, gửi lại sẽ điều chỉnh thêm lần nữa. Bỏ câu báo viết sẵn "AI đã cân đối lại thực đơn Ngày 2!" (hiện hiện ra dù không có gì thay đổi)
 
 ## Giai đoạn 8 — Frontend: Tài khoản & Lịch sử (FR-6, FR-7) · M

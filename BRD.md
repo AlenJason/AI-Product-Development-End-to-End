@@ -3,8 +3,8 @@
 **Tên sản phẩm:** Trợ lý AI Gợi ý & Điều chỉnh Thực đơn, Lịch tập Thông minh  
 **Môn học:** AI Product Development End-to-End (Đồ án Kỹ sư / Cử nhân Năm 4)  
 **Đơn vị thực hiện:** Trường Đại học Công nghệ Thông tin và Truyền thông Việt - Hàn (VKU)  
-**Phiên bản:** 2.5.1 (Dành cho Sinh viên thực hành: Flutter & NestJS)  
-**Ngày cập nhật:** 24/09/2026  
+**Phiên bản:** 2.6.0 (Dành cho Sinh viên thực hành: Flutter & NestJS)  
+**Ngày cập nhật:** 27/09/2026  
 **Trạng thái:** Đã phê duyệt (Approved)  
 
 ---
@@ -117,17 +117,18 @@ sequenceDiagram
 ### Giai đoạn 1: MVP Cốt lõi (Bắt buộc hoàn thành để nộp đồ án)
 
 #### FR-1: Khảo sát thông tin (Personalized Onboarding)
-* **FR-1.1:** Giao diện Form nhập: Tuổi, giới tính, chiều cao (cm), cân nặng (kg).
+* **FR-1.1:** Giao diện Form nhập: Tuổi (từ 18 tuổi — công thức Mifflin-St Jeor dành cho người trưởng thành, đúng đối tượng ở mục 3), giới tính, chiều cao (cm), cân nặng (kg); nữ khai thêm *đang mang thai hoặc cho con bú*. Onboarding chia 3 bước — cơ thể → mục tiêu & vận động → hạn chế — có thanh tiến trình, nút tiếp tục luôn ở đáy màn hình. *(bổ sung bản 2.6.0)*
 * **FR-1.2:** Chọn mức độ vận động hằng ngày (Activity Level) — bắt buộc để tính TDEE đúng công thức: *Ít vận động (Sedentary, dân văn phòng)*, *Vận động nhẹ (1–3 buổi tập/tuần)*, *Vận động nhiều (4–5 buổi tập/tuần)*.
-* **FR-1.3:** Chọn mục tiêu: *Giảm mỡ (Cut)* — thâm hụt 300 kcal/ngày, *Tăng cơ (Bulk)* — dư 250 kcal/ngày, hoặc *Duy trì vóc dáng (Maintain)*.
-* **FR-1.4:** Ba ô nhập tự do, tối đa 300 ký tự mỗi ô: *Dị ứng / thực phẩm cần tránh*, *Chấn thương / vùng cơ thể cần tránh*, *Tình trạng sức khoẻ / bệnh nền* (ví dụ tiểu đường, cao huyết áp, gout). Có chip gợi ý bấm nhanh (hải sản, trứng, sữa, đậu phộng, đau gối, đau lưng…); bấm vào chỉ điền sẵn chữ vào ô. Màn hình ghi rõ: gợi ý chỉ mang tính tham khảo, không thay thế tư vấn y tế. Ở chế độ giả lập (chưa có khoá Gemini), backend nhận ra các dị ứng, chấn thương phổ biến bằng từ khoá (gõ có dấu hay không dấu đều được) để lọc thực đơn mẫu; có phần không nhận ra thì app nhận một câu cảnh báo chung, không nhắc lại chữ người dùng đã nhập. *(bổ sung bản 2.5.0)*
+* **FR-1.3:** Chọn mục tiêu: *Giảm mỡ (Cut)* — thâm hụt 300 kcal/ngày, *Tăng cơ (Bulk)* — dư 250 kcal/ngày, hoặc *Duy trì vóc dáng (Maintain)*. **Không chọn được Giảm mỡ** khi BMI dưới 18,5 (thiếu cân) hoặc đang mang thai / cho con bú: app khoá lựa chọn kèm lý do, backend trả 400 cho mọi request có hồ sơ như vậy. *(bổ sung bản 2.6.0)*
+* **FR-1.4:** Ba mục *Dị ứng / thực phẩm cần tránh*, *Chấn thương / vùng cơ thể cần tránh*, *Tình trạng sức khoẻ / bệnh nền*, mỗi mục một công tắc "Tôi có …" mặc định tắt (= không có). Bật lên thì hiện danh sách phổ biến để tích nhiều mục — dị ứng: hải sản, cá, đậu phộng, trứng, sữa, đậu nành, gluten, mè, nấm, thịt bò, thịt heo, thịt gà; chấn thương: đầu gối, cổ chân, cổ tay / khuỷu tay, lưng / cột sống, vai; bệnh nền: tiểu đường, cao huyết áp, gout, tim mạch, dạ dày — và lựa chọn "Khác" để tự ghi. App ghép lựa chọn thành văn bản, tối đa 300 ký tự mỗi mục (hợp đồng mục 6.1 không đổi). Danh sách dị ứng và chấn thương lấy đúng các nhóm backend nhận ra bằng từ khoá. *(bản 2.6.0 — thay ô nhập tự do và chip điền sẵn chữ)* Màn hình ghi rõ: gợi ý chỉ mang tính tham khảo, không thay thế tư vấn y tế. Ở chế độ giả lập (chưa có khoá Gemini), backend nhận ra các dị ứng, chấn thương phổ biến bằng từ khoá (gõ có dấu hay không dấu đều được) để lọc thực đơn mẫu; có phần không nhận ra thì app nhận một câu cảnh báo chung, không nhắc lại chữ người dùng đã nhập. *(bổ sung bản 2.5.0)*
 * **FR-1.5 (Logic Deterministic):** Backend tự tính BMI, BMR (công thức Mifflin-St Jeor), TDEE = BMR × hệ số hoạt động (FR-1.2), và calo mục tiêu = TDEE + mức điều chỉnh theo mục tiêu (FR-1.3), **nhưng không bao giờ thấp hơn BMR**. Khi phải nâng lên bằng BMR, response có câu giải thích để app hiển thị. **Tổng calo thực đơn mỗi ngày** cũng phải nằm trong khoảng từ 85% mục tiêu (và không thấp hơn BMR) tới 110% mục tiêu; thực đơn mẫu được nhân khẩu phần cho khớp mục tiêu của từng người. *(bổ sung bản 2.5.0)*
-* **FR-1.6:** Tab "Cá nhân" cho xem và sửa hồ sơ (chỉ số cơ thể, mục tiêu, ba ô ở FR-1.4) bất cứ lúc nào. Hồ sơ chỉ lưu trên máy (`shared_preferences`) và gửi kèm từng request, **không lưu ở server**. Sửa xong, app gợi ý tạo lại plan.
+* **FR-1.6:** Tab "Cá nhân" cho xem và sửa hồ sơ (chỉ số cơ thể, mục tiêu, ba mục ở FR-1.4) bất cứ lúc nào. Hồ sơ chỉ lưu trên máy (`shared_preferences`) và gửi kèm từng request, **không lưu ở server**. Sửa xong, app gợi ý tạo lại plan; tới khi tạo lại, đổi món và feedback vẫn dùng hồ sơ đã tạo plan đang mở. *(bổ sung bản 2.6.0)*
 
 #### FR-2: Khởi tạo kế hoạch 3 ngày (Rolling 3-Day Plan)
 * **FR-2.1 (Thực đơn món Việt):** 3 ngày, mỗi ngày 3 bữa chính (Sáng, Trưa, Tối). Món ăn quen thuộc (phở, bún thịt nạc, canh rau ngót, trứng luộc...). **Ràng buộc đa dạng:** không lặp lại tên món giữa các ngày trong cùng một plan 3 ngày — backend kiểm tra bằng code, không chỉ dặn trong prompt.
-* **FR-2.2 (Bài tập tại nhà):** Lịch tập 3 ngày gồm các động tác Bodyweight (Squat, chống đẩy khuỵu gối, plank...), ghi rõ số hiệp (sets) và số lần (reps).
+* **FR-2.2 (Bài tập tại nhà):** Lịch tập 3 ngày gồm các động tác Bodyweight (Squat, chống đẩy khuỵu gối, plank...), ghi rõ số hiệp (sets) và số lần (reps). **Độ khó theo hồ sơ:** từ 60 tuổi, từ 45 tuổi mà ít vận động, hoặc đang mang thai / cho con bú → chỉ động tác nhẹ nhất (mức 1, không bật nhảy); vận động nhiều và dưới 45 tuổi → được dùng cả động tác nâng cao (mức 3); còn lại tối đa mức 2. Áp cho thực đơn mẫu, kết quả Gemini, đổi bài tập và điều chỉnh sau feedback. *(bổ sung bản 2.6.0)*
 * **FR-2.3 (Hiển thị Calo):** Hiển thị tổng Calo dự tính và phân bổ Protein / Carbs / Fat mỗi ngày. Mỗi món có đủ `calories`, `protein_g`, `carbs_g`, `fat_g`.
+* **FR-2.4 (Ngày theo lịch):** App lưu ngày bắt đầu của plan và mở đúng ngày hôm nay; plan tạo từ feedback ngày 3 bắt đầu từ ngày mai; quá 3 ngày thì gợi ý tạo kế hoạch mới. *(bổ sung bản 2.6.0)*
 
 #### FR-3: Danh sách đi chợ thông minh (Smart Grocery Checklist)
 * **FR-3.1:** Backend tự tổng hợp nguyên liệu của cả 3 ngày thành danh sách 3 nhóm cố định: *Đạm* (thịt, cá, trứng, đậu phụ, sữa), *Rau củ quả*, *Gạo, bún & gia vị* (gạo, bún, mì, gia vị, dầu ăn). Nguyên liệu trùng tên và cùng đơn vị được cộng dồn khối lượng.
@@ -188,6 +189,7 @@ sequenceDiagram
   "weight_kg": 62,
   "activity_level": "light",
   "goal": "cut",
+  "pregnant_or_breastfeeding": false,
   "restrictions": {
     "allergies": "Hải sản",
     "injuries": "Đau gối",
@@ -198,11 +200,12 @@ sequenceDiagram
 
 | Trường | Giá trị |
 |---|---|
-| `age` | số nguyên 10–100 |
+| `age` | số nguyên 18–100 *(bản 2.6.0, trước là 10–100)* |
 | `gender` | `male` / `female` |
 | `height_cm`, `weight_kg` | 100–250 cm, 30–250 kg |
 | `activity_level` | `sedentary` (ít vận động) / `light` (vận động nhẹ) / `active` (vận động nhiều) — FR-1.2 |
-| `goal` | `cut` / `bulk` / `maintain` — FR-1.3 |
+| `goal` | `cut` / `bulk` / `maintain` — FR-1.3. `cut` bị từ chối (400, câu tiếng Việt) khi BMI < 18,5 hoặc `pregnant_or_breastfeeding = true` *(bản 2.6.0)* |
+| `pregnant_or_breastfeeding` | `true` / `false`, mặc định `false`; chỉ được `true` khi `gender = female`. Dữ liệu sức khoẻ: không lưu ở server, không ghi log (NFR-7) *(bổ sung bản 2.6.0)* |
 | `restrictions.allergies`, `.injuries`, `.health_conditions` | văn bản tự do, tối đa 300 ký tự, có thể bỏ trống hoặc bỏ hẳn `restrictions` — FR-1.4. Không lưu ở server (NFR-7) |
 
 ### 6.2. Response — Kế hoạch 3 ngày
@@ -436,10 +439,11 @@ Giá trị cho feedback:
    * Trong lúc code/test, backend chạy tạm trên localhost (`npm run start:dev`) là đủ. Muốn demo/nộp bài với nhiều thiết bị thật hoạt động ổn định lâu dài (không phụ thuộc laptop của nhóm có đang bật hay không), cần **deploy `backend_api/` lên một nơi chạy liên tục**.
    * Vì SQLite là một file trên ổ đĩa của server, nơi deploy phải có **ổ lưu trữ bền** (persistent disk/volume). Nhiều gói hosting miễn phí dùng ổ đĩa tạm: file bị xoá mỗi khi service ngủ, restart hoặc redeploy. Ví dụ, Render bản free không gắn được persistent disk, nên dùng SQLite trên đó sẽ mất toàn bộ tài khoản và lịch sử. Hai hướng đúng: (a) giữ SQLite, chọn host có volume bền (ví dụ Railway volume, Fly.io volume, hoặc VPS); (b) chuyển sang Postgres được quản lý sẵn — TypeORM chỉ cần đổi cấu hình kết nối. Kiểm tra lại gói và giá hiện hành của host trước khi chọn.
 7. **Quyền riêng tư dữ liệu sức khoẻ (bổ sung bản 2.3.0):**
-   * Dị ứng, chấn thương, tình trạng sức khoẻ là dữ liệu cá nhân nhạy cảm (Nghị định 13/2023/NĐ-CP). Chúng chỉ lưu trên máy người dùng, gửi kèm từng request rồi bỏ đi: backend không ghi vào database, không ghi log nội dung request hay nội dung Gemini trả về.
+   * Dị ứng, chấn thương, tình trạng sức khoẻ và việc mang thai / cho con bú là dữ liệu cá nhân nhạy cảm (Nghị định 13/2023/NĐ-CP). Chúng chỉ lưu trên máy người dùng, gửi kèm từng request rồi bỏ đi: backend không ghi vào database, không ghi log nội dung request hay nội dung Gemini trả về.
    * Plan lưu trong lịch sử (FR-7) không chứa các trường này.
 8. **Chống prompt injection (bổ sung bản 2.3.0):** Văn bản tự do của người dùng được đặt trong một khối dữ liệu có thẻ phân cách, bỏ ký tự `<` `>` và xuống dòng, giới hạn 300 ký tự mỗi ô; prompt dặn Gemini coi khối này là dữ liệu, không phải chỉ dẫn. Đầu ra vẫn phải qua bộ kiểm tra ở NFR-4, nên dù bị chèn lệnh cũng không làm hỏng app.
 9. **Khuyến cáo y tế (bổ sung bản 2.3.0):** Onboarding ghi rõ gợi ý chỉ mang tính tham khảo, không thay thế tư vấn y tế. Khi người dùng có khai tình trạng sức khoẻ, hoặc khi calo mục tiêu phải nâng lên bằng BMR, response có câu giải thích trong `warnings` để app hiển thị.
+10. **An toàn khi lập kế hoạch (bổ sung bản 2.6.0):** Không phục vụ người dưới 18 tuổi; không lập kế hoạch thâm hụt calo cho người thiếu cân (BMI < 18,5) hoặc đang mang thai / cho con bú (FR-1.3); độ khó bài tập giới hạn theo tuổi, mức vận động và thai kỳ (FR-2.2). Backend kiểm ở mọi endpoint nhận hồ sơ, kể cả đổi món, đổi bài, feedback; app khoá lựa chọn theo đúng các ngưỡng đó. Người mang thai / cho con bú nhận thêm khuyến cáo hỏi ý kiến bác sĩ trong `warnings`.
 
 ---
 

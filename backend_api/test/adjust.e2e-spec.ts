@@ -109,6 +109,8 @@ describe('Đổi món, đổi bài tập, feedback (e2e, chế độ giả lập
     ['no plan', 'exercises/swap', () => ({ profile: PROFILE, exercise_id: 'e1_1' })],
     ['no profile', 'meals/swap', (plan) => ({ plan, meal_id: 'm1_1' })],
     ['a plan that is not an object', 'meals/swap', () => ({ profile: PROFILE, plan: 'abc', meal_id: 'm1_1' })],
+    ['an underweight profile that cuts (v2.6.0)', 'exercises/swap', (plan) => ({ profile: { ...PROFILE, weight_kg: 45 }, plan, exercise_id: 'e1_1' })],
+    ['a profile under 18 (v2.6.0)', 'feedback', (plan) => ({ profile: { ...PROFILE, age: 17 }, plan, day_number: 1, intensity: 'hard', body_states: ['normal'], eating: 'on_plan' })],
   ])('answers 400 to %s', async (_label, path, build) => {
     await post(path, build(await generate())).expect(400);
   });

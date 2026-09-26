@@ -9,6 +9,7 @@ import { Goal } from './enums/goal.enum.js';
 import { GeminiTimeoutError, type GeminiService } from './gemini.service.js';
 import { PlanService } from './plan.service.js';
 import { WARNINGS } from './plan-warnings.js';
+import { exerciseLevel } from './swap-pools.js';
 
 const SAMPLE_CONTENT: unknown = JSON.parse(
   readFileSync(fileURLToPath(new URL('./data/sample-plan.json', import.meta.url)), 'utf-8'),
@@ -173,5 +174,34 @@ describe('PlanService — calorie totals and restrictions (v2.5.0)', () => {
     const { gemini, generatePlanContent } = geminiAnswering(SAMPLE_CONTENT);
     await new PlanService(gemini).generatePlan(profile(), { feedbackNote: 'buổi tập rất mệt' });
     expect(generatePlanContent).toHaveBeenCalledWith(expect.anything(), expect.anything(), 'buổi tập rất mệt', 20_000);
+  });
+});
+
+describe('PlanService — exercise level and pregnancy (v2.6.0)', () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  const levels = (plan: { days: { workout: { exercises: { name: string }[] } }[] }) =>
+    plan.days.flatMap((day) => day.workout.exercises.map((exercise) => exerciseLevel(exercise.name)));
+  const elderly = () => profile({ age: 65, activity_level: ActivityLevel.SEDENTARY, goal: Goal.MAINTAIN });
+
+  it('gives a 65-year-old sedentary user only level-1 exercises from the sample', async () => {
+    const plan = await new PlanService(geminiOff).generatePlan(elderly());
+    expect(levels(plan).every((level) => level === 1)).toBe(true);
+  });
+
+  it('lowers the level of Gemini exercises without calling Gemini again', async () => {
+    // Thực đơn mẫu dùng làm "đầu ra Gemini" có Jumping Jacks, Squat, Chống đẩy khuỵu gối, Plank (mức 2).
+    // 60 tuổi → mức 1; mục tiêu ~1660 kcal để thực đơn mẫu (~1550 kcal/ngày) vẫn đúng khoảng calo.
+    const { gemini, generatePlanContent } = geminiAnswering(SAMPLE_CONTENT);
+    const plan = await new PlanService(gemini).generatePlan(profile({ age: 60, goal: Goal.MAINTAIN }));
+    expect(plan.source).toBe('gemini');
+    expect(generatePlanContent).toHaveBeenCalledTimes(1);
+    expect(levels(plan).every((level) => level === 1)).toBe(true);
+  });
+
+  it('warns and keeps exercises at level 1 when pregnant or breastfeeding', async () => {
+    const plan = await new PlanService(geminiOff).generatePlan(profile({ goal: Goal.MAINTAIN, pregnant_or_breastfeeding: true }));
+    expect(plan.warnings).toContain(WARNINGS.pregnancy);
+    expect(levels(plan).every((level) => level === 1)).toBe(true);
   });
 });

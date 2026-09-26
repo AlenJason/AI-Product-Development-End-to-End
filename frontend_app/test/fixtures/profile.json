@@ -5,6 +5,7 @@
   "weight_kg": 62,
   "activity_level": "light",
   "goal": "cut",
+  "pregnant_or_breastfeeding": false,
   "restrictions": {
     "allergies": "Hải sản",
     "injuries": "Đau gối",

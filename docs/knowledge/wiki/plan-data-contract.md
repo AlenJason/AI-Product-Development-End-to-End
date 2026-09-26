@@ -1,5 +1,5 @@
 ---
-last_updated: 2026-09-24
+last_updated: 2026-09-27
 tags: [hop-dong-api, backend, dinh-duong]
 ---
 
@@ -9,12 +9,25 @@ Plan 3 ngày đi qua một đường duy nhất trong `backend_api/src/plan/`. G
 
 ## Luồng `POST /api/v1/generate-plan`
 
-1. `CreatePlanDto` (`dto/create-plan.dto.ts`) validate request. `restrictions` là ba chuỗi tự do tối đa 300 ký tự, mặc định rỗng.
+1. `CreatePlanDto` (`dto/create-plan.dto.ts`) validate request. `restrictions` là ba chuỗi tự do tối đa 300 ký tự, mặc định rỗng. Từ v2.6.0: tuổi 18–100, `pregnant_or_breastfeeding` (chỉ nữ), và `goal = cut` bị từ chối khi thiếu cân hoặc mang thai (mục "Hồ sơ an toàn" dưới).
 2. `computeDailyTarget()` (`daily-target.ts`) → BMI, BMR, TDEE, mục tiêu calo có sàn BMR, macro 25/45/30.
 3. Có `GEMINI_API_KEY` → `GeminiService.generatePlanContent()` trả JSON thô (chỉ `days`). Không có → bỏ qua bước này.
-4. `parsePlanContent(raw, target)` (`plan-validation.ts`) → class-validator + `findPlanViolations()`; rồi `findRestrictionViolations()` (có nguyên liệu dị ứng đã nhận ra → sai hợp đồng). Sai → `generateWithRetry()` gọi lại 1 lần (trừ khi hết giờ) → thực đơn mẫu `data/sample-plan.json`: lọc theo hạn chế nhận ra (`filterPlanByRestrictions()`), nhân khẩu phần từng ngày cho khớp mục tiêu (`scaleMealsToTotal()`), rồi qua đúng bước kiểm tra này.
+4. `parsePlanContent(raw, target)` (`plan-validation.ts`) → class-validator + `findPlanViolations()`; rồi `findRestrictionViolations()` (có nguyên liệu dị ứng đã nhận ra → sai hợp đồng). Sai → `generateWithRetry()` gọi lại 1 lần (trừ khi hết giờ) → thực đơn mẫu `data/sample-plan.json`: lọc theo hạn chế nhận ra (`filterPlanByRestrictions()`), nhân khẩu phần từng ngày cho khớp mục tiêu (`scaleMealsToTotal()`), rồi qua đúng bước kiểm tra này. Cuối cùng hạ mức động tác theo hồ sơ (`capWorkoutLevel()`) — cho cả kết quả Gemini (không gọi lại) lẫn thực đơn mẫu.
 5. `assemblePlan()` (`plan-assembly.ts`) → `plan_id` (hoặc giữ `plan_id` cũ khi đổi món/feedback), ID món và động tác, sắp bữa, `buildGroceryList()`.
-6. `warnings` (`plan-warnings.ts`): sàn BMR, khuyến cáo y tế, thực đơn mẫu chỉ lọc theo từ khoá, hạn chế chưa nhận ra hết. Không câu nào nhắc lại chữ người dùng nhập.
+6. `warnings` (`plan-warnings.ts`): sàn BMR, khuyến cáo y tế, mang thai / cho con bú, thực đơn mẫu chỉ lọc theo từ khoá, hạn chế chưa nhận ra hết. Không câu nào nhắc lại chữ người dùng nhập.
+
+## Hồ sơ an toàn và mức động tác (BRD v2.6.0)
+
+| Luật | Code |
+|---|---|
+| Tuổi 18–100 | `MIN_AGE`, `MAX_AGE` trong `profile-safety.ts`, dùng ở `@Min`/`@Max` của `CreatePlanDto` |
+| `goal = cut` bị từ chối khi BMI **chưa làm tròn** < 18,5 hoặc `pregnant_or_breastfeeding` | `cutBlockReason()` (`profile-safety.ts`) qua `SafeGoalConstraint` (`dto/profile-safety.validator.ts`) — 400 kèm câu tiếng Việt |
+| `pregnant_or_breastfeeding = true` chỉ khi `gender = female` | `PregnancyNeedsFemaleConstraint` |
+| Mức động tác tối đa: ≥ 60 tuổi, ≥ 45 + ít vận động, mang thai → 1; vận động nhiều + < 45 → 3; còn lại → 2 | `maxExerciseLevel()` (`exercise-level.ts`) |
+
+Validator nằm trên `CreatePlanDto` nên áp cho cả 4 endpoint nhận hồ sơ (`generate-plan` và ba endpoint của [[swap-and-feedback]]). App khoá lựa chọn theo đúng các ngưỡng này (`frontend_app/lib/models/profile_rules.dart`, [[flutter-ui]]). Ràng buộc: [[critical-constraints]] #30, #31.
+
+`capWorkoutLevel(plan, maxLevel, avoidTags)` thay động tác vượt mức bằng động tác trong kho cùng nhóm cơ, mức ≤ giới hạn, không vướng chấn thương, giữ số hiệp — tất định. Động tác không có trong kho (Gemini tự đặt) chỉ bị coi là vượt mức khi giới hạn là 1 và có tag `jumping`. Nhóm cơ nào cũng có động tác mức 1 không tag (`exercise-level.spec.ts` kiểm), nên hạ mức không làm rỗng buổi tập. Prompt ghi luật bằng `exerciseLevelRule()`, dựng từ chính kho.
 
 ## Hai lớp DTO
 

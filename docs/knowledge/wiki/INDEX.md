@@ -1,6 +1,6 @@
 # Mục lục Knowledge Base
 
-_Cập nhật lần cuối: 2026-09-26_
+_Cập nhật lần cuối: 2026-09-27_
 
 ## Danh sách chủ đề
 
@@ -13,7 +13,7 @@ _Cập nhật lần cuối: 2026-09-26_
 | [[gemini-integration]]      | Hành vi thật của SDK Gemini (hết giờ, lỗi, không tự gọi lại), cách test không cần khoá |
 | [[auth-and-history]]        | Đăng nhập Google/giả lập, JWT, guard, SQLite + migration, lịch sử kế hoạch; hành vi thư viện đã kiểm chứng |
 | [[swap-and-feedback]]       | Đổi món, đổi bài tập, feedback cuối ngày; bộ khớp từ khoá dị ứng/chấn thương; kho món và động tác soạn sẵn |
-| [[flutter-ui]]              | App Flutter: model theo hợp đồng, ApiClient, provider, lưu trên máy, fixture hợp đồng, CORS, quyền mạng |
+| [[flutter-ui]]              | App Flutter: Onboarding 3 bước, kế hoạch 3 ngày, đi chợ, hồ sơ; ApiClient, provider, lưu trên máy, fixture hợp đồng, CORS, quyền mạng, icon |
 | [[log]]                     | Nhật ký thay đổi wiki theo thời gian                                   |
 
 ## Tra cứu nhanh

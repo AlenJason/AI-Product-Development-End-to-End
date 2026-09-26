@@ -7,11 +7,14 @@ import 'package:my_ai_app/models/api/account.dart';
 import 'package:my_ai_app/models/api/codes.dart';
 import 'package:my_ai_app/models/api/profile.dart';
 import 'package:my_ai_app/providers/auth_provider.dart';
+import 'package:my_ai_app/providers/grocery_provider.dart';
 import 'package:my_ai_app/providers/plan_provider.dart';
 import 'package:my_ai_app/screens/dashboard_screen.dart';
 import 'package:my_ai_app/services/api_client.dart';
 import 'package:my_ai_app/services/api_exception.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import '../test/app_harness.dart' show fillOnboarding;
 
 // Chạy TAY trên máy ảo hoặc điện thoại thật, khi backend_api đang chạy ở chế độ giả lập — không chạy trong CI
 // (`flutter test` chỉ chạy thư mục test/):
@@ -89,7 +92,7 @@ void main() {
     );
 
     // Có plan đã lưu → app mở thẳng Dashboard.
-    await tester.pumpWidget(SmartFitApp(auth: auth, plans: plans));
+    await tester.pumpWidget(SmartFitApp(auth: auth, plans: plans, grocery: GroceryProvider(prefs: prefs, plans: plans)));
     await tester.pump(const Duration(seconds: 1));
     expect(find.byType(DashboardScreen), findsOneWidget);
     await tester.pumpWidget(const SizedBox());
@@ -105,4 +108,35 @@ void main() {
     final closedPort = ApiClient(baseUrl: base.replace(port: 1).toString());
     await expectLater(closedPort.health(), throwsA(isA<NetworkException>()));
   });
+
+  // Thao tác giao diện thật trên thiết bị (giai đoạn 6): Onboarding → backend thật tạo plan → Dashboard → đổi món.
+  testWidgets('giao diện trên thiết bị: điền Onboarding → plan thật → Dashboard → đổi món', (tester) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.clear();
+    final api = ApiClient(baseUrl: resolveApiBaseUrl());
+    final plans = PlanProvider(api: api, prefs: prefs);
+    await tester.pumpWidget(SmartFitApp(
+      auth: AuthProvider(api: api, prefs: prefs),
+      plans: plans,
+      grocery: GroceryProvider(prefs: prefs, plans: plans),
+    ));
+    await fillOnboarding(tester);
+    await tester.tap(find.text('Tạo kế hoạch 3 ngày'));
+    await pumpUntil(tester, find.text('Hôm nay là Ngày 1'));
+    expect(find.text('BỮA SÁNG'), findsOneWidget);
+
+    await tester.tap(find.text('Đổi món').first);
+    await pumpUntil(tester, find.textContaining('Đã đổi bữa sáng sang'));
+    await tester.pumpWidget(const SizedBox());
+    await prefs.clear();
+  });
+}
+
+// Mạng thật: vòng xoay chờ không bao giờ "settle", nên pump tới khi thấy [finder] (tối đa 60 s như timeout của app).
+Future<void> pumpUntil(WidgetTester tester, Finder finder) async {
+  for (var waited = 0; waited < 600; waited++) {
+    await tester.pump(const Duration(milliseconds: 100));
+    if (finder.evaluate().isNotEmpty) return;
+  }
+  fail('Không thấy $finder sau 60 s');
 }

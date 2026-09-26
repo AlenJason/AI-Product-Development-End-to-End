@@ -83,8 +83,29 @@ describe('POST /api/v1/generate-plan (e2e, SDK thật + server Gemini giả)', (
     ['ô nhập dài hơn 300 ký tự', { restrictions: { allergies: 'a'.repeat(301) } }],
     ['tuổi không phải số', { age: 'hai mươi' }],
     ['mục tiêu ngoài danh sách', { goal: 'lose_weight' }],
+    ['tuổi dưới 18 (v2.6.0)', { age: 17 }],
+    ['mang thai nhưng giới tính nam (v2.6.0)', { gender: 'male', pregnant_or_breastfeeding: true, goal: 'maintain' }],
+    ['pregnant_or_breastfeeding không phải boolean', { pregnant_or_breastfeeding: 'có' }],
   ])('rejects %s with 400', async (_label, overrides) => {
     await post(body(overrides)).expect(400);
+  });
+
+  // BRD FR-1.3 (v2.6.0): câu tiếng Việt giải thích lý do, không gọi Gemini.
+  it.each([
+    ['thiếu cân (BMI 16,4)', { height_cm: 160, weight_kg: 42 }, 'thiếu cân'],
+    ['đang mang thai hoặc cho con bú', { pregnant_or_breastfeeding: true }, 'mang thai'],
+  ])('refuses to plan a calorie deficit when %s', async (_label, overrides, reason) => {
+    fake.reply({ kind: 'json', body: SAMPLE_CONTENT });
+    const res = await post(body({ ...overrides, goal: 'cut' })).expect(400);
+    expect(res.body.message.join(' ')).toContain(reason);
+    expect(fake.requests).toHaveLength(0);
+  });
+
+  it('plans maintenance while pregnant, with the pregnancy warning and never echoing the flag back', async () => {
+    fake.reply({ kind: 'json', body: SAMPLE_CONTENT });
+    const res = await post(body({ goal: 'maintain', pregnant_or_breastfeeding: true })).expect(200);
+    expect(res.body.warnings.join(' ')).toContain('mang thai');
+    expect(JSON.stringify(res.body)).not.toContain('pregnant_or_breastfeeding');
   });
 
   it('accepts a request without restrictions', async () => {

@@ -8,11 +8,13 @@ import 'package:my_ai_app/services/api_client.dart';
 import 'fixture_loader.dart';
 
 // Backend giả cho test provider/widget: trả fixture hợp đồng theo đường dẫn, ghi lại request đã nhận.
-// `failWith` đặt mã lỗi (và fixture error_<mã>) cho mọi request tiếp theo; `hold` giữ response tới khi complete.
+// `failWith` đặt mã lỗi (và fixture error_<mã>) cho mọi request tiếp theo; `hold` giữ response tới khi complete;
+// `responses` thay JSON trả về cho một đường dẫn (ví dụ plan mới sau feedback ngày 3).
 class FakeBackend {
   final requests = <http.Request>[];
   int? failWith;
   Completer<void>? hold;
+  final responses = <String, Object>{};
 
   static const _fixtureFor = {
     '/health': 'health',
@@ -32,6 +34,8 @@ class FakeBackend {
       final status = failWith;
       if (status != null) return _json(loadFixture('error_$status'), status);
       if (request.method == 'DELETE') return http.Response('', 204);
+      final custom = responses[request.url.path];
+      if (custom != null) return _json(custom, 200);
       final name = _fixtureFor[request.url.path];
       if (name == null) return _json({'statusCode': 404, 'message': 'Cannot ${request.method} ${request.url.path}'}, 404);
       return _json(loadFixture(name), 200);

@@ -4,11 +4,13 @@ import { GoogleGenAI, ThinkingLevel, type ThinkingConfig } from '@google/genai';
 import type { CreatePlanDto } from './dto/create-plan.dto.js';
 import type { DailyTargetDto } from './dto/meal-plan-response.dto.js';
 import { ExerciseTag, MuscleGroup } from './enums/exercise.enum.js';
+import { maxExerciseLevel } from './exercise-level.js';
 import { Goal } from './enums/goal.enum.js';
 import { IngredientCategory, IngredientUnit } from './enums/ingredient.enum.js';
 import { MealType } from './enums/meal-type.enum.js';
 import { dayCalorieBounds, MACRO_CALORIE_TOLERANCE, mealCalorieBounds } from './plan-validation.js';
 import { matchRestrictions, type RestrictionMatch } from './restriction-matcher.js';
+import { type ExerciseLevel, SWAP_EXERCISES } from './swap-pools.js';
 import { sanitizeUserText } from './text.util.js';
 
 // Đo với Gemini thật (2026-09-24, `npm run measure:gemini`, gemini-3.5-flash): tạo plan 37–42 s khi model tự suy nghĩ
@@ -160,6 +162,8 @@ export function buildPlanPrompt(profile: CreatePlanDto, target: DailyTargetDto, 
     `- Tổng calo mỗi ngày: ${day.min}–${day.max} kcal.`,
     ...mealRules(target.target_calories),
     '- Buổi tập không cần dụng cụ, 15–25 phút.',
+    ...exerciseLevelRule(maxExerciseLevel(profile)),
+    ...pregnancyRule(profile),
     ...exerciseCodeRules(),
     '',
     'Chỉ trả về JSON, không kèm giải thích, đúng cấu trúc:',
@@ -181,6 +185,24 @@ export function exerciseAvoidRule(match: RestrictionMatch): string[] {
   return [
     `- Không dùng động tác có tags: ${match.avoidTags.map((tag) => `${tag} (${TAG_LABEL[tag]})`).join(', ')}. Ghi đủ tags cho mọi động tác.`,
   ];
+}
+
+// Mức động tác tối đa theo hồ sơ (BRD FR-2.2, v2.6.0). Tên động tác lấy từ kho — backend dùng đúng kho này để
+// thay động tác vượt mức (`capWorkoutLevel()`), nên Gemini không phải đoán "nhẹ" là gì.
+export function exerciseLevelRule(maxLevel: ExerciseLevel): string[] {
+  const names = (keep: (level: ExerciseLevel) => boolean) =>
+    SWAP_EXERCISES.filter((exercise) => keep(exercise.level)).map((exercise) => exercise.name).join(', ');
+  if (maxLevel === 1) {
+    return [`- Người dùng chỉ nên tập mức nhẹ nhất: không bật nhảy. Chỉ chọn các động tác như: ${names((level) => level === 1)}.`];
+  }
+  if (maxLevel === 2) return [`- Không dùng động tác nâng cao: ${names((level) => level === 3)}.`];
+  return [];
+}
+
+// Cờ do người dùng bật (không phải chữ tự nhập) nên nằm ngoài khối dữ liệu người dùng.
+export function pregnancyRule(profile: Pick<CreatePlanDto, 'pregnant_or_breastfeeding'>): string[] {
+  if (!profile.pregnant_or_breastfeeding) return [];
+  return ['- Người dùng đang mang thai hoặc cho con bú: món phải nấu chín kỹ, không dùng rượu bia, không ăn kiêng.'];
 }
 
 export const PROMPT_ROLE = 'Bạn là chuyên gia dinh dưỡng và huấn luyện thể lực cho người Việt.';

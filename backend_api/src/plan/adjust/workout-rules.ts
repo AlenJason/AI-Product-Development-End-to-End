@@ -2,7 +2,7 @@ import type { ExerciseContentDto, WorkoutContentDto } from '../dto/plan-content.
 import { ExerciseTag, type MuscleGroup } from '../enums/exercise.enum.js';
 import { BodyState, Eating, Intensity } from '../enums/feedback.enum.js';
 import { REST_WORKOUT, STRETCH_EXERCISE, WALK_EXERCISE } from '../exercise-presets.js';
-import { exerciseCandidates, exerciseLevel, toPlanExercise } from '../swap-pools.js';
+import { exerciseCandidates, exerciseLevel, type ExerciseLevel, toPlanExercise } from '../swap-pools.js';
 import { normalizeKey } from '../text.util.js';
 
 // Quy tắc cố định cho buổi tập ngày kế tiếp sau feedback (BRD FR-5.2, D2) — không cần Gemini.
@@ -38,6 +38,7 @@ export function adjustWorkout(
   feedback: NormalizedFeedback,
   trainedMuscles: Set<MuscleGroup>,
   profileAvoidTags: ExerciseTag[],
+  maxLevel: ExerciseLevel,
 ): WorkoutContentDto {
   if (hasDangerSign(feedback)) return structuredClone(REST_WORKOUT);
 
@@ -45,7 +46,7 @@ export function adjustWorkout(
   let durationMinutes = workout.duration_minutes;
 
   if (feedback.states.has(BodyState.JOINT_PAIN)) {
-    exercises = replaceJointLoading(exercises, profileAvoidTags);
+    exercises = replaceJointLoading(exercises, profileAvoidTags, maxLevel);
   }
 
   const tired = feedback.intensity === Intensity.HARD || feedback.states.has(BodyState.FATIGUED);
@@ -73,14 +74,18 @@ export function adjustWorkout(
   return { ...workout, duration_minutes: durationMinutes, exercises };
 }
 
-function replaceJointLoading(exercises: ExerciseContentDto[], profileAvoidTags: ExerciseTag[]): ExerciseContentDto[] {
+function replaceJointLoading(
+  exercises: ExerciseContentDto[],
+  profileAvoidTags: ExerciseTag[],
+  maxLevel: ExerciseLevel,
+): ExerciseContentDto[] {
   const names = new Set(exercises.map((exercise) => normalizeKey(exercise.name)));
   return exercises.flatMap((exercise): ExerciseContentDto[] => {
     if (!exercise.tags.some((tag) => JOINT_PAIN_TAGS.includes(tag))) return [exercise];
     const [candidate] = exerciseCandidates(exercise.muscle_group, {
       avoidTags: [...JOINT_PAIN_TAGS, ...profileAvoidTags],
       excludeNames: names,
-      maxLevel: exerciseLevel(exercise.name) ?? 3,
+      maxLevel: Math.min(exerciseLevel(exercise.name) ?? maxLevel, maxLevel),
     });
     if (!candidate) return [];
     names.add(normalizeKey(candidate.name));

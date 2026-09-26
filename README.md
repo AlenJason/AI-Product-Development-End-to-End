@@ -15,7 +15,7 @@
 ## Cấu trúc thư mục
 
 ```
-frontend_app/    Ứng dụng Flutter (đã có tầng gọi API; màn hình còn dùng dữ liệu mẫu tới giai đoạn 6)
+frontend_app/    Ứng dụng Flutter: Onboarding, kế hoạch 3 ngày (đổi món, đổi bài), đi chợ, hồ sơ — nối backend
 backend_api/     API NestJS — generate-plan (Gemini hoặc thực đơn mẫu), đổi món, đổi bài tập, feedback, đăng nhập Google, lịch sử (SQLite)
 ai_workspace/    Script Node/TS thử nghiệm prompt & schema Gemini, độc lập với backend
 docs/            Kế hoạch triển khai, hướng dẫn gắn khoá, wiki nội bộ
@@ -78,6 +78,12 @@ Kết quả build và test tự động của từng commit: tab [Actions](https
 ## Nhật ký thay đổi (Changelog)
 
 Đối chiếu theo phiên bản BRD (mục "Phiên bản" trong [BRD.md](BRD.md)), để giảng viên/trợ giảng theo dõi tiến độ trực tiếp trên repo mà không cần đọc từng commit.
+
+### BRD v2.6.0 — 2026-09-27
+- Giai đoạn 6 — app dùng dữ liệu thật: Onboarding 3 bước (thêm tuổi, giới tính, mức vận động), màn chờ gọi API, kế hoạch 3 ngày mở đúng ngày hôm nay với đủ 3 bữa, tổng calo và macro, đổi món và đổi bài gọi API, danh sách đi chợ (đánh dấu đã mua, ẩn món đã có sẵn), tab Cá nhân sửa hồ sơ. Không còn dữ liệu viết cứng
+- Nhập hạn chế mới: công tắc "Tôi có dị ứng / chấn thương / bệnh nền" → chọn từ danh sách phổ biến hoặc tự ghi — người không có hạn chế nào không phải tích gì
+- An toàn: không phục vụ người dưới 18 tuổi; không cho chọn Giảm mỡ khi thiếu cân hoặc đang mang thai / cho con bú; bài tập nhẹ hơn cho người lớn tuổi, ít vận động hoặc mang thai (trước đây mọi người nhận cùng một buổi tập)
+- Tên "SmartFit AI", icon và màn khởi động riêng; sửa dải đen trên thanh trạng thái Android. Kiểm thử: 89 test Flutter, 320 unit và 74 e2e backend; chạy thật trên máy ảo Android 16
 
 ### BRD v2.5.1 — 2026-09-24 → 2026-09-26
 - Giai đoạn 5 — nền tảng kết nối app với backend: app Flutter có model theo đúng hợp đồng API, lớp gọi API báo lỗi bằng tiếng Việt thay vì crash (mất mạng, hết giờ, phiên hết hạn…), lưu kế hoạch và phiên đăng nhập trên máy — mở lại app vẫn xem được kế hoạch khi không có mạng. Backend bật CORS cho bản web (`CORS_ORIGINS`). Backend xuất 14 mẫu JSON thật để test hai phía cùng dùng — đổi hợp đồng mà quên cập nhật phía nào thì test phía đó đỏ. Thêm CI cho Flutter (44 test); sửa quyền mạng Android/iOS/macOS và cấu hình build Android (trước đó APK không build được sau khi thêm package lưu dữ liệu). Màn hình vẫn dùng dữ liệu mẫu tới giai đoạn 6

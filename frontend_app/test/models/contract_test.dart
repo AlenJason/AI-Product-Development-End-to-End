@@ -32,6 +32,12 @@ void main() {
       expect(Profile.fromJson(json).toJson(), equals(json));
     });
 
+    test('hồ sơ lưu trước v2.6.0 (không có pregnant_or_breastfeeding) vẫn đọc được', () {
+      final json = loadFixture('profile')..remove('pregnant_or_breastfeeding');
+      expect(Profile.fromJson(json).pregnantOrBreastfeeding, isFalse);
+      expect(() => Profile.fromJson({...loadFixture('profile'), 'pregnant_or_breastfeeding': 'có'}), throwsFormatException);
+    });
+
     test('auth_login, history, health', () {
       final auth = loadFixture('auth_login');
       expect(AuthResult.fromJson(auth).toJson(), equals(auth));

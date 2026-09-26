@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'codes.dart';
 import 'json_read.dart';
 
@@ -11,6 +13,7 @@ class Profile {
     required this.weightKg,
     required this.activityLevel,
     required this.goal,
+    this.pregnantOrBreastfeeding = false,
     this.restrictions = const Restrictions(),
   });
 
@@ -20,6 +23,8 @@ class Profile {
   final num weightKg;
   final ActivityLevel activityLevel;
   final Goal goal;
+  // Chỉ có nghĩa khi gender = female; true thì backend không cho chọn Giảm mỡ (BRD FR-1.3, v2.6.0).
+  final bool pregnantOrBreastfeeding;
   final Restrictions restrictions;
 
   factory Profile.fromJson(Json json) => Profile(
@@ -29,6 +34,9 @@ class Profile {
         weightKg: readNum(json, 'weight_kg'),
         activityLevel: readCode(json, 'activity_level', ActivityLevel.values, (v) => v.code),
         goal: readCode(json, 'goal', Goal.values, (v) => v.code),
+        // Hồ sơ lưu trước v2.6.0 không có trường này.
+        pregnantOrBreastfeeding:
+            json['pregnant_or_breastfeeding'] == null ? false : readBool(json, 'pregnant_or_breastfeeding'),
         restrictions: json['restrictions'] == null
             ? const Restrictions()
             : Restrictions.fromJson(readMap(json['restrictions'], 'restrictions')),
@@ -41,8 +49,12 @@ class Profile {
         'weight_kg': weightKg,
         'activity_level': activityLevel.code,
         'goal': goal.code,
+        'pregnant_or_breastfeeding': pregnantOrBreastfeeding,
         'restrictions': restrictions.toJson(),
       };
+
+  // So sánh theo JSON gửi đi: hai hồ sơ bằng nhau thì cho ra cùng một plan.
+  bool sameAs(Profile other) => jsonEncode(toJson()) == jsonEncode(other.toJson());
 }
 
 // Ba ô nhập tự do, tối đa 300 ký tự mỗi ô (BRD FR-1.4) — giới hạn này kiểm ở form (giai đoạn 6) và ở backend.

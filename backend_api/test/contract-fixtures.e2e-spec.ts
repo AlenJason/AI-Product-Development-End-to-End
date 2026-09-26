@@ -19,8 +19,15 @@ const PROFILE = {
   weight_kg: 62,
   activity_level: 'light',
   goal: 'cut',
+  pregnant_or_breastfeeding: false,
   restrictions: { allergies: 'Hải sản', injuries: 'Đau gối', health_conditions: 'Tiểu đường' },
 };
+
+// Nhãn dị ứng / chấn thương bộ khớp từ khoá nhận ra. Mọi chip gợi ý của app phải nằm trong đây (D5) —
+// test Flutter `restriction_options_test.dart` kiểm, nên sửa file từ khoá mà quên app thì test đó đỏ.
+const KEYWORDS = JSON.parse(
+  readFileSync(new URL('../src/plan/data/restriction-keywords.json', import.meta.url), 'utf-8'),
+) as { allergies: { labels: string[] }[]; injuries: { labels: string[] }[] };
 
 describe('Fixture hợp đồng cho Flutter (e2e)', () => {
   let testApp: TestApp;
@@ -64,6 +71,10 @@ describe('Fixture hợp đồng cho Flutter (e2e)', () => {
 
   it('matches every committed fixture', async () => {
     check('profile', PROFILE);
+    check('restriction_labels', {
+      allergies: KEYWORDS.allergies.flatMap((group) => group.labels),
+      injuries: KEYWORDS.injuries.flatMap((group) => group.labels),
+    });
     check('health', (await http().get('/health').expect(200)).body);
 
     const login = await loginMock(testApp, 'sv@vku.edu.vn');

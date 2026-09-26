@@ -2,6 +2,7 @@ import type { WorkoutContentDto } from '../dto/plan-content.dto.js';
 import { ExerciseTag, MuscleGroup } from '../enums/exercise.enum.js';
 import { BodyState, Eating, Intensity } from '../enums/feedback.enum.js';
 import { REST_WORKOUT, STRETCH_EXERCISE, WALK_EXERCISE } from '../exercise-presets.js';
+import { exerciseLevel } from '../swap-pools.js';
 import { adjustWorkout, describeFeedback, normalizeFeedback } from './workout-rules.js';
 
 const workout = (): WorkoutContentDto => ({
@@ -30,7 +31,7 @@ describe('normalizeFeedback', () => {
 
 describe('adjustWorkout — danger sign (#14, BRD FR-5.2)', () => {
   it('replaces the whole next workout with rest or a light walk', () => {
-    expect(adjustWorkout(workout(), feedback(Intensity.MODERATE, [BodyState.DANGER_SIGN]), NONE, [])).toEqual(REST_WORKOUT);
+    expect(adjustWorkout(workout(), feedback(Intensity.MODERATE, [BodyState.DANGER_SIGN]), NONE, [], 3)).toEqual(REST_WORKOUT);
   });
 
   it('overrides every other answer, including "easy" and other states', () => {
@@ -39,12 +40,13 @@ describe('adjustWorkout — danger sign (#14, BRD FR-5.2)', () => {
       feedback(Intensity.EASY, [BodyState.DANGER_SIGN, BodyState.SORE, BodyState.JOINT_PAIN, BodyState.NORMAL]),
       new Set([MuscleGroup.LEGS]),
       [],
+      3,
     );
     expect(adjusted).toEqual(REST_WORKOUT);
   });
 
   it('returns a copy, so later edits cannot change the preset', () => {
-    const adjusted = adjustWorkout(workout(), feedback(Intensity.HARD, [BodyState.DANGER_SIGN]), NONE, []);
+    const adjusted = adjustWorkout(workout(), feedback(Intensity.HARD, [BodyState.DANGER_SIGN]), NONE, [], 3);
     adjusted.exercises[0].sets = 5;
     expect(REST_WORKOUT.exercises[0].sets).toBe(1);
   });
@@ -52,39 +54,47 @@ describe('adjustWorkout — danger sign (#14, BRD FR-5.2)', () => {
 
 describe('adjustWorkout — regular rules (BRD FR-5.2)', () => {
   it('keeps the workout for a moderate session with a normal body', () => {
-    expect(adjustWorkout(workout(), feedback(Intensity.MODERATE, [BodyState.NORMAL]), NONE, [])).toEqual(workout());
+    expect(adjustWorkout(workout(), feedback(Intensity.MODERATE, [BodyState.NORMAL]), NONE, [], 3)).toEqual(workout());
   });
 
   it('adds one set after an easy session, capped at 6', () => {
-    expect(sets(adjustWorkout(workout(), feedback(Intensity.EASY, [BodyState.NORMAL]), NONE, []))).toEqual([3, 4, 4, 6]);
+    expect(sets(adjustWorkout(workout(), feedback(Intensity.EASY, [BodyState.NORMAL]), NONE, [], 3))).toEqual([3, 4, 4, 6]);
   });
 
   it('does not add sets after an easy session when the body is not fine', () => {
-    expect(sets(adjustWorkout(workout(), feedback(Intensity.EASY, [BodyState.FATIGUED]), NONE, []))).toEqual([1, 2, 2, 5]);
+    expect(sets(adjustWorkout(workout(), feedback(Intensity.EASY, [BodyState.FATIGUED]), NONE, [], 3))).toEqual([1, 2, 2, 5]);
   });
 
   it.each([
     ['a hard session', feedback(Intensity.HARD, [BodyState.NORMAL])],
     ['fatigue', feedback(Intensity.MODERATE, [BodyState.FATIGUED])],
   ])('removes one set (at least 1 left) and shortens the session after %s', (_label, input) => {
-    const adjusted = adjustWorkout(workout(), input, NONE, []);
+    const adjusted = adjustWorkout(workout(), input, NONE, [], 3);
     expect(sets(adjusted)).toEqual([1, 2, 2, 5]);
     expect(adjusted.duration_minutes).toBe(15);
   });
 
   it('eases muscle groups trained that day and adds a stretch when sore', () => {
-    const adjusted = adjustWorkout(workout(), feedback(Intensity.MODERATE, [BodyState.SORE]), new Set([MuscleGroup.LEGS]), []);
+    const adjusted = adjustWorkout(workout(), feedback(Intensity.MODERATE, [BodyState.SORE]), new Set([MuscleGroup.LEGS]), [], 3);
     expect(sets(adjusted)).toEqual([2, 2, 3, 6, 1]);
     expect(adjusted.exercises.at(-1)?.name).toBe(STRETCH_EXERCISE.name);
   });
 
   it('does not stack the sore reduction on top of the tired one', () => {
-    const adjusted = adjustWorkout(workout(), feedback(Intensity.HARD, [BodyState.SORE]), new Set([MuscleGroup.LEGS]), []);
+    const adjusted = adjustWorkout(workout(), feedback(Intensity.HARD, [BodyState.SORE]), new Set([MuscleGroup.LEGS]), [], 3);
     expect(sets(adjusted)).toEqual([1, 2, 2, 5, 1]);
   });
 
+  it('replaces joint-loading exercises only with exercises inside the allowed level (v2.6.0)', () => {
+    const before = new Set(workout().exercises.map((exercise) => exercise.name));
+    const adjusted = adjustWorkout(workout(), feedback(Intensity.MODERATE, [BodyState.JOINT_PAIN]), NONE, [], 1);
+    const added = adjusted.exercises.filter((exercise) => !before.has(exercise.name));
+    expect(added.length).toBeGreaterThan(0);
+    for (const exercise of added) expect(exerciseLevel(exercise.name)).toBe(1);
+  });
+
   it('replaces jumping and kneeling exercises on joint pain, respecting declared injuries', () => {
-    const adjusted = adjustWorkout(workout(), feedback(Intensity.MODERATE, [BodyState.JOINT_PAIN]), NONE, [ExerciseTag.WRIST_LOAD]);
+    const adjusted = adjustWorkout(workout(), feedback(Intensity.MODERATE, [BodyState.JOINT_PAIN]), NONE, [ExerciseTag.WRIST_LOAD], 3);
     const tags = adjusted.exercises.flatMap((exercise) => exercise.tags);
     expect(tags).not.toContain(ExerciseTag.JUMPING);
     expect(tags).not.toContain(ExerciseTag.KNEELING);
@@ -99,10 +109,10 @@ describe('adjustWorkout — regular rules (BRD FR-5.2)', () => {
 
   it('falls back to a walk when nothing is left', () => {
     const only: WorkoutContentDto = { ...workout(), exercises: [{ ...workout().exercises[0], name: 'Bật nhảy lạ', muscle_group: MuscleGroup.SHOULDERS, tags: [ExerciseTag.JUMPING] }] };
-    const adjusted = adjustWorkout(only, feedback(Intensity.MODERATE, [BodyState.JOINT_PAIN]), NONE, [ExerciseTag.OVERHEAD, ExerciseTag.WRIST_LOAD]);
+    const adjusted = adjustWorkout(only, feedback(Intensity.MODERATE, [BodyState.JOINT_PAIN]), NONE, [ExerciseTag.OVERHEAD, ExerciseTag.WRIST_LOAD], 3);
     expect(adjusted.exercises.length).toBeGreaterThan(0);
     expect(adjusted.exercises.every((exercise) => !exercise.tags.includes(ExerciseTag.JUMPING))).toBe(true);
-    const empty = adjustWorkout({ ...workout(), exercises: [] }, feedback(Intensity.MODERATE, [BodyState.NORMAL]), NONE, []);
+    const empty = adjustWorkout({ ...workout(), exercises: [] }, feedback(Intensity.MODERATE, [BodyState.NORMAL]), NONE, [], 3);
     expect(empty.exercises).toEqual([WALK_EXERCISE]);
   });
 
@@ -111,7 +121,7 @@ describe('adjustWorkout — regular rules (BRD FR-5.2)', () => {
       ...workout(),
       exercises: Array.from({ length: 8 }, (_, i) => ({ ...workout().exercises[1], name: `Động tác ${i}` })),
     };
-    expect(adjustWorkout(full, feedback(Intensity.MODERATE, [BodyState.SORE]), NONE, []).exercises).toHaveLength(8);
+    expect(adjustWorkout(full, feedback(Intensity.MODERATE, [BodyState.SORE]), NONE, [], 3).exercises).toHaveLength(8);
   });
 });
 

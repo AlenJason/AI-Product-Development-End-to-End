@@ -87,3 +87,34 @@ describe('prompts spell out what the backend will reject', () => {
     expect(buildDayMealsPrompt(restricted, 1624, 2, 1462, { min: 1399, max: 1624 }, Eating.OVER, [])).toContain('Tuyệt đối không dùng');
   });
 });
+
+describe('exercise level and pregnancy rules (v2.6.0)', () => {
+  const withProfile = (overrides: Partial<CreatePlanDto>) => Object.assign(profile({}), overrides);
+
+  it('asks a 65-year-old sedentary user for level-1 exercises only, named from the pool', () => {
+    const prompt = buildPlanPrompt(withProfile({ age: 65, activity_level: ActivityLevel.SEDENTARY, goal: Goal.MAINTAIN }), target);
+    expect(prompt).toContain('chỉ nên tập mức nhẹ nhất');
+    expect(prompt).toContain('Chống đẩy tường');
+    expect(prompt).not.toContain('Jumping Jacks');
+  });
+
+  it('bans the advanced exercises at level 2 and adds no level rule at level 3', () => {
+    expect(buildPlanPrompt(profile({}), target)).toContain('- Không dùng động tác nâng cao:');
+    const active = buildPlanPrompt(withProfile({ activity_level: ActivityLevel.ACTIVE, goal: Goal.MAINTAIN }), target);
+    expect(active).not.toContain('động tác nâng cao');
+    expect(active).not.toContain('mức nhẹ nhất');
+  });
+
+  it('adds the pregnancy rule outside the user data block', () => {
+    const prompt = buildPlanPrompt(withProfile({ goal: Goal.MAINTAIN, pregnant_or_breastfeeding: true }), target);
+    const rule = prompt.indexOf('đang mang thai hoặc cho con bú');
+    expect(rule).toBeGreaterThan(prompt.indexOf('</du_lieu_nguoi_dung>'));
+    expect(buildPlanPrompt(profile({}), target)).not.toContain('mang thai');
+  });
+
+  it('uses the same level rule when asking for a lighter exercise', () => {
+    const exercise = { name: 'Squat tay không', sets: 3, reps_or_duration: '12 lần', muscle_group: MuscleGroup.LEGS, tags: [] };
+    const prompt = buildExerciseSwapPrompt(withProfile({ age: 65, goal: Goal.MAINTAIN }), exercise, ['Squat tay không']);
+    expect(prompt).toContain('chỉ nên tập mức nhẹ nhất');
+  });
+});

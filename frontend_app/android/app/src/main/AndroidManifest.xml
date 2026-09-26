@@ -2,7 +2,7 @@
     <!-- Gọi backend_api (bản release cũng cần; manifest debug/profile đã có sẵn cho công cụ Flutter). -->
     <uses-permission android:name="android.permission.INTERNET"/>
     <application
-        android:label="my_ai_app"
+        android:label="SmartFit AI"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

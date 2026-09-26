@@ -60,6 +60,8 @@ function buildPrompt(): string {
     '- ingredients[].category chỉ được là: protein (thịt, cá, trứng, đậu phụ, sữa), produce (rau, củ, quả), pantry (gạo, bún, mì, gia vị, dầu ăn).',
     '- ingredients[].unit chỉ được là: g, ml, piece, tbsp, tsp.',
     '- Buổi tập không cần dụng cụ, 15–25 phút.',
+    // Backend dựng dòng dưới bằng exerciseLevelRule() từ kho động tác: hồ sơ này (22 tuổi, vận động nhẹ) được tối đa mức 2.
+    '- Không dùng động tác nâng cao: Squat nhảy, Bulgarian split squat (chân sau gác ghế), Chống đẩy tiêu chuẩn, Superman giữ tư thế, Leo núi (Mountain climber), Pike push-up, Chống đẩy kim cương, Burpee, Nhảy dây không dây.',
     '- exercises[].muscle_group chỉ được là: legs, chest, back, core, shoulders, arms, full_body, cardio.',
     '- exercises[].tags chọn trong: jumping, kneeling, wrist_load, back_load, overhead (để mảng rỗng nếu không có).',
     '',

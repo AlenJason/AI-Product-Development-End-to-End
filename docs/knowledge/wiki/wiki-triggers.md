@@ -1,6 +1,6 @@
 ---
 type: meta
-last_updated: 2026-09-26
+last_updated: 2026-09-27
 ---
 
 # Wiki Triggers
@@ -18,10 +18,11 @@ Auth và database của backend nằm ở `backend_api/src/auth/`, `src/database
 | `backend_api/src/plan/gemini.service.ts`, `backend_api/test/fake-gemini-server.ts`, `ai_workspace/**` | `gemini-integration.md` |
 | `backend_api/src/plan/dto/**`, `backend_api/src/plan/enums/**`, `backend_api/src/plan/data/**`, `backend_api/src/plan/plan-validation.ts`, `backend_api/src/plan/plan-assembly.ts`, `backend_api/src/plan/daily-target.ts`, `backend_api/src/plan/plan-warnings.ts`, `backend_api/src/plan/text.util.ts`, `backend_api/src/plan/plan.service.ts` | `plan-data-contract.md` |
 | `backend_api/src/auth/**`, `backend_api/src/database/**`, `backend_api/src/history/**`, `backend_api/test/test-app.ts`, `backend_api/test/memory-data-source.ts`, `backend_api/scripts/smoke-test.mjs` | `auth-and-history.md` |
-| `frontend_app/lib/screens/**`, `frontend_app/lib/widgets/**`, `frontend_app/lib/main.dart` | `flutter-ui.md` |
+| `frontend_app/lib/screens/**`, `frontend_app/lib/widgets/**`, `frontend_app/lib/theme/**`, `frontend_app/lib/main.dart` | `flutter-ui.md` |
+| `backend_api/src/plan/profile-safety.ts`, `backend_api/src/plan/dto/profile-safety.validator.ts`, `backend_api/src/plan/exercise-level.ts` | `plan-data-contract.md`, `swap-and-feedback.md`, `critical-constraints.md` (#30, #31) |
 | `frontend_app/lib/models/**`, `frontend_app/lib/services/**`, `frontend_app/lib/providers/**`, `frontend_app/lib/config/**`, `frontend_app/test/**` | `flutter-ui.md`, `critical-constraints.md` (#26, #28) |
 | `backend_api/src/cors-options.ts`, `backend_api/test/cors.e2e-spec.ts`, `backend_api/test/contract-fixtures.e2e-spec.ts` | `flutter-ui.md`, `critical-constraints.md` (#26, #27) |
-| `frontend_app/pubspec.yaml`, `frontend_app/android/**/AndroidManifest.xml`, `frontend_app/ios/Runner/Info.plist`, `frontend_app/macos/Runner/*.entitlements`, `.github/workflows/frontend.yml` | `flutter-ui.md`, `critical-constraints.md` (#29) |
+| `frontend_app/pubspec.yaml`, `frontend_app/android/**/AndroidManifest.xml`, `frontend_app/ios/Runner/Info.plist`, `frontend_app/macos/Runner/*.entitlements`, `.github/workflows/frontend.yml`, `frontend_app/android/app/src/main/res/**`, `frontend_app/web/**`, `frontend_app/tool/**`, `frontend_app/assets/icon/**` | `flutter-ui.md`, `critical-constraints.md` (#29) |
 | `BRD.md` | `product-spec.md` *(chưa có — đọc thẳng BRD.md)* |
 
 Trigger bổ sung (bất kỳ thay đổi nào sau đây → bắt buộc cập nhật khi commit):
@@ -42,6 +43,8 @@ Trigger bổ sung (bất kỳ thay đổi nào sau đây → bắt buộc cập 
 | đăng nhập / auth / JWT / token / Google Sign-In / tài khoản / lịch sử / history / SQLite / TypeORM / migration / database / guard | `auth-and-history.md` |
 | screen / widget / onboarding / dashboard / giao diện đi chợ / Flutter | `flutter-ui.md` |
 | CORS / API_BASE_URL / dart-define / ApiClient / provider / shared_preferences / fixture hợp đồng / quyền mạng | `flutter-ui.md`, `critical-constraints.md` |
+| thiếu cân / BMI / mang thai / cho con bú / tuổi tối thiểu / độ khó động tác / mức động tác | `plan-data-contract.md`, `critical-constraints.md` |
+| chip hạn chế / ngày trong plan / bản nháp hồ sơ / icon / tên app / màn khởi động / thanh trạng thái | `flutter-ui.md`, `critical-constraints.md` |
 | BRD / roadmap / rubric / phạm vi / FR- / NFR- | `product-spec.md` *(chưa có — đọc thẳng BRD.md)* |
 | tài liệu tham khảo / thư viện / SDK / phiên bản / deprecated | `reference-materials.md` |
 
