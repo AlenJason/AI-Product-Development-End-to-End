@@ -6,7 +6,9 @@ plugins {
 
 android {
     namespace = "com.example.my_ai_app"
-    compileSdk = 34
+    // Plugin Android của shared_preferences đòi biên dịch với API ≥ 36. Chỉ ảnh hưởng lúc biên dịch;
+    // hành vi khi chạy vẫn theo targetSdk bên dưới.
+    compileSdk = 36
     ndkVersion = flutter.ndkVersion
 
     compileOptions {

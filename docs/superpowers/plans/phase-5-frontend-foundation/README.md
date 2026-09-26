@@ -66,6 +66,8 @@ Code của F01–F06 được viết và chạy trên bản sao `backend_api/` v
 
 **Không kiểm được trên máy lập plan:** build Android (tải Gradle bị ngắt sau 10 phút), iOS và macOS (không có Xcode). Cấu hình quyền mạng chỉ được kiểm cú pháp; chạy thử trên máy ảo Android là việc của giai đoạn 6 (PLAN 6.7).
 
+**Kiểm lại sau khi thực hiện (2026-09-26):** build Android chạy được khi thử lại và lộ lỗi thật — `android/app/build.gradle.kts` ghim `compileSdk = 34` (commit `445864b`), còn plugin `shared_preferences_android` đòi ≥ 36, nên **APK không build được**. CI không bắt được vì không build APK. Sửa: `compileSdk = 36`, `targetSdk` giữ 34. Sau khi sửa, APK debug và release build được; manifest đã gộp: debug có `INTERNET` + `usesCleartextTraffic`, release có `INTERNET`, không có cleartext. Backend nghe mọi địa chỉ (`*:PORT`), gọi được qua IP LAN.
+
 ## Phát hiện khi lập plan (ngoài brainstorm)
 
 | # | Phát hiện | Xử lý |

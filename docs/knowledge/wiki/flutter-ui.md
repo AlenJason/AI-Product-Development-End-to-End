@@ -103,7 +103,9 @@ Kiểm trong Chrome thật khi lập plan giai đoạn 5: preflight cho POST JSO
 | macOS | `com.apple.security.network.client` trong cả `DebugProfile.entitlements` và `Release.entitlements` |
 | Web | không cần; cần CORS phía backend |
 
-Chưa chạy thử trên máy ảo Android, iOS Simulator hay macOS: máy lập plan giai đoạn 5 không có Xcode và tải Gradle bị ngắt. Bản web build và chạy được.
+Android: `compileSdk = 36` trong `android/app/build.gradle.kts` — plugin Android của `shared_preferences` đòi biên dịch với API ≥ 36; `targetSdk` vẫn 34. Trước đó file này ghim `compileSdk = 34` và APK không build được. CI chỉ chạy `analyze` + `test` nên không bắt được lỗi kiểu này — đổi package có plugin thì build thử `flutter build apk --debug`.
+
+Đã kiểm: APK debug và release build được; manifest đã gộp của bản debug có `INTERNET` + `usesCleartextTraffic`, bản release có `INTERNET`, không có cleartext. Bản web build và chạy được. Chưa chạy app trên máy ảo Android; chưa build iOS/macOS (máy không có Xcode).
 
 ## Test
 

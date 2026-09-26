@@ -41,6 +41,10 @@ App gọi backend ở `http://localhost:3000` (máy ảo Android: `http://10.0.2
 flutter run --dart-define=API_BASE_URL=http://192.168.1.10:3000
 ```
 
+- Xem IP của máy chạy backend: `ipconfig getifaddr en0` (macOS) hoặc `ipconfig` (Windows, dòng IPv4). Backend đã nghe mọi địa chỉ mạng, không cần cấu hình thêm.
+- Điện thoại vẫn báo "Không kết nối được máy chủ" → kiểm tường lửa của máy chạy backend có cho kết nối vào cổng 3000 không, và mở thử `http://<IP>:3000/health` bằng trình duyệt trên điện thoại.
+- Bản web báo lỗi kết nối trong khi backend vẫn chạy → thường do CORS: trình duyệt chặn nhưng không cho app biết lý do. Khi phát triển để trống `CORS_ORIGINS` trong `backend_api/.env`; khi deploy bản web thì đặt đúng địa chỉ bản web.
+
 ### Backend (NestJS)
 
 ```bash
@@ -70,7 +74,7 @@ Kết quả build và test tự động của từng commit: tab [Actions](https
 Đối chiếu theo phiên bản BRD (mục "Phiên bản" trong [BRD.md](BRD.md)), để giảng viên/trợ giảng theo dõi tiến độ trực tiếp trên repo mà không cần đọc từng commit.
 
 ### BRD v2.5.1 — 2026-09-24 → 2026-09-26
-- Giai đoạn 5 — nền tảng kết nối app với backend: app Flutter có model theo đúng hợp đồng API, lớp gọi API báo lỗi bằng tiếng Việt thay vì crash (mất mạng, hết giờ, phiên hết hạn…), lưu kế hoạch và phiên đăng nhập trên máy — mở lại app vẫn xem được kế hoạch khi không có mạng. Backend bật CORS cho bản web (`CORS_ORIGINS`). Backend xuất 14 mẫu JSON thật để test hai phía cùng dùng — đổi hợp đồng mà quên cập nhật phía nào thì test phía đó đỏ. Thêm CI cho Flutter (44 test); sửa quyền mạng Android/iOS/macOS. Màn hình vẫn dùng dữ liệu mẫu tới giai đoạn 6
+- Giai đoạn 5 — nền tảng kết nối app với backend: app Flutter có model theo đúng hợp đồng API, lớp gọi API báo lỗi bằng tiếng Việt thay vì crash (mất mạng, hết giờ, phiên hết hạn…), lưu kế hoạch và phiên đăng nhập trên máy — mở lại app vẫn xem được kế hoạch khi không có mạng. Backend bật CORS cho bản web (`CORS_ORIGINS`). Backend xuất 14 mẫu JSON thật để test hai phía cùng dùng — đổi hợp đồng mà quên cập nhật phía nào thì test phía đó đỏ. Thêm CI cho Flutter (44 test); sửa quyền mạng Android/iOS/macOS và cấu hình build Android (trước đó APK không build được sau khi thêm package lưu dữ liệu). Màn hình vẫn dùng dữ liệu mẫu tới giai đoạn 6
 - Thử bằng khoá Gemini thật: tạo kế hoạch mất 37–42 giây vì model "suy nghĩ" trước khi trả lời, vượt giới hạn 15 giây nên gần như luôn rơi về thực đơn mẫu. Sửa: tắt chế độ suy nghĩ mặc định (còn 8–15 giây), giới hạn 20 giây mỗi lần gọi và 40 giây tổng; prompt ghi rõ nguyên liệu và động tác backend sẽ loại (trước đó Gemini cho cá nước ngọt khi người dùng dị ứng hải sản). Qua backend thật: `generate-plan` trả kết quả Gemini sau 14 giây
 - Model mặc định đổi sang `gemini-3.5-flash` (`gemini-3.8-flash` liên tục báo quá tải); gói miễn phí chỉ cho 20 lần gọi mỗi ngày cho mỗi model — hết thì app vẫn chạy bằng dữ liệu soạn sẵn. Thêm `npm run measure:gemini` để đo lại khi đổi model
 
