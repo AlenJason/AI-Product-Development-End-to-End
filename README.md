@@ -15,7 +15,7 @@
 ## Cấu trúc thư mục
 
 ```
-frontend_app/    Ứng dụng Flutter (đang phát triển UI, dùng dữ liệu mẫu)
+frontend_app/    Ứng dụng Flutter (đã có tầng gọi API; màn hình còn dùng dữ liệu mẫu tới giai đoạn 6)
 backend_api/     API NestJS — generate-plan (Gemini hoặc thực đơn mẫu), đổi món, đổi bài tập, feedback, đăng nhập Google, lịch sử (SQLite)
 ai_workspace/    Script Node/TS thử nghiệm prompt & schema Gemini, độc lập với backend
 docs/            Kế hoạch triển khai, hướng dẫn gắn khoá, wiki nội bộ
@@ -32,6 +32,13 @@ Dự án chạy được ngay khi chưa có khoá nào (chế độ giả lập:
 cd frontend_app
 flutter pub get
 flutter run -d chrome   # hoặc flutter run cho thiết bị/máy ảo
+flutter test            # không cần backend chạy
+```
+
+App gọi backend ở `http://localhost:3000` (máy ảo Android: `http://10.0.2.2:3000`). Chạy trên điện thoại thật thì chỉ địa chỉ máy đang chạy backend, hai máy cùng Wi-Fi:
+
+```bash
+flutter run --dart-define=API_BASE_URL=http://192.168.1.10:3000
 ```
 
 ### Backend (NestJS)
@@ -62,7 +69,8 @@ Kết quả build và test tự động của từng commit: tab [Actions](https
 
 Đối chiếu theo phiên bản BRD (mục "Phiên bản" trong [BRD.md](BRD.md)), để giảng viên/trợ giảng theo dõi tiến độ trực tiếp trên repo mà không cần đọc từng commit.
 
-### BRD v2.5.1 — 2026-09-24
+### BRD v2.5.1 — 2026-09-24 → 2026-09-26
+- Giai đoạn 5 — nền tảng kết nối app với backend: app Flutter có model theo đúng hợp đồng API, lớp gọi API báo lỗi bằng tiếng Việt thay vì crash (mất mạng, hết giờ, phiên hết hạn…), lưu kế hoạch và phiên đăng nhập trên máy — mở lại app vẫn xem được kế hoạch khi không có mạng. Backend bật CORS cho bản web (`CORS_ORIGINS`). Backend xuất 14 mẫu JSON thật để test hai phía cùng dùng — đổi hợp đồng mà quên cập nhật phía nào thì test phía đó đỏ. Thêm CI cho Flutter (44 test); sửa quyền mạng Android/iOS/macOS. Màn hình vẫn dùng dữ liệu mẫu tới giai đoạn 6
 - Thử bằng khoá Gemini thật: tạo kế hoạch mất 37–42 giây vì model "suy nghĩ" trước khi trả lời, vượt giới hạn 15 giây nên gần như luôn rơi về thực đơn mẫu. Sửa: tắt chế độ suy nghĩ mặc định (còn 8–15 giây), giới hạn 20 giây mỗi lần gọi và 40 giây tổng; prompt ghi rõ nguyên liệu và động tác backend sẽ loại (trước đó Gemini cho cá nước ngọt khi người dùng dị ứng hải sản). Qua backend thật: `generate-plan` trả kết quả Gemini sau 14 giây
 - Model mặc định đổi sang `gemini-3.5-flash` (`gemini-3.8-flash` liên tục báo quá tải); gói miễn phí chỉ cho 20 lần gọi mỗi ngày cho mỗi model — hết thì app vẫn chạy bằng dữ liệu soạn sẵn. Thêm `npm run measure:gemini` để đo lại khi đổi model
 

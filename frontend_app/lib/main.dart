@@ -1,34 +1,56 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'config/api_config.dart';
+import 'providers/auth_provider.dart';
+import 'providers/plan_provider.dart';
 import 'screens/onboarding_screen.dart';
 import 'screens/loading_screen.dart';
 import 'screens/dashboard_screen.dart';
 import 'screens/grocery_screen.dart';
+import 'services/api_client.dart';
 import 'widgets/feedback_bottom_sheet.dart';
 
-void main() {
-  runApp(const SmartFitApp());
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  // Đọc hết dữ liệu đã lưu một lần trước khi vẽ màn đầu — MainShell biết ngay có plan hay chưa, không cần màn chờ.
+  final prefs = await SharedPreferences.getInstance();
+  final api = ApiClient(baseUrl: resolveApiBaseUrl());
+  runApp(SmartFitApp(
+    auth: AuthProvider(api: api, prefs: prefs),
+    plans: PlanProvider(api: api, prefs: prefs),
+  ));
 }
 
 enum AppScreen { onboarding, loading, dashboard, grocery }
 
 class SmartFitApp extends StatelessWidget {
-  const SmartFitApp({super.key});
+  const SmartFitApp({super.key, required this.auth, required this.plans});
+
+  final AuthProvider auth;
+  final PlanProvider plans;
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'SmartFit AI',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        useMaterial3: true,
-        scaffoldBackgroundColor: const Color(0xFFF8F9FA),
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF00875A),
-          primary: const Color(0xFF00875A),
-          surface: const Color(0xFFF8F9FA),
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider.value(value: auth),
+        ChangeNotifierProvider.value(value: plans),
+      ],
+      child: MaterialApp(
+        title: 'SmartFit AI',
+        debugShowCheckedModeBanner: false,
+        theme: ThemeData(
+          useMaterial3: true,
+          scaffoldBackgroundColor: const Color(0xFFF8F9FA),
+          colorScheme: ColorScheme.fromSeed(
+            seedColor: const Color(0xFF00875A),
+            primary: const Color(0xFF00875A),
+            surface: const Color(0xFFF8F9FA),
+          ),
         ),
+        home: const MainShell(),
       ),
-      home: const MainShell(),
     );
   }
 }
@@ -41,7 +63,9 @@ class MainShell extends StatefulWidget {
 }
 
 class _MainShellState extends State<MainShell> {
-  AppScreen _currentScreen = AppScreen.dashboard;
+  // Chưa có plan → bắt đầu từ Onboarding; đã có plan đã lưu → vào thẳng Dashboard, không cần mạng (NFR-2).
+  late AppScreen _currentScreen =
+      context.read<PlanProvider>().hasPlan ? AppScreen.dashboard : AppScreen.onboarding;
   int _currentBottomNavIndex = 0; // 0: Kế hoạch, 1: Đi chợ, 2: Thống kê, 3: Cá nhân
 
   void _openFeedbackModal() {

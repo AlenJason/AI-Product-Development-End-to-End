@@ -1,13 +1,13 @@
 ---
 type: meta
-last_updated: 2026-09-24
+last_updated: 2026-09-26
 ---
 
 # Wiki Triggers
 
 Ánh xạ khu vực code và chủ đề sang bài wiki tương ứng. Được `commit`, `feature-explore`, và `feature-build` sử dụng.
 
-Auth và database của backend nằm ở `backend_api/src/auth/`, `src/database/`, `src/history/` (từ giai đoạn 3) — trigger ở bảng dưới. Flutter chỉ lưu `access_token` và plan hiện tại bằng `shared_preferences`.
+Auth và database của backend nằm ở `backend_api/src/auth/`, `src/database/`, `src/history/` (từ giai đoạn 3) — trigger ở bảng dưới. Flutter lưu JWT, hồ sơ và plan hiện tại trên máy bằng `shared_preferences` (`frontend_app/lib/providers/`, từ giai đoạn 5).
 
 ## Trigger theo đường dẫn file
 
@@ -18,14 +18,16 @@ Auth và database của backend nằm ở `backend_api/src/auth/`, `src/database
 | `backend_api/src/plan/gemini.service.ts`, `backend_api/test/fake-gemini-server.ts`, `ai_workspace/**` | `gemini-integration.md` |
 | `backend_api/src/plan/dto/**`, `backend_api/src/plan/enums/**`, `backend_api/src/plan/data/**`, `backend_api/src/plan/plan-validation.ts`, `backend_api/src/plan/plan-assembly.ts`, `backend_api/src/plan/daily-target.ts`, `backend_api/src/plan/plan-warnings.ts`, `backend_api/src/plan/text.util.ts`, `backend_api/src/plan/plan.service.ts` | `plan-data-contract.md` |
 | `backend_api/src/auth/**`, `backend_api/src/database/**`, `backend_api/src/history/**`, `backend_api/test/test-app.ts`, `backend_api/test/memory-data-source.ts`, `backend_api/scripts/smoke-test.mjs` | `auth-and-history.md` |
-| `frontend_app/lib/screens/**`, `frontend_app/lib/widgets/**`, `frontend_app/lib/main.dart` | `flutter-ui.md` *(chưa có — tạo ở giai đoạn 5)* |
-| `frontend_app/lib/models/**` | `flutter-ui.md` *(chưa có — tạo ở giai đoạn 5)* |
+| `frontend_app/lib/screens/**`, `frontend_app/lib/widgets/**`, `frontend_app/lib/main.dart` | `flutter-ui.md` |
+| `frontend_app/lib/models/**`, `frontend_app/lib/services/**`, `frontend_app/lib/providers/**`, `frontend_app/lib/config/**`, `frontend_app/test/**` | `flutter-ui.md`, `critical-constraints.md` (#26, #28) |
+| `backend_api/src/cors-options.ts`, `backend_api/test/cors.e2e-spec.ts`, `backend_api/test/contract-fixtures.e2e-spec.ts` | `flutter-ui.md`, `critical-constraints.md` (#26, #27) |
+| `frontend_app/pubspec.yaml`, `frontend_app/android/**/AndroidManifest.xml`, `frontend_app/ios/Runner/Info.plist`, `frontend_app/macos/Runner/*.entitlements`, `.github/workflows/frontend.yml` | `flutter-ui.md`, `critical-constraints.md` (#29) |
 | `BRD.md` | `product-spec.md` *(chưa có — đọc thẳng BRD.md)* |
 
 Trigger bổ sung (bất kỳ thay đổi nào sau đây → bắt buộc cập nhật khi commit):
 
 - Một ràng buộc thay đổi (khoảng calo, hệ số vận động, mức điều chỉnh calo theo mục tiêu — xem `critical-constraints.md`)
-- Hợp đồng request/response (BRD.md mục 6) thay đổi mà `backend_api/src/plan/dto/`, `enums/` và `data/sample-plan.json` chưa cập nhật khớp theo
+- Hợp đồng request/response (BRD.md mục 6) thay đổi mà `backend_api/src/plan/dto/`, `enums/`, `data/sample-plan.json`, fixture `frontend_app/test/fixtures/` (`npm run fixtures:update`) và model `frontend_app/lib/models/api/` chưa cập nhật khớp theo
 - Một đoạn tóm tắt trong wiki không còn đúng thực tế
 - Thêm hoặc sửa entity trong `backend_api/src/database/entities/` (phải kèm migration — `critical-constraints.md` #19)
 
@@ -38,7 +40,8 @@ Trigger bổ sung (bất kỳ thay đổi nào sau đây → bắt buộc cập 
 | endpoint / controller / swagger / health / validation / DTO | `plan-data-contract.md`, `auth-and-history.md`, `swap-and-feedback.md` |
 | đổi món / đổi bài / swap / feedback / dị ứng / chấn thương / từ khoá / kho món / kho động tác / dấu hiệu nguy hiểm / khẩu phần | `swap-and-feedback.md` |
 | đăng nhập / auth / JWT / token / Google Sign-In / tài khoản / lịch sử / history / SQLite / TypeORM / migration / database / guard | `auth-and-history.md` |
-| screen / widget / onboarding / dashboard / giao diện đi chợ / Flutter | `flutter-ui.md` *(chưa có — tạo ở giai đoạn 5)* |
+| screen / widget / onboarding / dashboard / giao diện đi chợ / Flutter | `flutter-ui.md` |
+| CORS / API_BASE_URL / dart-define / ApiClient / provider / shared_preferences / fixture hợp đồng / quyền mạng | `flutter-ui.md`, `critical-constraints.md` |
 | BRD / roadmap / rubric / phạm vi / FR- / NFR- | `product-spec.md` *(chưa có — đọc thẳng BRD.md)* |
 | tài liệu tham khảo / thư viện / SDK / phiên bản / deprecated | `reference-materials.md` |
 

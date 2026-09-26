@@ -1,0 +1,9 @@
+{
+  "message": [
+    "age must not be greater than 100",
+    "age must not be less than 10",
+    "age must be an integer number"
+  ],
+  "error": "Bad Request",
+  "statusCode": 400
+}

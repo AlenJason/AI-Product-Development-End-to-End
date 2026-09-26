@@ -1,5 +1,5 @@
 import type { INestApplication } from '@nestjs/common';
-import { Test } from '@nestjs/testing';
+import { Test, type TestingModuleBuilder } from '@nestjs/testing';
 import request from 'supertest';
 import { configureApp } from '../src/app.setup.js';
 
@@ -11,7 +11,11 @@ export interface TestApp {
 // Máy dev có thể có khoá Gemini thật, file DB thật, AUTH_MODE=google trong .env (#17):
 // ghim env trước khi nạp AppModule (ConfigModule.forRoot đọc .env ngay lúc import), trả lại khi đóng.
 // Mặc định: DB trong RAM, đăng nhập giả lập, không có Gemini.
-export async function createTestApp(env: Record<string, string> = {}): Promise<TestApp> {
+// `configure` ghi đè provider khi cần kết quả tất định (ví dụ RandomSource khi xuất fixture hợp đồng).
+export async function createTestApp(
+  env: Record<string, string> = {},
+  configure: (builder: TestingModuleBuilder) => TestingModuleBuilder = (builder) => builder,
+): Promise<TestApp> {
   const pinned: Record<string, string> = {
     DATABASE_PATH: ':memory:',
     AUTH_MODE: 'mock',
@@ -23,6 +27,7 @@ export async function createTestApp(env: Record<string, string> = {}): Promise<T
     GEMINI_BASE_URL: '',
     GEMINI_THINKING: '',
     GEMINI_TOTAL_TIMEOUT_MS: '',
+    CORS_ORIGINS: '',
     ...env,
   };
   const saved = Object.fromEntries(Object.keys(pinned).map((key) => [key, process.env[key]]));
@@ -36,7 +41,7 @@ export async function createTestApp(env: Record<string, string> = {}): Promise<T
 
   try {
     const { AppModule } = await import('../src/app.module.js');
-    const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
+    const moduleRef = await configure(Test.createTestingModule({ imports: [AppModule] })).compile();
     const app = moduleRef.createNestApplication({ logger: false });
     configureApp(app);
     await app.init();

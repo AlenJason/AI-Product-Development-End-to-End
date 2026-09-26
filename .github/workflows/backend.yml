@@ -5,11 +5,15 @@ on:
     paths:
       - 'backend_api/**'
       - 'ai_workspace/**'
+      # test/contract-fixtures.e2e-spec.ts so fixture đã commit với response thật của backend
+      - 'frontend_app/test/fixtures/**'
       - '.github/workflows/backend.yml'
   pull_request:
     paths:
       - 'backend_api/**'
       - 'ai_workspace/**'
+      # test/contract-fixtures.e2e-spec.ts so fixture đã commit với response thật của backend
+      - 'frontend_app/test/fixtures/**'
       - '.github/workflows/backend.yml'
 
 permissions:

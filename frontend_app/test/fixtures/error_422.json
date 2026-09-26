@@ -1,0 +1,5 @@
+{
+  "message": "Không tìm được động tác nhẹ hơn cùng nhóm cơ phù hợp với bạn — động tác này có thể đã là mức nhẹ nhất.",
+  "error": "Unprocessable Entity",
+  "statusCode": 422
+}

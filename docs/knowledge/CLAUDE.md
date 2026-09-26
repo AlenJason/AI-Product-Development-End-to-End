@@ -22,7 +22,7 @@ Knowledge base cho **SmartFit AI** — đồ án VKU: ứng dụng Flutter + Nes
 
 1. Thiết kế API NestJS trong `backend_api/` — validate DTO, tính BMR/TDEE, hợp đồng endpoint
 2. Tích hợp Gemini structured output — thiết kế prompt, tuân thủ JSON schema, kiểm tra hợp lý dữ liệu dinh dưỡng
-3. Giao diện Flutter trong `frontend_app/` — screens/widgets và (khi làm tới) kết nối API
+3. Giao diện Flutter trong `frontend_app/` — screens/widgets và tầng kết nối API (có từ giai đoạn 5, xem [[flutter-ui]])
 4. Kỷ luật phạm vi sản phẩm — BRD.md là nguồn spec đã được duyệt; thay đổi tính năng cần đối chiếu lại, không tự ý lệch khỏi tài liệu
 5. Xác thực Google Sign-In + lịch sử kế hoạch qua SQLite/TypeORM (BRD FR-6, FR-7) — có code từ giai đoạn 3, xem [[auth-and-history]]
 6. Đổi món, đổi bài tập, feedback cuối ngày (BRD FR-4, FR-5) — có code từ giai đoạn 4, xem [[swap-and-feedback]]

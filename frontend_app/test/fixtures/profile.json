@@ -1,0 +1,13 @@
+{
+  "age": 22,
+  "gender": "female",
+  "height_cm": 168,
+  "weight_kg": 62,
+  "activity_level": "light",
+  "goal": "cut",
+  "restrictions": {
+    "allergies": "Hải sản",
+    "injuries": "Đau gối",
+    "health_conditions": "Tiểu đường"
+  }
+}

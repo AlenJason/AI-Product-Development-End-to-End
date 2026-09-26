@@ -55,7 +55,7 @@
     },
     {
       "after": "F07",
-      "checks": ["grep -rn \"chưa có — tạo ở giai đoạn 5\" docs/", "grep -c \"^| 2[6-9] |\" docs/knowledge/wiki/critical-constraints.md"],
+      "checks": ["grep -rn \"chưa có — tạo ở giai đoạn 5\" docs/knowledge/", "grep -c \"^| 2[6-9] |\" docs/knowledge/wiki/critical-constraints.md"],
       "expected": ["", "4"]
     }
   ],

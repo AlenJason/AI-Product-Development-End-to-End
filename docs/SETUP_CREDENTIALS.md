@@ -157,6 +157,7 @@ node -e "console.log(require('node:crypto').randomBytes(48).toString('base64'))"
 - `GOOGLE_CLIENT_ID` nhận nhiều giá trị cách nhau dấu phẩy, khi app gửi ID Token cấp cho nhiều Client ID khác nhau (ví dụ Web và iOS).
 - Đổi `JWT_SECRET` thì mọi phiên đăng nhập cũ hết hiệu lực: người dùng phải đăng nhập lại, dữ liệu không mất.
 - `DATABASE_PATH` (mặc định `database.sqlite`, tính từ thư mục chạy backend) là file chứa tài khoản và lịch sử. File này đã nằm trong `.gitignore`.
+- Bản web của app chạy ở địa chỉ khác backend nên cần CORS. Khi phát triển, để trống `CORS_ORIGINS` (cho `localhost` mọi cổng). Khi deploy bản web, đặt `CORS_ORIGINS=https://<địa chỉ bản web>` — cùng địa chỉ khai báo ở "Authorized JavaScript origins" của Web Client ID (giai đoạn 8). Để trống khi `NODE_ENV=production` thì chỉ app mobile gọi được.
 
 Khởi động lại backend. Thiếu `GOOGLE_CLIENT_ID`, hoặc `JWT_SECRET` ngắn hơn 32 ký tự → backend dừng ngay lúc khởi động và in lý do.
 

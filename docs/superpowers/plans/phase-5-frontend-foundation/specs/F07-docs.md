@@ -33,7 +33,7 @@ Không có.
 
 ## Definition of Done
 
-- [ ] `grep -rn "chưa có — tạo ở giai đoạn 5" docs/` không ra dòng nào
+- [ ] `grep -rn "chưa có — tạo ở giai đoạn 5" docs/knowledge/` không ra dòng nào
 - [ ] `critical-constraints.md` có #26–#29; `INDEX.md` có `[[flutter-ui]]`
 - [ ] PLAN.md: 5.1–5.9 đã tích; 6.6, 6.7, 9.2, 9.3 cập nhật
 - [ ] README: cách chạy app với backend trên từng nền tảng; changelog có giai đoạn 5
@@ -357,7 +357,7 @@ Mục 2.3, thêm gạch đầu dòng cuối danh sách (sau dòng `DATABASE_PATH
 ### Task 9 — Cổng kiểm tra F07
 
 ```bash
-grep -rn "chưa có — tạo ở giai đoạn 5" docs/ || echo "sạch"
+grep -rn "chưa có — tạo ở giai đoạn 5" docs/knowledge/ || echo "sạch"
 grep -c "^| 2[6-9] |" docs/knowledge/wiki/critical-constraints.md   # 4
 grep -n "no \`http\`\|Not yet wired" CLAUDE.md || echo "sạch"
 ```

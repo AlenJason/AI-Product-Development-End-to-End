@@ -1,0 +1,5 @@
+{
+  "message": "Cần đăng nhập (header Authorization: Bearer <access_token>).",
+  "error": "Unauthorized",
+  "statusCode": 401
+}

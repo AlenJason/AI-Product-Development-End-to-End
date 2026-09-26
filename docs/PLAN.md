@@ -30,9 +30,9 @@ Cả hai dịch vụ bên ngoài đều có chế độ giả lập, nên toàn 
 ## Hiện trạng (đã xong)
 
 - [x] BRD v2.5.1 (MVP, tính năng nâng cao, tài khoản & lịch sử, hợp đồng API đầy đủ)
-- [x] Backend: `GET /health`, `POST /api/v1/generate-plan` (tính BMR/TDEE, gọi Gemini, kiểm tra khoảng calo, fallback), đổi món, đổi bài tập, feedback, đăng nhập Google (giả lập mặc định), lịch sử kế hoạch (SQLite), validate DTO, Swagger UI
+- [x] Backend: `GET /health`, `POST /api/v1/generate-plan` (tính BMR/TDEE, gọi Gemini, kiểm tra khoảng calo, fallback), đổi món, đổi bài tập, feedback, đăng nhập Google (giả lập mặc định), lịch sử kế hoạch (SQLite), validate DTO, Swagger UI, CORS cho bản web
 - [x] `ai_workspace/`: script thử prompt Gemini
-- [x] Frontend: giao diện Onboarding, Loading, Dashboard, Grocery, bảng Feedback — dùng dữ liệu mẫu, **chưa nối API**
+- [x] Frontend: giao diện Onboarding, Loading, Dashboard, Grocery, bảng Feedback (dữ liệu mẫu); tầng kết nối API — model theo hợp đồng, `ApiClient`, provider, lưu trên máy (giai đoạn 5). Màn hình **chưa nối API** (giai đoạn 6)
 - [x] Wiki nội bộ `docs/knowledge/`, `CLAUDE.md`
 
 ---
@@ -135,13 +135,17 @@ Chi tiết: brainstorm `docs/superpowers/brainstorms/phase-4-swap-feedback.md` (
 
 ## Giai đoạn 5 — Frontend: nền tảng · M
 
-- [ ] **5.1** Thêm package `http`, `provider`, `shared_preferences`
-- [ ] **5.2** Địa chỉ backend qua `--dart-define=API_BASE_URL` — web: `localhost`; máy ảo Android: `10.0.2.2`; điện thoại thật: IP mạng LAN của máy chạy backend
-- [ ] **5.3** Model Dart có `fromJson`/`toJson` theo BRD mục 6, thay các view-model trong `meal_plan.dart`
-- [ ] **5.4** `ApiClient` (`lib/services/`): gọi mọi endpoint; lỗi mạng → thông báo dễ hiểu, không crash (NFR-2)
-- [ ] **5.5** `PlanProvider` (plan hiện tại, lưu `shared_preferences`) và `AuthProvider` (JWT)
-- [ ] **5.6** `MainShell`: chưa có plan → mở Onboarding, đã có → Dashboard; sửa `widget_test.dart` theo luồng mới (test hiện đang giả định app mở thẳng Dashboard)
-- [ ] **5.7** Bật CORS trong `configureApp()` (`backend_api/src/app.setup.ts`) cho địa chỉ Flutter web, cho phép header `Authorization` — không có thì trình duyệt chặn mọi request từ bản web chạy ở cổng khác (phát hiện ở giai đoạn 3)
+- [x] **5.1** Thêm package `http`, `provider`, `shared_preferences`
+- [x] **5.2** Địa chỉ backend qua `--dart-define=API_BASE_URL` — web: `localhost`; máy ảo Android: `10.0.2.2`; điện thoại thật: IP mạng LAN của máy chạy backend (`lib/config/api_config.dart`). Quyền mạng Android (release), iOS, macOS
+- [x] **5.3** Model Dart có `fromJson`/`toJson` theo BRD mục 6 (`lib/models/api/`), đi vòng tròn đúng JSON server trả. Màn hình chuyển sang model mới và xoá view-model cũ `meal_plan.dart` ở 6.7
+- [x] **5.4** `ApiClient` (`lib/services/`): gọi mọi endpoint; lỗi → `ApiException` có câu tiếng Việt, không crash (NFR-2); timeout 60 s cho request có Gemini
+- [x] **5.5** `PlanProvider` (plan + hồ sơ, lưu `shared_preferences`) và `AuthProvider` (JWT; 401 → đăng xuất)
+- [x] **5.6** `MainShell`: chưa có plan → mở Onboarding, đã có → Dashboard; viết lại `widget_test.dart`
+- [x] **5.7** Bật CORS trong `configureApp()` qua `CORS_ORIGINS` (trống khi phát triển → `localhost`/`127.0.0.1` mọi cổng; trống khi deploy → tắt), cho phép header `Authorization`
+- [x] **5.8** *(bổ sung, quyết định Q1)* Fixture hợp đồng: backend xuất 14 JSON thật vào `frontend_app/test/fixtures/` (`npm run fixtures:update`), test hai phía cùng dùng
+- [x] **5.9** *(bổ sung, quyết định Q4)* CI Flutter: `flutter analyze` + `flutter test` (`.github/workflows/frontend.yml`)
+
+Chi tiết: brainstorm `docs/superpowers/brainstorms/phase-5-frontend-foundation.md` (quyết định Q1–Q4 ở mục 8), plan `docs/superpowers/plans/phase-5-frontend-foundation/`.
 
 ## Giai đoạn 6 — Frontend: nối MVP (FR-1 → FR-3) · M
 
@@ -150,7 +154,8 @@ Chi tiết: brainstorm `docs/superpowers/brainstorms/phase-4-swap-feedback.md` (
 - [ ] **6.3** Loading: gọi API thật thay cho bộ đếm giờ giả; lỗi → nút thử lại (NFR-1, NFR-2). Có Gemini thì chờ thật khoảng 10–15 giây, tối đa khoảng 40 giây — câu chờ và thanh tiến trình phải hợp với khoảng này; HTTP client của app để timeout dài hơn 40 giây
 - [ ] **6.4** Dashboard: hiển thị đủ 3 ngày, 3 bữa/ngày, bài tập, calo và macro (FR-2.3); hiện cảnh báo khi chế độ giả lập chưa kiểm tra được hết hạn chế
 - [ ] **6.5** Grocery: dựng từ `grocery_list`; trạng thái tích chọn lưu cục bộ (FR-3.2)
-- [ ] **6.6** Widget test dùng `ApiClient` giả
+- [ ] **6.6** Widget test dùng backend giả `test/fake_backend.dart` (có từ giai đoạn 5)
+- [ ] **6.7** Màn hình đọc/ghi qua `PlanProvider`/`AuthProvider` và model `lib/models/api/`; xoá view-model cũ `lib/models/meal_plan.dart`. Chạy thử trên máy ảo Android (quyền mạng giai đoạn 5 chưa kiểm được trên máy thật)
 
 ## Giai đoạn 7 — Frontend: tính năng nâng cao (FR-4, FR-5) · M
 
@@ -168,8 +173,8 @@ Chi tiết: brainstorm `docs/superpowers/brainstorms/phase-4-swap-feedback.md` (
 ## Giai đoạn 9 — Deploy, nghiệm thu, nộp bài · M
 
 - [ ] **9.1** Chọn nơi deploy: (a) giữ SQLite, dùng host có ổ lưu trữ bền (Railway volume, Fly.io volume, VPS), hoặc (b) chuyển sang Postgres. **Không** dùng Render bản free với SQLite
-- [ ] **9.2** Deploy backend, cấu hình biến môi trường trên host: `NODE_ENV=production`, `AUTH_MODE=google`, `GOOGLE_CLIENT_ID`, `JWT_SECRET`, `DATABASE_PATH` trỏ vào ổ lưu trữ bền, `GEMINI_API_KEY`
-- [ ] **9.3** Build app để demo: bản web và/hoặc APK Android
+- [ ] **9.2** Deploy backend, cấu hình biến môi trường trên host: `NODE_ENV=production`, `AUTH_MODE=google`, `GOOGLE_CLIENT_ID`, `JWT_SECRET`, `DATABASE_PATH` trỏ vào ổ lưu trữ bền, `GEMINI_API_KEY`, `CORS_ORIGINS` (địa chỉ bản web, nếu deploy bản web)
+- [ ] **9.3** Build app để demo: bản web và/hoặc APK Android, với `--dart-define=API_BASE_URL=https://<địa chỉ backend>`
 - [ ] **9.4** Chạy checklist kiểm thử toàn luồng ở cả hai chế độ (giả lập / khoá thật)
 - [ ] **9.5** Cập nhật README (cách chạy, ảnh chụp màn hình), Changelog, BRD mục 9, wiki
 - [ ] **9.6** Slide báo cáo và video demo

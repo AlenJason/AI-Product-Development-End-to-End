@@ -1,4 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Gọi backend_api (bản release cũng cần; manifest debug/profile đã có sẵn cho công cụ Flutter). -->
+    <uses-permission android:name="android.permission.INTERNET"/>
     <application
         android:label="my_ai_app"
         android:name="${applicationName}"
