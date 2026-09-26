@@ -1,0 +1,63 @@
+{
+  "slug": "phase-5-frontend-foundation",
+  "features": [
+    { "id": "F01", "name": "Backend: CORS qua CORS_ORIGINS, fixture hợp đồng cho Flutter", "scope": "API" },
+    { "id": "F02", "name": "Package, địa chỉ backend (API_BASE_URL), quyền mạng Android/iOS/macOS", "scope": "UI" },
+    { "id": "F03", "name": "Model Dart theo BRD 6 + test vòng tròn bằng fixture", "scope": "UI" },
+    { "id": "F04", "name": "ApiClient: 9 endpoint, lỗi thành ApiException tiếng Việt", "scope": "UI" },
+    { "id": "F05", "name": "PlanProvider, AuthProvider, lưu shared_preferences", "scope": "UI" },
+    { "id": "F06", "name": "MainShell mở đúng màn đầu, widget test, CI Flutter", "scope": "UI" },
+    { "id": "F07", "name": "Wiki flutter-ui.md + ràng buộc #26–#29, CLAUDE.md, README, PLAN.md, SETUP_CREDENTIALS", "scope": "Docs" }
+  ],
+  "dependencies": {
+    "F03": ["F01"],
+    "F04": ["F02", "F03"],
+    "F05": ["F04"],
+    "F06": ["F05"],
+    "F07": ["F06"]
+  },
+  "phase_gates": [
+    {
+      "after": "F01",
+      "checks": [
+        "cd backend_api && npm run fixtures:update && git status --short ../frontend_app/test/fixtures | wc -l",
+        "cd backend_api && npm run typecheck && npm run build",
+        "cd backend_api && npm test",
+        "cd backend_api && npm run test:e2e",
+        "cd backend_api && npm run test:smoke && npm run lint"
+      ],
+      "expected": ["14 file mới lần đầu; chạy lại không đổi", "", "Tests  264 passed (264)", "Tests  66 passed (66)", ""]
+    },
+    {
+      "after": "F02",
+      "checks": ["cd frontend_app && flutter pub get && flutter analyze", "cd frontend_app && flutter test test/config", "cd frontend_app && flutter build web --dart-define=API_BASE_URL=http://localhost:3000"],
+      "expected": ["No issues found!", "+2: All tests passed!", "✓ Built build/web"]
+    },
+    {
+      "after": "F03",
+      "checks": ["cd frontend_app && flutter analyze", "cd frontend_app && flutter test test/models"],
+      "expected": ["No issues found!", "+12: All tests passed!"]
+    },
+    {
+      "after": "F04",
+      "checks": ["cd frontend_app && flutter analyze", "cd frontend_app && flutter test test/services", "grep -rn \"print\\|log(\" frontend_app/lib/services"],
+      "expected": ["No issues found!", "+13: All tests passed!", ""]
+    },
+    {
+      "after": "F05",
+      "checks": ["cd frontend_app && flutter analyze", "cd frontend_app && flutter test test/providers"],
+      "expected": ["No issues found!", "+14: All tests passed!"]
+    },
+    {
+      "after": "F06",
+      "checks": ["cd frontend_app && flutter analyze", "cd frontend_app && flutter test"],
+      "expected": ["No issues found!", "+44: All tests passed!"]
+    },
+    {
+      "after": "F07",
+      "checks": ["grep -rn \"chưa có — tạo ở giai đoạn 5\" docs/", "grep -c \"^| 2[6-9] |\" docs/knowledge/wiki/critical-constraints.md"],
+      "expected": ["", "4"]
+    }
+  ],
+  "executor": "direct (feature-build chưa hỗ trợ NestJS/Flutter)"
+}
