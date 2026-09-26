@@ -98,14 +98,14 @@ Kiểm trong Chrome thật khi lập plan giai đoạn 5: preflight cho POST JSO
 
 | Nền tảng | Cấu hình |
 |---|---|
-| Android | `INTERNET` trong `android/app/src/main/AndroidManifest.xml` (bản release); `usesCleartextTraffic="true"` chỉ trong manifest debug |
+| Android | `INTERNET` trong `android/app/src/main/AndroidManifest.xml` (bản release); `usesCleartextTraffic="true"` chỉ trong manifest debug — HTTP của Dart không cần cờ này (đã thử trên Android 16), giữ cho thư viện dùng HTTP của hệ thống |
 | iOS | `NSAppTransportSecurity` → `NSAllowsLocalNetworking` trong `ios/Runner/Info.plist` |
 | macOS | `com.apple.security.network.client` trong cả `DebugProfile.entitlements` và `Release.entitlements` |
 | Web | không cần; cần CORS phía backend |
 
 Android: `compileSdk = 36` trong `android/app/build.gradle.kts` — plugin Android của `shared_preferences` đòi biên dịch với API ≥ 36; `targetSdk` vẫn 34. Trước đó file này ghim `compileSdk = 34` và APK không build được. CI chỉ chạy `analyze` + `test` nên không bắt được lỗi kiểu này — đổi package có plugin thì build thử `flutter build apk --debug`.
 
-Đã kiểm: APK debug và release build được; manifest đã gộp của bản debug có `INTERNET` + `usesCleartextTraffic`, bản release có `INTERNET`, không có cleartext. Bản web build và chạy được. Chưa chạy app trên máy ảo Android; chưa build iOS/macOS (máy không có Xcode).
+Đã kiểm: APK debug và release build được; manifest đã gộp của bản debug có `INTERNET` + `usesCleartextTraffic`, bản release có `INTERNET`, không có cleartext. Bản web build và chạy được. Chạy trên máy ảo Android 16 (Pixel 8, API 36, 2026-09-26): `integration_test/backend_smoke_test.dart` gọi backend thật qua `10.0.2.2` — tạo plan, lịch sử, đổi món, đổi bài, feedback, lỗi 409, lưu `shared_preferences` thật — đều xanh; plan đã lưu → mở thẳng Dashboard cả khi backend tắt; plan hỏng → Onboarding, không crash, giữ hồ sơ. Chưa build iOS/macOS (máy không có Xcode).
 
 ## Test
 
@@ -115,6 +115,8 @@ Android: `compileSdk = 36` trong `android/app/build.gradle.kts` — plugin Andro
   - `test/providers/` — `SharedPreferences.setMockInitialValues()`;
   - `test/widget_test.dart` — màn đầu theo dữ liệu đã lưu;
   - `test/fake_backend.dart` — backend giả trả fixture theo đường dẫn, ghi lại request.
+- `integration_test/backend_smoke_test.dart` — chạy **tay** trên máy ảo/điện thoại khi backend đang chạy ở chế độ giả lập: `flutter test integration_test -d emulator-5554` (điện thoại thật thêm `--dart-define=API_BASE_URL=http://<IP LAN>:3000`). Gọi backend thật qua mạng của thiết bị, dùng `shared_preferences` thật, xoá dữ liệu đã lưu của app trên thiết bị đó. Tự dừng nếu `/health` báo `gemini: configured` (không tốn hạn mức Gemini — #17) hoặc không phải `auth_mode: mock`. `flutter test` (và CI) chỉ chạy thư mục `test/`, không chạy test này.
+- Chưa có máy ảo: Android Studio → Device Manager → tạo thiết bị (ví dụ Pixel 8, API 36).
 - CI: `.github/workflows/frontend.yml` chạy `flutter analyze` + `flutter test` với Flutter 3.47.5 khi `frontend_app/**` đổi.
 - Code có sẵn chưa theo `dart format` ở khổ dòng nào, nên CI không kiểm format; sửa file cũ thì không format lại cả file (sẽ gộp dòng ở các widget không liên quan).
 

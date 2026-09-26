@@ -38,6 +38,7 @@ flutter run                     # run on a connected device/emulator
 flutter analyze                 # static analysis (flutter_lints, default rule set)
 flutter test                    # run all tests (no backend needed; fixtures in test/fixtures/)
 flutter test test/services/api_client_test.dart   # run a single test file
+flutter test integration_test -d emulator-5554   # manual only: real backend_api from the device (mock mode, no GEMINI_API_KEY); wipes the app's saved data there; not in CI
 ```
 
 Backend (`backend_api/`):
@@ -97,7 +98,7 @@ npm run experiment              # runs generate-plan-experiment.ts
 - `lib/services/api_client.dart` — `ApiClient` for all 9 endpoints: 60 s timeout for calls that may hit Gemini (the backend gives up at 40 s), 15 s otherwise; bodies decoded as UTF-8 from `bodyBytes`; every failure becomes a sealed `ApiException` (`api_exception.dart`) whose `message` is Vietnamese UI text (400 details stay in `ValidationException.details`); a 401 on a request that carried a token calls `onUnauthorized`. Never log request/response bodies — they carry health data.
 - `lib/providers/` — `PlanProvider` (profile + plan in `shared_preferences` keys `smartfit.profile.v1` / `smartfit.plan.v1`; `busy` flag, calls while busy are ignored; corrupt data dropped) and `AuthProvider` (`smartfit.access_token`, `smartfit.user.v1`; signs out on 401).
 - `lib/screens/` — one file per screen; `lib/widgets/` — `macro_ring.dart`, `feedback_bottom_sheet.dart`.
-- Network config per platform: `INTERNET` in the main Android manifest, cleartext HTTP only in the debug manifest, iOS `NSAllowsLocalNetworking`, macOS `network.client` in both entitlements. Android `compileSdk = 36` (`shared_preferences_android` requires it; `targetSdk` stays 34). CI doesn't build an APK, so after adding a package with a native plugin run `flutter build apk --debug` locally.
+- Network config per platform: `INTERNET` in the main Android manifest, cleartext HTTP only in the debug manifest, iOS `NSAllowsLocalNetworking`, macOS `network.client` in both entitlements (Dart's HTTP isn't subject to Android's cleartext policy — checked on Android 16 — the debug flag is only for platform-stack networking). Android `compileSdk = 36` (`shared_preferences_android` requires it; `targetSdk` stays 34). CI doesn't build an APK, so after adding a package with a native plugin run `flutter build apk --debug` locally.
 
 UI strings, labels, and comments are in Vietnamese throughout the existing code — match this when adding to the same screens/widgets.
 

@@ -35,6 +35,12 @@ flutter run -d chrome   # hoặc flutter run cho thiết bị/máy ảo
 flutter test            # không cần backend chạy
 ```
 
+Kiểm app gọi backend thật trên máy ảo Android (tạo máy ảo trong Android Studio → Device Manager; backend chạy giả lập, `.env` không có `GEMINI_API_KEY`):
+
+```bash
+flutter test integration_test -d emulator-5554   # xoá dữ liệu đã lưu của app trên máy ảo
+```
+
 App gọi backend ở `http://localhost:3000` (máy ảo Android: `http://10.0.2.2:3000`). Chạy trên điện thoại thật thì chỉ địa chỉ máy đang chạy backend, hai máy cùng Wi-Fi:
 
 ```bash

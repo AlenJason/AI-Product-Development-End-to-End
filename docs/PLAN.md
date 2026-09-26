@@ -144,24 +144,25 @@ Chi tiết: brainstorm `docs/superpowers/brainstorms/phase-4-swap-feedback.md` (
 - [x] **5.7** Bật CORS trong `configureApp()` qua `CORS_ORIGINS` (trống khi phát triển → `localhost`/`127.0.0.1` mọi cổng; trống khi deploy → tắt), cho phép header `Authorization`
 - [x] **5.8** *(bổ sung, quyết định Q1)* Fixture hợp đồng: backend xuất 14 JSON thật vào `frontend_app/test/fixtures/` (`npm run fixtures:update`), test hai phía cùng dùng
 - [x] **5.9** *(bổ sung, quyết định Q4)* CI Flutter: `flutter analyze` + `flutter test` (`.github/workflows/frontend.yml`)
+- [x] **5.10** *(bổ sung sau khi kiểm lại)* Chạy trên máy ảo Android 16: sửa `compileSdk` 34 → 36 (APK không build được sau khi thêm `shared_preferences`); `integration_test/backend_smoke_test.dart` gọi backend thật từ máy ảo (chạy tay); mở app có plan đã lưu → Dashboard kể cả khi backend tắt, plan hỏng → Onboarding
 
 Chi tiết: brainstorm `docs/superpowers/brainstorms/phase-5-frontend-foundation.md` (quyết định Q1–Q4 ở mục 8), plan `docs/superpowers/plans/phase-5-frontend-foundation/`.
 
 ## Giai đoạn 6 — Frontend: nối MVP (FR-1 → FR-3) · M
 
 - [ ] **6.1** Onboarding: thêm tuổi, giới tính, mức vận động (FR-1.1, FR-1.2 — backend bắt buộc nhưng giao diện chưa có); 3 ô nhập tự do + chip gợi ý + dòng khuyến cáo y tế (D4); validate cùng giới hạn với backend
-- [ ] **6.2** Tab "Cá nhân": xem và sửa hồ sơ, lưu trên máy (FR-1.6); sửa xong thì gợi ý tạo lại plan
+- [ ] **6.2** Tab "Cá nhân": xem và sửa hồ sơ, lưu trên máy (FR-1.6); sửa xong thì gợi ý tạo lại plan (hiện ghi cứng "168 cm • 62 kg • Giảm mỡ", không theo Onboarding)
 - [ ] **6.3** Loading: gọi API thật thay cho bộ đếm giờ giả; lỗi → nút thử lại (NFR-1, NFR-2). Có Gemini thì chờ thật khoảng 10–15 giây, tối đa khoảng 40 giây — câu chờ và thanh tiến trình phải hợp với khoảng này; HTTP client của app để timeout dài hơn 40 giây
-- [ ] **6.4** Dashboard: hiển thị đủ 3 ngày, 3 bữa/ngày, bài tập, calo và macro (FR-2.3); hiện cảnh báo khi chế độ giả lập chưa kiểm tra được hết hạn chế
+- [ ] **6.4** Dashboard: hiển thị đủ 3 ngày, 3 bữa/ngày, bài tập, calo và macro (FR-2.3); hiện cảnh báo khi chế độ giả lập chưa kiểm tra được hết hạn chế. Thấy khi chạy trên máy ảo (giai đoạn 5): ngày ghi cứng "Thứ Ba, 15/9/2026"; thiếu bữa sáng; bộ chọn S1–S5 là 5 ngày và bấm không đổi nội dung; món/động tác không theo hạn chế đã chọn (vẫn có cá khi dị ứng hải sản)
 - [ ] **6.5** Grocery: dựng từ `grocery_list`; trạng thái tích chọn lưu cục bộ (FR-3.2)
 - [ ] **6.6** Widget test dùng backend giả `test/fake_backend.dart` (có từ giai đoạn 5)
-- [ ] **6.7** Màn hình đọc/ghi qua `PlanProvider`/`AuthProvider` và model `lib/models/api/`; xoá view-model cũ `lib/models/meal_plan.dart`. Chạy thử trên máy ảo Android (giai đoạn 5 mới build APK và kiểm manifest, chưa chạy app)
+- [ ] **6.7** Màn hình đọc/ghi qua `PlanProvider`/`AuthProvider` và model `lib/models/api/`; xoá view-model cũ `lib/models/meal_plan.dart`. Thao tác lại toàn luồng trên máy ảo Android và chạy `flutter test integration_test`
 
 ## Giai đoạn 7 — Frontend: tính năng nâng cao (FR-4, FR-5) · M
 
 - [ ] **7.1** Nút "Đổi món" gọi API (hiện đang xoay vòng trong danh sách món viết cứng); thay cả plan và checklist bằng plan server trả về. 409 → báo hồ sơ đã đổi, gợi ý tạo plan mới; 422 → báo không còn món thay thế phù hợp
 - [ ] **7.2** Nút "Đổi bài" gọi API
-- [ ] **7.3** Làm lại bảng feedback theo D2 (3 câu hỏi, câu tình trạng cơ thể chọn nhiều); gọi API, cập nhật ngày kế tiếp; nhận `safety_warning` → hiện khuyến cáo ngừng tập, hỏi ý kiến bác sĩ. **Khoá nút sau khi đã gửi feedback cho một ngày** — backend không lưu trạng thái, gửi lại sẽ điều chỉnh thêm lần nữa
+- [ ] **7.3** Làm lại bảng feedback theo D2 (3 câu hỏi, câu tình trạng cơ thể chọn nhiều); gọi API, cập nhật ngày kế tiếp; nhận `safety_warning` → hiện khuyến cáo ngừng tập, hỏi ý kiến bác sĩ. **Khoá nút sau khi đã gửi feedback cho một ngày** — backend không lưu trạng thái, gửi lại sẽ điều chỉnh thêm lần nữa. Bỏ câu báo viết sẵn "AI đã cân đối lại thực đơn Ngày 2!" (hiện hiện ra dù không có gì thay đổi)
 
 ## Giai đoạn 8 — Frontend: Tài khoản & Lịch sử (FR-6, FR-7) · M
 
