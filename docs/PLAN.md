@@ -63,6 +63,15 @@ Giao diện Flutter (thiết kế từ Figma) và backend/BRD từng lệch nhau
 - **Chế độ giả lập:** code khớp từ khoá phổ biến (tôm, cua, sữa, gối…). Nếu có nội dung không nhận ra, app cảnh báo rằng chưa kiểm tra được toàn bộ hạn chế.
 - App ghi rõ: gợi ý chỉ mang tính tham khảo, không thay thế tư vấn y tế; người có bệnh nền nên hỏi ý kiến bác sĩ.
 
+**D5 — Cách nhập hạn chế (2026-09-26, góp ý khi chạy thử trên Android; thay phần giao diện của D4):** Onboarding hiện có hai ô tích cứng "Dị ứng hải sản", "Đau khớp gối" — người không dị ứng hay không chấn thương thì không có lựa chọn "không", người dị ứng thứ khác thì không nhập được.
+
+- Ba mục *Dị ứng*, *Chấn thương*, *Tình trạng sức khoẻ*, mỗi mục một công tắc "Tôi có …", mặc định tắt (= không có).
+- Bật lên → danh sách phổ biến, tích được nhiều mục, và lựa chọn "Khác" mở ô tự ghi. Tổng chuỗi ghép không quá 300 ký tự.
+- Danh sách dị ứng và chấn thương lấy đúng các nhóm backend nhận ra (`backend_api/src/plan/data/restriction-keywords.json`: hải sản, tôm, cua, cá, mực, nghêu/sò/ốc, đậu phộng, trứng, sữa, đậu nành, gluten, thịt bò, thịt heo, thịt gà, mè, nấm; đầu gối, cổ chân, cổ tay/khuỷu tay, lưng, vai), để mục nào được tích cũng được lọc ở chế độ giả lập. Cần test hai phía để danh sách app không lệch file từ khoá.
+- Tình trạng sức khoẻ (tiểu đường, cao huyết áp, gout…): chỉ được đưa vào prompt khi có Gemini; chế độ giả lập **chưa** điều chỉnh thực đơn theo bệnh nền, chỉ hiện khuyến cáo — giao diện phải nói rõ.
+- App ghép lựa chọn thành chuỗi gửi đi, hợp đồng API (BRD 6.1) không đổi. Phần "Khác" backend không nhận ra → cảnh báo "chưa nhận ra hết" (đã có).
+- Tab "Cá nhân" dùng cùng cách nhập. BRD FR-1.4 sửa theo ở giai đoạn 6.
+
 ---
 
 ## Giai đoạn 0 — Dọn dẹp & chuẩn bị · S
@@ -150,13 +159,14 @@ Chi tiết: brainstorm `docs/superpowers/brainstorms/phase-5-frontend-foundation
 
 ## Giai đoạn 6 — Frontend: nối MVP (FR-1 → FR-3) · M
 
-- [ ] **6.1** Onboarding: thêm tuổi, giới tính, mức vận động (FR-1.1, FR-1.2 — backend bắt buộc nhưng giao diện chưa có); 3 ô nhập tự do + chip gợi ý + dòng khuyến cáo y tế (D4); validate cùng giới hạn với backend
+- [ ] **6.1** Onboarding: thêm tuổi, giới tính, mức vận động (FR-1.1, FR-1.2 — backend bắt buộc nhưng giao diện chưa có); nhập hạn chế theo D5 + dòng khuyến cáo y tế (D4); validate cùng giới hạn với backend, báo lỗi ngay khi nhập. Bỏ giá trị điền sẵn 168 / 62; nút tiếp tục phải mang hồ sơ đi (hiện `onNext` không truyền dữ liệu nào)
 - [ ] **6.2** Tab "Cá nhân": xem và sửa hồ sơ, lưu trên máy (FR-1.6); sửa xong thì gợi ý tạo lại plan (hiện ghi cứng "168 cm • 62 kg • Giảm mỡ", không theo Onboarding)
-- [ ] **6.3** Loading: gọi API thật thay cho bộ đếm giờ giả; lỗi → nút thử lại (NFR-1, NFR-2). Có Gemini thì chờ thật khoảng 10–15 giây, tối đa khoảng 40 giây — câu chờ và thanh tiến trình phải hợp với khoảng này; HTTP client của app để timeout dài hơn 40 giây
-- [ ] **6.4** Dashboard: hiển thị đủ 3 ngày, 3 bữa/ngày, bài tập, calo và macro (FR-2.3); hiện cảnh báo khi chế độ giả lập chưa kiểm tra được hết hạn chế. Thấy khi chạy trên máy ảo (giai đoạn 5): ngày ghi cứng "Thứ Ba, 15/9/2026"; thiếu bữa sáng; bộ chọn S1–S5 là 5 ngày và bấm không đổi nội dung; món/động tác không theo hạn chế đã chọn (vẫn có cá khi dị ứng hải sản)
-- [ ] **6.5** Grocery: dựng từ `grocery_list`; trạng thái tích chọn lưu cục bộ (FR-3.2)
+- [ ] **6.3** Loading: gọi API thật thay cho bộ đếm giờ giả; lỗi → nút thử lại (NFR-1, NFR-2). Có Gemini thì chờ thật khoảng 10–15 giây, tối đa khoảng 40 giây — câu chờ và thanh tiến trình phải hợp với khoảng này; HTTP client của app để timeout dài hơn 40 giây. Bỏ nút "Xem trước kế hoạch ngay" và các câu chờ bịa số liệu ("Cân đối Macro: 140g Carbs, 65g Protein…", "phù hợp ngân sách")
+- [ ] **6.4** Dashboard: hiển thị đủ 3 ngày, 3 bữa/ngày, bài tập, calo và macro (FR-2.3); hiện cảnh báo khi chế độ giả lập chưa kiểm tra được hết hạn chế. Thấy khi chạy trên máy ảo (giai đoạn 5): ngày ghi cứng "Thứ Ba, 15/9/2026"; thiếu bữa sáng; bộ chọn S1–S5 là 5 ngày và bấm không đổi nội dung; món/động tác không theo hạn chế đã chọn (vẫn có cá khi dị ứng hải sản); chưa hiện tổng calo và macro mỗi ngày (FR-2.3) — widget `macro_ring.dart` có sẵn nhưng chưa dùng; nhãn "Dễ", "Không tạ", chữ "T", "3 ngày" ghi cứng; hiện `warnings` của plan
+- [ ] **6.5** Grocery: dựng từ `grocery_list`; trạng thái tích chọn lưu cục bộ (FR-3.2). Tên nhóm theo BRD FR-3.1 (*Đạm*, *Rau củ quả*, *Gạo, bún & gia vị* — hiện là "Thịt & Thủy hải sản", "Gia vị & nguyên liệu khác"); thêm thao tác xoá món đã có sẵn trong tủ lạnh (FR-3.2); quyết định giữ hay bỏ nút "Thêm nguyên liệu" (không có trong BRD)
 - [ ] **6.6** Widget test dùng backend giả `test/fake_backend.dart` (có từ giai đoạn 5)
 - [ ] **6.7** Màn hình đọc/ghi qua `PlanProvider`/`AuthProvider` và model `lib/models/api/`; xoá view-model cũ `lib/models/meal_plan.dart`. Thao tác lại toàn luồng trên máy ảo Android và chạy `flutter test integration_test`
+- [ ] **6.8** Tên app hiển thị "my_ai_app" (Android, web) và "My Ai App" (iOS) → "SmartFit AI"; icon vẫn là icon mặc định của Flutter
 
 ## Giai đoạn 7 — Frontend: tính năng nâng cao (FR-4, FR-5) · M
 
