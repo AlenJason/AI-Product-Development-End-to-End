@@ -1,4 +1,4 @@
-import { computeDailyTarget } from './daily-target.js';
+import { computeDailyTarget, energySplit, MACRO_ENERGY_SPLIT } from './daily-target.js';
 import { ActivityLevel } from './enums/activity-level.enum.js';
 import { Gender } from './enums/gender.enum.js';
 import { Goal } from './enums/goal.enum.js';
@@ -98,4 +98,16 @@ describe('computeDailyTarget — nam/nữ × mức vận động × mục tiêu'
       });
     },
   );
+});
+
+describe('energySplit', () => {
+  it('returns the energy share of protein, carbs and fat over all given meals', () => {
+    const split = energySplit([
+      { protein_g: 25, carbs_g: 45, fat_g: 0 },
+      { protein_g: 0, carbs_g: 0, fat_g: 40 / 3 },
+    ]);
+    expect(split.protein).toBeCloseTo(MACRO_ENERGY_SPLIT.protein);
+    expect(split.carbs).toBeCloseTo(MACRO_ENERGY_SPLIT.carbs);
+    expect(split.fat).toBeCloseTo(MACRO_ENERGY_SPLIT.fat);
+  });
 });

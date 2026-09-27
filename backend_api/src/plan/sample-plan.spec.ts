@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { computeDailyTarget } from './daily-target.js';
+import { computeDailyTarget, energySplit, MACRO_ENERGY_SPLIT } from './daily-target.js';
 import { RestrictionsDto } from './dto/restrictions.dto.js';
 import { ActivityLevel } from './enums/activity-level.enum.js';
 import { Gender } from './enums/gender.enum.js';
@@ -17,6 +17,21 @@ const raw: unknown = JSON.parse(
   readFileSync(fileURLToPath(new URL('./data/sample-plan.json', import.meta.url)), 'utf-8'),
 );
 const NO_RESTRICTIONS = matchRestrictions(new RestrictionsDto());
+const keywords = JSON.parse(
+  readFileSync(fileURLToPath(new URL('./data/restriction-keywords.json', import.meta.url)), 'utf-8'),
+) as { allergies: { labels: string[] }[] };
+
+// Không hạn chế, từng nhóm dị ứng backend nhận ra, và vài tổ hợp làm thay nhiều món cùng lúc.
+const ALLERGY_CASES = [
+  '',
+  ...keywords.allergies.map((entry) => entry.labels[0]),
+  'hải sản, trứng',
+  'bò, gà, heo',
+  'hải sản, đậu phụ, trứng',
+];
+// Cả ngày lệch mục tiêu 25/45/30 không quá 3 điểm phần trăm ở từng chất (BRD FR-1.5). Thực đơn mẫu trước đây
+// chỉ được nhân theo calo nên tinh bột ~53 %, béo ~23 %.
+const MAX_DAY_DEVIATION = 0.03;
 
 // 18 hồ sơ của ma trận BMR/TDEE + 2 hồ sơ cực trị trong giới hạn BRD 6.1 (tuổi 18–100 từ v2.6.0).
 const PROFILES = [
@@ -51,7 +66,7 @@ describe('sample-plan.json', () => {
     expect(assembled.days).toHaveLength(3);
     expect(rice).toEqual({
       name: 'Gạo tẻ',
-      quantity: '540g',
+      quantity: '460g',
       source_meal_ids: ['m1_2', 'm1_3', 'm2_2', 'm2_3', 'm3_2', 'm3_3'],
     });
   });
@@ -66,6 +81,18 @@ describe('sample-plan.json', () => {
       expect(total).toBeGreaterThanOrEqual(Math.max(min, target.bmr));
       expect(total).toBeLessThanOrEqual(max);
       expect(Math.abs(total - target.target_calories)).toBeLessThanOrEqual(3);
+    }
+  });
+
+  it.each(ALLERGY_CASES)('keeps every day close to the 25/45/30 energy split — allergies: "%s"', (allergies) => {
+    const { target } = computeDailyTarget(PROFILES[0]);
+    const match = matchRestrictions(Object.assign(new RestrictionsDto(), { allergies }));
+    const { plan } = buildSampleContent(target, match, 3);
+    for (const day of plan.days) {
+      const split = energySplit(day.meals);
+      for (const key of Object.keys(MACRO_ENERGY_SPLIT) as (keyof typeof MACRO_ENERGY_SPLIT)[]) {
+        expect(Math.abs(split[key] - MACRO_ENERGY_SPLIT[key])).toBeLessThanOrEqual(MAX_DAY_DEVIATION);
+      }
     }
   });
 

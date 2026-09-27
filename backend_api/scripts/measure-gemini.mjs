@@ -15,6 +15,7 @@ import { MealContentDto } from '../dist/plan/dto/plan-content.dto.js';
 import { RestrictionsDto } from '../dist/plan/dto/restrictions.dto.js';
 import { buildPlanPrompt } from '../dist/plan/gemini.service.js';
 import { mealCalorieBounds, parseContent, parsePlanContent } from '../dist/plan/plan-validation.js';
+import { exceedsLevel, maxExerciseLevel } from '../dist/plan/exercise-level.js';
 import { findRestrictionViolations } from '../dist/plan/restriction-filter.js';
 import { findAvoidedIngredient, matchRestrictions } from '../dist/plan/restriction-matcher.js';
 
@@ -90,6 +91,28 @@ function checkPlan(text, p) {
   return violations.length > 0 ? `vướng hạn chế: ${violations[0]}` : 'ĐẠT';
 }
 
+// Tỉ lệ năng lượng đạm/tinh bột/béo trung bình 3 ngày (mục tiêu 25/45/30 — BRD FR-1.5) và số động tác Gemini tự chọn
+// vượt mức cho phép của hồ sơ (trước khi backend hạ mức — FR-2.2). Đọc từ JSON thô, kể cả khi plan không đạt.
+function planStats(text, p) {
+  let raw;
+  try { raw = JSON.parse(text); } catch { return {}; }
+  const days = Array.isArray(raw?.days) ? raw.days : [];
+  const shares = days.map((day) => {
+    const meals = Array.isArray(day?.meals) ? day.meals : [];
+    const [protein, carbs, fat] = ['protein_g', 'carbs_g', 'fat_g'].map((key) => meals.reduce((sum, meal) => sum + (Number(meal?.[key]) || 0), 0));
+    const energy = 4 * protein + 4 * carbs + 9 * fat;
+    return energy > 0 ? [(4 * protein) / energy, (4 * carbs) / energy, (9 * fat) / energy] : [0, 0, 0];
+  });
+  const macro = shares.length ? [0, 1, 2].map((i) => Math.round((100 * shares.reduce((sum, s) => sum + s[i], 0)) / shares.length)) : null;
+  const maxLevel = maxExerciseLevel(p);
+  const exercises = days.flatMap((day) => (Array.isArray(day?.workout?.exercises) ? day.workout.exercises : []));
+  const over = exercises.filter((e) => exceedsLevel({ name: String(e?.name ?? ''), tags: Array.isArray(e?.tags) ? e.tags : [] }, maxLevel)).length;
+  return { macro, over, exercises: exercises.length, maxLevel };
+}
+
+const describeStats = (s) =>
+  s.macro ? ` | đạm/tinh bột/béo ${s.macro.join('/')}% | vượt mức ${s.over}/${s.exercises} (tối đa ${s.maxLevel})` : '';
+
 function checkSwap(text, p, range) {
   let raw;
   try { raw = JSON.parse(text); } catch { return 'JSON hỏng'; }
@@ -107,15 +130,16 @@ const swapRange = { min: Math.max(Math.round(SWAP_MEAL.calories * 0.9), lunchBou
 for (const model of MODELS) {
   for (const thinking of THINKING) {
     const jobs = [
-      ...Object.entries(PROFILES).map(([label, p]) => ({ task: 'tạo plan', label, prompt: buildPlanPrompt(p, computeDailyTarget(p).target), check: (t) => checkPlan(t, p) })),
+      ...Object.entries(PROFILES).map(([label, p]) => ({ task: 'tạo plan', label, prompt: buildPlanPrompt(p, computeDailyTarget(p).target), check: (t) => checkPlan(t, p), stats: (t) => planStats(t, p) })),
       { task: 'đổi món', label: swapLabel, prompt: buildMealSwapPrompt(swapProfile, SWAP_MEAL, swapRange, [SWAP_MEAL.name]), check: (t) => checkSwap(t, swapProfile, swapRange) },
     ];
     for (const job of jobs) {
       const r = await call(model, thinking, job.prompt);
       const verdict = r.error ? `LỖI ${r.error}` : job.check(r.text);
-      const row = { model, thinking, task: job.task, profile: job.label, ms: r.ms, thoughts: r.thoughts, output: r.output, verdict };
+      const stats = !r.error && job.stats ? job.stats(r.text) : {};
+      const row = { model, thinking, task: job.task, profile: job.label, ms: r.ms, thoughts: r.thoughts, output: r.output, verdict, ...stats };
       results.push(row);
-      console.log(`${model} | ${thinking} | ${job.task} | ${job.label} | ${r.ms ?? '-'} ms | suy nghĩ ${r.thoughts ?? '-'} tok | ${verdict}`);
+      console.log(`${model} | ${thinking} | ${job.task} | ${job.label} | ${r.ms ?? '-'} ms | suy nghĩ ${r.thoughts ?? '-'} tok | ${verdict}${describeStats(stats)}`);
       writeFileSync(OUT, JSON.stringify(results, null, 2));
       await sleep(PACE_MS);
       if (r.error && /không hỗ trợ|not supported/i.test(r.error)) break; // cấu hình không hợp model → bỏ qua phần còn lại
@@ -132,7 +156,12 @@ for (const model of MODELS) {
       if (rows.length === 0) continue;
       const ms = done.map((r) => r.ms).sort((a, b) => a - b);
       const passed = done.filter((r) => r.verdict === 'ĐẠT').length;
-      console.log(`${model} | ${thinking} | ${task}: đạt ${passed}/${done.length} (lỗi API ${rows.length - done.length}) | ${ms.length ? `${ms[0]}–${ms.at(-1)} ms` : '-'}`);
+      const macros = done.filter((r) => r.macro).map((r) => r.macro);
+      const macro = macros.length ? ` | đạm/tinh bột/béo TB ${[0, 1, 2].map((i) => Math.round(macros.reduce((s, m) => s + m[i], 0) / macros.length)).join('/')}%` : '';
+      const over = done.filter((r) => r.exercises).reduce((s, r) => s + r.over, 0);
+      const total = done.filter((r) => r.exercises).reduce((s, r) => s + r.exercises, 0);
+      const level = total ? ` | vượt mức ${over}/${total}` : '';
+      console.log(`${model} | ${thinking} | ${task}: đạt ${passed}/${done.length} (lỗi API ${rows.length - done.length}) | ${ms.length ? `${ms[0]}–${ms.at(-1)} ms` : '-'}${macro}${level}`);
     }
   }
 }

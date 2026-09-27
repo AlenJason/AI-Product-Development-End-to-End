@@ -23,20 +23,20 @@
             "meal_type": "breakfast",
             "name": "Bún thịt bò nạc",
             "portion": "1 tô vừa",
-            "calories": 417,
-            "protein_g": 25.5,
-            "carbs_g": 56,
-            "fat_g": 10.2,
+            "calories": 406,
+            "protein_g": 27,
+            "carbs_g": 48.8,
+            "fat_g": 11.4,
             "ingredients": [
               {
                 "name": "Bún tươi",
-                "amount": 155,
+                "amount": 185,
                 "unit": "g",
                 "category": "pantry"
               },
               {
                 "name": "Thịt bò nạc",
-                "amount": 70,
+                "amount": 110,
                 "unit": "g",
                 "category": "protein"
               },
@@ -51,6 +51,12 @@
                 "amount": 10,
                 "unit": "g",
                 "category": "produce"
+              },
+              {
+                "name": "Dầu ăn",
+                "amount": 0.5,
+                "unit": "tbsp",
+                "category": "pantry"
               }
             ],
             "meal_id": "m1_1"
@@ -59,20 +65,20 @@
             "meal_type": "lunch",
             "name": "Cơm trắng, ức gà xào nấm, canh cải ngọt",
             "portion": "1 chén cơm + 1 đĩa thức ăn + 1 bát canh",
-            "calories": 641,
-            "protein_g": 45.8,
-            "carbs_g": 86.5,
-            "fat_g": 12.2,
+            "calories": 617,
+            "protein_g": 40.5,
+            "carbs_g": 71.7,
+            "fat_g": 18.7,
             "ingredients": [
               {
                 "name": "Gạo tẻ",
-                "amount": 100,
+                "amount": 90,
                 "unit": "g",
                 "category": "pantry"
               },
               {
                 "name": "Ức gà",
-                "amount": 155,
+                "amount": 130,
                 "unit": "g",
                 "category": "protein"
               },
@@ -101,26 +107,26 @@
             "meal_type": "dinner",
             "name": "Đậu phụ sốt cà chua, canh bí đỏ thịt băm",
             "portion": "1 chén cơm + 1 đĩa đậu + 1 bát canh",
-            "calories": 565,
-            "protein_g": 30.5,
-            "carbs_g": 76.4,
-            "fat_g": 15.3,
+            "calories": 601,
+            "protein_g": 36.4,
+            "carbs_g": 62.3,
+            "fat_g": 22.9,
             "ingredients": [
               {
                 "name": "Gạo tẻ",
-                "amount": 80,
+                "amount": 60,
                 "unit": "g",
                 "category": "pantry"
               },
               {
                 "name": "Đậu phụ",
-                "amount": 155,
+                "amount": 210,
                 "unit": "g",
                 "category": "protein"
               },
               {
                 "name": "Cà chua",
-                "amount": 100,
+                "amount": 105,
                 "unit": "g",
                 "category": "produce"
               },
@@ -135,6 +141,12 @@
                 "amount": 40,
                 "unit": "g",
                 "category": "protein"
+              },
+              {
+                "name": "Dầu ăn",
+                "amount": 0.5,
+                "unit": "tbsp",
+                "category": "pantry"
               }
             ],
             "meal_id": "m1_3"
@@ -188,10 +200,10 @@
             "meal_type": "breakfast",
             "name": "Bánh mì trứng ốp la",
             "portion": "1 ổ bánh mì + 2 quả trứng",
-            "calories": 399,
-            "protein_g": 18.9,
-            "carbs_g": 47.3,
-            "fat_g": 14.7,
+            "calories": 418,
+            "protein_g": 20.9,
+            "carbs_g": 46,
+            "fat_g": 16.7,
             "ingredients": [
               {
                 "name": "Bánh mì",
@@ -207,7 +219,7 @@
               },
               {
                 "name": "Dưa leo",
-                "amount": 55,
+                "amount": 50,
                 "unit": "g",
                 "category": "produce"
               },
@@ -224,26 +236,26 @@
             "meal_type": "lunch",
             "name": "Cơm gà luộc, rau muống xào tỏi",
             "portion": "1 chén cơm + 1 đĩa gà + 1 đĩa rau",
-            "calories": 646,
-            "protein_g": 44.1,
-            "carbs_g": 86.2,
-            "fat_g": 13.7,
+            "calories": 639,
+            "protein_g": 40.7,
+            "carbs_g": 72.1,
+            "fat_g": 20.9,
             "ingredients": [
               {
                 "name": "Gạo tẻ",
-                "amount": 105,
+                "amount": 90,
                 "unit": "g",
                 "category": "pantry"
               },
               {
                 "name": "Thịt gà bỏ da",
-                "amount": 160,
+                "amount": 140,
                 "unit": "g",
                 "category": "protein"
               },
               {
                 "name": "Rau muống",
-                "amount": 160,
+                "amount": 155,
                 "unit": "g",
                 "category": "produce"
               },
@@ -266,20 +278,20 @@
             "meal_type": "dinner",
             "name": "Bò xào cần tây, canh rau ngót",
             "portion": "1 chén cơm + 1 đĩa bò + 1 bát canh",
-            "calories": 578,
-            "protein_g": 33.6,
-            "carbs_g": 73.6,
-            "fat_g": 16.8,
+            "calories": 567,
+            "protein_g": 35.5,
+            "carbs_g": 61.6,
+            "fat_g": 19.8,
             "ingredients": [
               {
                 "name": "Gạo tẻ",
-                "amount": 85,
+                "amount": 75,
                 "unit": "g",
                 "category": "pantry"
               },
               {
                 "name": "Thịt bò nạc",
-                "amount": 105,
+                "amount": 115,
                 "unit": "g",
                 "category": "protein"
               },
@@ -327,20 +339,20 @@
             "meal_type": "breakfast",
             "name": "Phở gà",
             "portion": "1 tô vừa",
-            "calories": 422,
-            "protein_g": 25.3,
-            "carbs_g": 61.2,
-            "fat_g": 8.4,
+            "calories": 398,
+            "protein_g": 26.4,
+            "carbs_g": 42.2,
+            "fat_g": 13.7,
             "ingredients": [
               {
                 "name": "Bánh phở",
-                "amount": 160,
+                "amount": 125,
                 "unit": "g",
                 "category": "pantry"
               },
               {
-                "name": "Thịt gà bỏ da",
-                "amount": 75,
+                "name": "Thịt gà",
+                "amount": 105,
                 "unit": "g",
                 "category": "protein"
               },
@@ -363,32 +375,32 @@
             "meal_type": "lunch",
             "name": "Cơm bò xào hành tây, canh bí xanh",
             "portion": "1 chén cơm + 1 đĩa bò + 1 bát canh",
-            "calories": 638,
-            "protein_g": 37.6,
-            "carbs_g": 85.7,
-            "fat_g": 15.7,
+            "calories": 641,
+            "protein_g": 40.8,
+            "carbs_g": 73.4,
+            "fat_g": 20.4,
             "ingredients": [
               {
                 "name": "Gạo tẻ",
-                "amount": 105,
+                "amount": 80,
                 "unit": "g",
                 "category": "pantry"
               },
               {
                 "name": "Thịt bò nạc",
-                "amount": 125,
+                "amount": 155,
                 "unit": "g",
                 "category": "protein"
               },
               {
                 "name": "Hành tây",
-                "amount": 85,
+                "amount": 80,
                 "unit": "g",
                 "category": "produce"
               },
               {
                 "name": "Bí xanh",
-                "amount": 160,
+                "amount": 155,
                 "unit": "g",
                 "category": "produce"
               },
@@ -405,14 +417,14 @@
             "meal_type": "dinner",
             "name": "Trứng hấp thịt băm, rau cải luộc",
             "portion": "1 chén cơm + 1 đĩa trứng + 1 đĩa rau",
-            "calories": 564,
-            "protein_g": 29.5,
-            "carbs_g": 71.7,
-            "fat_g": 17.9,
+            "calories": 586,
+            "protein_g": 36.9,
+            "carbs_g": 64.4,
+            "fat_g": 20,
             "ingredients": [
               {
                 "name": "Gạo tẻ",
-                "amount": 85,
+                "amount": 80,
                 "unit": "g",
                 "category": "pantry"
               },
@@ -424,7 +436,7 @@
               },
               {
                 "name": "Thịt nạc băm",
-                "amount": 55,
+                "amount": 80,
                 "unit": "g",
                 "category": "protein"
               },
@@ -486,7 +498,7 @@
         "items": [
           {
             "name": "Thịt bò nạc",
-            "quantity": "300g",
+            "quantity": "380g",
             "source_meal_ids": [
               "m1_1",
               "m2_3",
@@ -495,21 +507,21 @@
           },
           {
             "name": "Ức gà",
-            "quantity": "155g",
+            "quantity": "130g",
             "source_meal_ids": [
               "m1_2"
             ]
           },
           {
             "name": "Đậu phụ",
-            "quantity": "155g",
+            "quantity": "210g",
             "source_meal_ids": [
               "m1_3"
             ]
           },
           {
             "name": "Thịt nạc băm",
-            "quantity": "95g",
+            "quantity": "120g",
             "source_meal_ids": [
               "m1_3",
               "m3_3"
@@ -525,9 +537,15 @@
           },
           {
             "name": "Thịt gà bỏ da",
-            "quantity": "235g",
+            "quantity": "140g",
             "source_meal_ids": [
-              "m2_2",
+              "m2_2"
+            ]
+          },
+          {
+            "name": "Thịt gà",
+            "quantity": "105g",
+            "source_meal_ids": [
               "m3_1"
             ]
           }
@@ -569,7 +587,7 @@
           },
           {
             "name": "Cà chua",
-            "quantity": "100g",
+            "quantity": "105g",
             "source_meal_ids": [
               "m1_3"
             ]
@@ -583,14 +601,14 @@
           },
           {
             "name": "Dưa leo",
-            "quantity": "55g",
+            "quantity": "50g",
             "source_meal_ids": [
               "m2_1"
             ]
           },
           {
             "name": "Rau muống",
-            "quantity": "160g",
+            "quantity": "155g",
             "source_meal_ids": [
               "m2_2"
             ]
@@ -618,14 +636,14 @@
           },
           {
             "name": "Hành tây",
-            "quantity": "85g",
+            "quantity": "80g",
             "source_meal_ids": [
               "m3_2"
             ]
           },
           {
             "name": "Bí xanh",
-            "quantity": "160g",
+            "quantity": "155g",
             "source_meal_ids": [
               "m3_2"
             ]
@@ -637,14 +655,26 @@
         "items": [
           {
             "name": "Bún tươi",
-            "quantity": "155g",
+            "quantity": "185g",
             "source_meal_ids": [
               "m1_1"
             ]
           },
           {
+            "name": "Dầu ăn",
+            "quantity": "5 muỗng canh",
+            "source_meal_ids": [
+              "m1_1",
+              "m1_2",
+              "m1_3",
+              "m2_2",
+              "m2_3",
+              "m3_2"
+            ]
+          },
+          {
             "name": "Gạo tẻ",
-            "quantity": "560g",
+            "quantity": "475g",
             "source_meal_ids": [
               "m1_2",
               "m1_3",
@@ -652,16 +682,6 @@
               "m2_3",
               "m3_2",
               "m3_3"
-            ]
-          },
-          {
-            "name": "Dầu ăn",
-            "quantity": "4 muỗng canh",
-            "source_meal_ids": [
-              "m1_2",
-              "m2_2",
-              "m2_3",
-              "m3_2"
             ]
           },
           {
@@ -680,7 +700,7 @@
           },
           {
             "name": "Bánh phở",
-            "quantity": "160g",
+            "quantity": "125g",
             "source_meal_ids": [
               "m3_1"
             ]

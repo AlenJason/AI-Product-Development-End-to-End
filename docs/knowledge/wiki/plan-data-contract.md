@@ -46,7 +46,7 @@ Tách hai lớp vì Gemini càng phải viết ít trường thì càng ít ch�
 | Bữa trưa, bữa tối | 25–45% `target_calories` |
 | Tổng một ngày | max(85% `target_calories`, BMR) – 110% `target_calories` |
 
-`mealCalorieBounds()`, `dayCalorieBounds()` tính các khoảng này; prompt Gemini đọc cùng hàm. Thực đơn mẫu (soạn cho ~1550 kcal/ngày) và món trong kho được nhân khẩu phần bằng `meal-scaling.ts` — calo, macro, lượng nguyên liệu cùng một hệ số, nên calo vẫn khớp 4P+4C+9F.
+`mealCalorieBounds()`, `dayCalorieBounds()` tính các khoảng này; prompt Gemini đọc cùng hàm. Thực đơn mẫu (soạn cho ~1550 kcal/ngày) và món trong kho được nhân khẩu phần bằng `meal-scaling.ts` — calo, macro, lượng nguyên liệu cùng một hệ số, nên calo vẫn khớp 4P+4C+9F và tỉ lệ đạm/tinh bột/béo của món không đổi. Macro của từng món ước từ nguyên liệu sống (giá trị dinh dưỡng phổ biến trên 100 g, làm tròn — chưa đối chiếu Bảng thành phần thực phẩm Việt Nam), khẩu phần cơm/đạm/dầu chỉnh để cả ngày gần 25/45/30 (sửa ngày 2026-09-27; trước đó ~24/53/23).
 
 ## Mã cố định (`enums/`)
 
@@ -58,4 +58,4 @@ Gộp theo nhóm + tên (không phân biệt hoa thường, khoảng trắng —
 
 ## Test
 
-Mỗi file có `*.spec.ts` đặt cạnh trong `src/plan/`; chạy `cd backend_api && npm test`. `sample-plan.spec.ts` bảo đảm thực đơn mẫu luôn đúng hợp đồng.
+Mỗi file có `*.spec.ts` đặt cạnh trong `src/plan/`; chạy `cd backend_api && npm test`. `sample-plan.spec.ts` bảo đảm thực đơn mẫu luôn đúng hợp đồng và mỗi ngày gần tỉ lệ năng lượng 25/45/30 (lệch ≤ 3 điểm, cả khi món vướng dị ứng được thay — #33).

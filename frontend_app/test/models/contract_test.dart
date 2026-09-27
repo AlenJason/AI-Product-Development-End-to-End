@@ -49,10 +49,11 @@ void main() {
   });
 
   test('giữ đúng kiểu số: macro thập phân vẫn thập phân, calo nguyên vẫn nguyên', () {
-    final meal = MealPlan.fromJson(loadFixture('generate_plan')).days.first.meals.first;
-    expect(meal.calories, isA<int>());
-    expect(meal.proteinG, isA<double>());
-    expect(meal.toJson()['protein_g'], same(meal.proteinG));
+    // Món nào có đạm lẻ tuỳ thực đơn mẫu, nên tìm trong cả plan thay vì cố định món đầu tiên.
+    final meals = MealPlan.fromJson(loadFixture('generate_plan')).days.expand((day) => day.meals).toList();
+    expect(meals.map((meal) => meal.calories), everyElement(isA<int>()));
+    final decimal = meals.firstWhere((meal) => meal.proteinG is double);
+    expect(decimal.toJson()['protein_g'], same(decimal.proteinG));
   });
 
   group('JSON sai hợp đồng → FormatException nêu rõ trường', () {

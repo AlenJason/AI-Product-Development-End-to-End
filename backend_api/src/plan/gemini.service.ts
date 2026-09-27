@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { GoogleGenAI, ThinkingLevel, type ThinkingConfig } from '@google/genai';
+import { ApiError, GoogleGenAI, ThinkingLevel, type ThinkingConfig } from '@google/genai';
 import type { CreatePlanDto } from './dto/create-plan.dto.js';
 import type { DailyTargetDto } from './dto/meal-plan-response.dto.js';
 import { ExerciseTag, MuscleGroup } from './enums/exercise.enum.js';
@@ -72,6 +72,13 @@ export class GeminiTimeoutError extends Error {
   }
 }
 
+// Hết giờ có hai dạng: SDK tự ngắt (AbortError), hoặc Google cắt trước — SDK gửi httpOptions.timeout lên server
+// qua header X-Server-Timeout, và Google trả 504 DEADLINE_EXCEEDED ngay trước lúc SDK kịp ngắt. Đo ngày
+// 27/09/2026: cả hai lần hết giờ đều ở dạng 504, nên trước đây backend vẫn gọi lại và người dùng chờ 34 s thay vì 20 s.
+function isTimeout(error: unknown): boolean {
+  return (error instanceof Error && error.name === 'AbortError') || (error instanceof ApiError && error.status === 504);
+}
+
 @Injectable()
 export class GeminiService {
   private readonly client: GoogleGenAI | null;
@@ -124,7 +131,7 @@ export class GeminiService {
       });
       text = response.text;
     } catch (error) {
-      if (error instanceof Error && error.name === 'AbortError') {
+      if (isTimeout(error)) {
         throw new GeminiTimeoutError(timeoutMs);
       }
       throw error;

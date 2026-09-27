@@ -41,6 +41,14 @@ Kiểm app gọi backend thật trên máy ảo Android (tạo máy ảo trong A
 flutter test integration_test -d emulator-5554   # xoá dữ liệu đã lưu của app trên máy ảo
 ```
 
+Trên máy Mac có Xcode, cùng bài kiểm đó chạy được trên macOS và iOS Simulator (không cần CocoaPods):
+
+```bash
+export DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer   # nếu xcode-select đang trỏ Command Line Tools
+flutter test integration_test -d macos
+flutter devices                                  # lấy id của iPhone Simulator, rồi: flutter test integration_test -d <id>
+```
+
 App gọi backend ở `http://localhost:3000` (máy ảo Android: `http://10.0.2.2:3000`). Chạy trên điện thoại thật thì chỉ địa chỉ máy đang chạy backend, hai máy cùng Wi-Fi:
 
 ```bash
@@ -84,6 +92,9 @@ Kết quả build và test tự động của từng commit: tab [Actions](https
 - Nhập hạn chế mới: công tắc "Tôi có dị ứng / chấn thương / bệnh nền" → chọn từ danh sách phổ biến hoặc tự ghi — người không có hạn chế nào không phải tích gì
 - An toàn: không phục vụ người dưới 18 tuổi; không cho chọn Giảm mỡ khi thiếu cân hoặc đang mang thai / cho con bú; bài tập nhẹ hơn cho người lớn tuổi, ít vận động hoặc mang thai (trước đây mọi người nhận cùng một buổi tập)
 - Tên "SmartFit AI", icon và màn khởi động riêng; sửa dải đen trên thanh trạng thái Android. Kiểm thử: 89 test Flutter, 320 unit và 74 e2e backend; chạy thật trên máy ảo Android 16
+- Sau khi chạy thử: cân lại đạm/tinh bột/béo của thực đơn mẫu và 21 món đổi — trước đây cả ngày ~24/53/23 (Dashboard báo tinh bột ~120%, chất béo ~69% mục tiêu), nay mỗi ngày lệch mục tiêu 25/45/30 không quá 3 điểm, kể cả khi món bị thay vì dị ứng; có test giữ tỉ lệ này. Món đổi "Xôi đậu xanh" (78% tinh bột) thay bằng "Xôi gà"
+- Đo lại Gemini thật: hôm đo, API chậm gấp 2–3 lần (tắt suy nghĩ: 28–30 giây, bật: 56–63 giây) nên vượt giới hạn 20 giây và người dùng nhận thực đơn mẫu. Sửa lỗi: khi Google tự cắt vì hết giờ (504), backend trước đây vẫn gọi lại nên người dùng chờ 34 giây; nay dùng thực đơn mẫu ngay sau 20 giây
+- App chạy được trên iOS Simulator và macOS (Xcode 27): bài kiểm gọi backend thật đạt 3/3 trên cả hai; tên app macOS đổi thành "SmartFit AI". Kiểm thử: 89 test Flutter, 372 unit và 74 e2e backend
 
 ### BRD v2.5.1 — 2026-09-24 → 2026-09-26
 - Giai đoạn 5 — nền tảng kết nối app với backend: app Flutter có model theo đúng hợp đồng API, lớp gọi API báo lỗi bằng tiếng Việt thay vì crash (mất mạng, hết giờ, phiên hết hạn…), lưu kế hoạch và phiên đăng nhập trên máy — mở lại app vẫn xem được kế hoạch khi không có mạng. Backend bật CORS cho bản web (`CORS_ORIGINS`). Backend xuất 14 mẫu JSON thật để test hai phía cùng dùng — đổi hợp đồng mà quên cập nhật phía nào thì test phía đó đỏ. Thêm CI cho Flutter (44 test); sửa quyền mạng Android/iOS/macOS và cấu hình build Android (trước đó APK không build được sau khi thêm package lưu dữ liệu). Màn hình vẫn dùng dữ liệu mẫu tới giai đoạn 6

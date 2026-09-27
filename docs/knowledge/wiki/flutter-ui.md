@@ -133,7 +133,7 @@ Android: `compileSdk = 36` trong `android/app/build.gradle.kts` — plugin Andro
 - Màn khởi động: Android 12+ vẽ lớp trước của icon thích ứng (hình trắng) trên `windowSplashScreenBackground` = xanh thương hiệu (`values-v31/styles.xml`) — để nền mặc định trắng thì hình biến mất; Android cũ hơn hiện icon giữa nền trắng (`launch_background.xml`).
 - Thanh trạng thái / điều hướng: theme `Theme.Light.NoTitleBar` mặc định tô đen thanh hệ thống và bỏ qua màu Flutter đặt → các theme bật `windowDrawsSystemBarBackgrounds`, nền trong suốt; `main()` bật `SystemUiMode.edgeToEdge`, màn hình dùng `SafeArea`.
 
-Đã kiểm trên máy ảo Android 16 (Pixel 8, API 36): icon trên launcher, màn khởi động, thanh trạng thái sáng, luồng Onboarding → Dashboard → Đi chợ → Cá nhân, cỡ chữ 130%. Chưa build iOS/macOS (máy không có Xcode).
+Đã kiểm trên máy ảo Android 16 (Pixel 8, API 36): icon trên launcher, màn khởi động, thanh trạng thái sáng, luồng Onboarding → Dashboard → Đi chợ → Cá nhân, cỡ chữ 130%. iOS và macOS (Xcode 27, 2026-09-27): `flutter test integration_test -d <máy>` 3/3 xanh trên iPhone 17 Simulator (iOS 27) và trên macOS — gồm luồng Onboarding → plan thật → Dashboard → đổi món và lưu trên máy; mở app trên Simulator thấy Onboarding đúng. Plugin (`shared_preferences`) chạy qua Swift Package Manager (`FlutterGeneratedPluginSwiftPackage` đã có trong `project.pbxproj`), không cần CocoaPods — `flutter doctor` vẫn báo thiếu CocoaPods, bỏ qua được. Tên app macOS là `PRODUCT_NAME` trong `macos/Runner/Configs/AppInfo.xcconfig` ("SmartFit AI"; trước đó `my_ai_app`). `xcode-select` đang trỏ Command Line Tools thì đặt `export DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer` trước lệnh Flutter (đổi `xcode-select` cần sudo).
 
 ## Test
 

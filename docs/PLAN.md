@@ -83,7 +83,7 @@ Giao diện Flutter (thiết kế từ Figma) và backend/BRD từng lệch nhau
 | B1 | Plan chỉ có ngày 1–3, không có ngày bắt đầu: hôm sau mở app vẫn "Ngày 1", bỏ dùng lâu thì plan cũ nằm mãi | App lưu ngày bắt đầu trên máy, tự chuyển ngày theo lịch; hết 3 ngày → gợi ý tạo plan mới |
 | B2 | Onboarding sẽ có khoảng 10 trường; trên màn hình 720×1280 nút tạo kế hoạch đã nằm dưới mép màn hình | Chia 3 bước (chỉ số cơ thể → mục tiêu & vận động → hạn chế), thanh tiến trình, nút luôn ở đáy |
 
-A1–A4 đổi hợp đồng và luật dinh dưỡng → BRD v2.6.0 ở giai đoạn 6 (FR-1.1, FR-1.4, FR-1.5, FR-2.2, NFR an toàn). **Để sau** (đã cân nhắc, chưa làm): đi chợ theo số người nấu; tuỳ chọn ăn chay (cần thêm món chay và nhóm từ khoá); đánh dấu bữa ăn ngoài (phải đổi cách backend tính danh sách đi chợ); cảnh báo nhẹ khi BMI ≥ 30 chọn "Tăng cơ"; cân macro của thực đơn mẫu (phát hiện khi chạy thử giai đoạn 6: thực đơn mẫu chỉ được nhân khẩu phần theo calo nên tinh bột ~120%, chất béo ~70% mục tiêu; backend chưa kiểm tỉ lệ macro).
+A1–A4 đổi hợp đồng và luật dinh dưỡng → BRD v2.6.0 ở giai đoạn 6 (FR-1.1, FR-1.4, FR-1.5, FR-2.2, NFR an toàn). **Để sau** (đã cân nhắc, chưa làm): đi chợ theo số người nấu; tuỳ chọn ăn chay (cần thêm món chay và nhóm từ khoá); đánh dấu bữa ăn ngoài (phải đổi cách backend tính danh sách đi chợ); cảnh báo nhẹ khi BMI ≥ 30 chọn "Tăng cơ". **Đã làm sau giai đoạn 6 (27/09/2026):** cân macro của thực đơn mẫu và kho món đổi (phát hiện khi chạy thử giai đoạn 6: thực đơn mẫu chỉ được nhân khẩu phần theo calo nên tinh bột ~120%, chất béo ~70% mục tiêu) — nay mỗi ngày lệch 25/45/30 không quá 3 điểm, có test (ràng buộc #33).
 
 ---
 

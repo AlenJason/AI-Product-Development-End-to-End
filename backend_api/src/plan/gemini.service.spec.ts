@@ -55,6 +55,24 @@ describe('GeminiService — SDK thật, server Gemini giả', () => {
     await expect(gemini.generatePlanContent(profile(), target)).rejects.toBeInstanceOf(GeminiTimeoutError);
   });
 
+  // Google tự cắt theo header X-Server-Timeout mà SDK gửi kèm timeout — thực tế hay gặp dạng này hơn AbortError.
+  it('treats HTTP 504 DEADLINE_EXCEEDED as a timeout, so it is never retried (#15)', async () => {
+    fake.reply({ kind: 'error', status: 504, message: 'Deadline expired before operation could complete.' });
+    await expect(gemini.generatePlanContent(profile(), target)).rejects.toBeInstanceOf(GeminiTimeoutError);
+
+    const logger = { warn: vi.fn(), error: vi.fn() };
+    const before = fake.requests.length;
+    const result = await generateWithRetry(
+      logger as never,
+      'thử',
+      { perCallMs: 20_000, totalMs: 40_000 },
+      (timeoutMs) => gemini.generateJson('prompt', timeoutMs),
+      () => ({ value: null, errors: [] }),
+    );
+    expect(result).toBeNull();
+    expect(fake.requests.length - before).toBe(1);
+  });
+
   it('sends exactly one request on HTTP 500 — the SDK must not retry on its own (#15)', async () => {
     fake.reply({ kind: 'error', status: 500, message: 'boom' });
     await expect(gemini.generatePlanContent(profile(), target)).rejects.toMatchObject({

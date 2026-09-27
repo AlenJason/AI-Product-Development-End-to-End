@@ -12,7 +12,7 @@ Backend gọi Gemini qua SDK `@google/genai` ở đúng một chỗ: `GeminiServ
 | Tình huống | SDK làm gì | `GeminiService` xử lý |
 |---|---|---|
 | Thành công | `POST {baseUrl}/v1beta/models/{model}:generateContent`, body có prompt và `generationConfig.responseMimeType`; đọc `candidates[0].content.parts[].text` thành `response.text` | `JSON.parse` → trả JSON thô cho `PlanService` kiểm hợp đồng |
-| Hết `httpOptions.timeout` | Ném `DOMException` tên `AbortError` (là `instanceof Error`), đúng lúc hết giờ | Đổi thành `GeminiTimeoutError` → `PlanService` không gọi lại |
+| Hết `httpOptions.timeout` | Gửi kèm header `X-Server-Timeout` (giây, làm tròn lên). Google thường cắt trước và trả `ApiError` 504 `DEADLINE_EXCEEDED`; nếu không, SDK ném `DOMException` tên `AbortError` (là `instanceof Error`) đúng lúc hết giờ | Cả hai đổi thành `GeminiTimeoutError` (`isTimeout()`) → không gọi lại. Trước 2026-09-27 chỉ bắt `AbortError`: lần đo qua backend thật hết giờ bằng 504, bị gọi lại, người dùng chờ 34 s |
 | HTTP 4xx/5xx (ví dụ khoá sai: 400) | Ném `ApiError`, có `status`; `message` là nguyên văn JSON lỗi của Google | Ném tiếp → `PlanService` log thông báo, gọi lại 1 lần, rồi dùng thực đơn mẫu |
 | HTTP 500 khi **không** truyền `retryOptions` | Gửi đúng **1** request, không tự gọi lại | — |
 | HTTP 500 khi **có** `retryOptions` | Tự gọi lại tới 5 lần, chờ tới 60 giây giữa các lần | Cấm dùng (#15) |
@@ -41,6 +41,23 @@ Qua backend thật (`off`, HTTP): `generate-plan` 14,3 s, `source: gemini`; đ�
 | `gemini-3.8-flash` liên tục 503 "high demand"; không nhận `thinkingLevel: MINIMAL` (400) | Mặc định đổi sang `gemini-3.5-flash` (#9) |
 | Gói miễn phí: **20 lần gọi/ngày cho mỗi model** (429 `GenerateRequestsPerDayPerProjectPerModel-FreeTier`); cũng có giới hạn theo phút | Hết thì backend dùng dữ liệu soạn sẵn; đổi `GEMINI_MODEL` để có hạn mức riêng của model khác |
 | Lỗi của SDK chứa nguyên khối JSON của Google (dài, có mảng `details`) | `describeGeminiError()` chỉ log mã lỗi + thông báo chính |
+
+## Đo lại sau giai đoạn 6 (2026-09-27)
+
+Cùng lệnh, cùng 3 hồ sơ, prompt có thêm luật mức động tác và mang thai. `measure-gemini.mjs` nay ghi thêm tỉ lệ năng lượng đạm/tinh bột/béo trung bình 3 ngày của plan Gemini trả về và số động tác vượt mức cho phép của hồ sơ (trước khi backend hạ mức).
+
+| `gemini-3.5-flash` | Tạo plan | Đạt | Đạm/tinh bột/béo (TB) | Động tác vượt mức | Đổi món |
+|---|---|---|---|---|---|
+| suy nghĩ mặc định (7500–8500 token suy nghĩ) | 56–63 s | 3/3 | 26/44/31 | 0/36 | 32 s |
+| `GEMINI_THINKING=low` (1300–4700 token) | 34–47 s | 3/3 | 26/44/30 | 0/33 | 25 s |
+| `GEMINI_THINKING=off` | 28–30 s | 2/3 (1 lần dùng đơn vị ngoài g/ml/piece/tbsp/tsp) | 26/46/27 | 0/33 | 17 s |
+
+| Điều đã thấy | Hệ quả |
+|---|---|
+| Mọi mức chậm gấp 2–3 lần hôm 24/09, kể cả đổi món (prompt không đổi): 3 s → 17 s. Tốc độ sinh chữ khi tắt suy nghĩ ~125 token/s, một plan ~3600–4200 token | Chậm do phía Google hôm đó, không do prompt dài thêm. Với `GEMINI_TIMEOUT_MS=20000`, hôm như vậy mọi lần tạo plan đều hết giờ → thực đơn mẫu. Chưa đổi giới hạn — cần quyết giữa chờ lâu hơn và nhận thực đơn mẫu |
+| Qua backend thật (`off`, HTTP): 2 lần 504 `DEADLINE_EXCEEDED` rồi thực đơn mẫu sau 34 s | 504 phải tính là hết giờ (#15) — đã sửa |
+| Bật suy nghĩ: 6/6 plan đạt hợp đồng, macro sát 25/45/30 hơn (béo 30–31 %). Tắt: 2/3, béo 26–27 % | Suy nghĩ giúp đúng định dạng và cân macro, nhưng tốn gấp đôi thời gian; backend đã kiểm mọi kết quả và gọi lại 1 lần nên vẫn giữ `off` |
+| Không mức nào chọn động tác vượt mức cho phép — luật `exerciseLevelRule()` trong prompt có tác dụng | `capWorkoutLevel()` vẫn chạy cho mọi kết quả (#31) |
 
 ## Test không cần khoá
 
