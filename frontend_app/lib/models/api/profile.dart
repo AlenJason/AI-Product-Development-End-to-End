@@ -73,3 +73,4 @@ class Restrictions {
 
   Json toJson() => {'allergies': allergies, 'injuries': injuries, 'health_conditions': healthConditions};
 }
+

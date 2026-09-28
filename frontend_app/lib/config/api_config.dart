@@ -14,3 +14,4 @@ String resolveApiBaseUrl({String configured = _configuredBaseUrl, bool isWeb = k
           : 'http://localhost:3000';
   return url.endsWith('/') ? url.substring(0, url.length - 1) : url;
 }
+

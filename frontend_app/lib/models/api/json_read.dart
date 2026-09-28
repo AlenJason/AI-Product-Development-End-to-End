@@ -48,3 +48,4 @@ T readCode<T extends Enum>(Json json, String field, List<T> values, String Funct
   }
   throw FormatException('"$field" có mã không hợp lệ: $value');
 }
+

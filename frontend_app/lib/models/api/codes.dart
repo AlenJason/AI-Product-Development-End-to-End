@@ -116,3 +116,4 @@ enum Eating {
   const Eating(this.code);
   final String code;
 }
+

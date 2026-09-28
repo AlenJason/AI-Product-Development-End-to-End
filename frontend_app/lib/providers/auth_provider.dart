@@ -68,3 +68,4 @@ class AuthProvider extends ChangeNotifier {
     unawaited(_prefs.remove(userKey));
   }
 }
+

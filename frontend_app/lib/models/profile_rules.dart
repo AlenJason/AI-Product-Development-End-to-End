@@ -74,3 +74,4 @@ List<String> profileProblems(Profile profile) => [
   ])
     if (text.length > restrictionMaxLength) 'Mỗi mục hạn chế tối đa $restrictionMaxLength ký tự',
 ];
+

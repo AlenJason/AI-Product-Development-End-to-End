@@ -51,3 +51,4 @@ class ServerException extends ApiException {
 
   final int? statusCode;
 }
+

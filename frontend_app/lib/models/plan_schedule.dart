@@ -39,3 +39,4 @@ String vietnameseDate(DateTime date) {
   const weekdays = ['Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy', 'Chủ Nhật'];
   return '${weekdays[date.weekday - 1]}, ${date.day}/${date.month}';
 }
+

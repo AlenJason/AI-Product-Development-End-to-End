@@ -109,3 +109,4 @@ class RestrictionSelection {
   RestrictionSelection copyWith({bool? enabled, Set<String>? chosen, String? other}) =>
       RestrictionSelection(enabled: enabled ?? this.enabled, chosen: chosen ?? this.chosen, other: other ?? this.other);
 }
+
