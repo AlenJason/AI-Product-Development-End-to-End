@@ -101,8 +101,9 @@ class FeedbackAnswers {
   Json toJson() => {
         'day_number': dayNumber,
         'intensity': intensity.code,
-        'body_states': bodyStates.map((state) => state.code),
+        'body_states': bodyStates.map((state) => state.code).toList(),
         'eating': eating.code,
       };
 }
+
 

@@ -37,8 +37,8 @@ class MealPlan {
         'source': source.code,
         'warnings': warnings,
         'daily_target': dailyTarget.toJson(),
-        'days': days.map((day) => day.toJson()),
-        'grocery_list': groceryList.map((group) => group.toJson()),
+        'days': days.map((day) => day.toJson()).toList(),
+        'grocery_list': groceryList.map((group) => group.toJson()).toList(),
       };
 }
 
@@ -97,7 +97,7 @@ class PlanDay {
 
   Json toJson() => {
         'day_number': dayNumber,
-        'meals': meals.map((meal) => meal.toJson()),
+        'meals': meals.map((meal) => meal.toJson()).toList(),
         'workout': workout.toJson(),
       };
 }
@@ -146,7 +146,7 @@ class Meal {
         'protein_g': proteinG,
         'carbs_g': carbsG,
         'fat_g': fatG,
-        'ingredients': ingredients.map((ingredient) => ingredient.toJson()),
+        'ingredients': ingredients.map((ingredient) => ingredient.toJson()).toList(),
       };
 }
 
@@ -184,7 +184,7 @@ class Workout {
   Json toJson() => {
         'title': title,
         'duration_minutes': durationMinutes,
-        'exercises': exercises.map((exercise) => exercise.toJson()),
+        'exercises': exercises.map((exercise) => exercise.toJson()).toList(),
       };
 }
 
@@ -220,7 +220,7 @@ class Exercise {
         'sets': sets,
         'reps_or_duration': repsOrDuration,
         'muscle_group': muscleGroup.code,
-        'tags': tags.map((tag) => tag.code),
+        'tags': tags.map((tag) => tag.code).toList(),
       };
 }
 

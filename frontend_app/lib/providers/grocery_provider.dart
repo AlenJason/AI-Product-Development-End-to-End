@@ -54,7 +54,7 @@ class GroceryProvider extends ChangeNotifier {
     notifyListeners();
     await _prefs.setString(
       stateKey,
-      jsonEncode({'plan_id': _planId, 'bought': _bought, 'have': _have.toList()}),
+      jsonEncode({'plan_id': _planId, 'bought': _bought.toList(), 'have': _have.toList()}),
     );
   }
 
