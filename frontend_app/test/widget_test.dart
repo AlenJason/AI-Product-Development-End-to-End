@@ -1,10 +1,12 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:my_ai_app/providers/plan_provider.dart';
 import 'package:my_ai_app/screens/dashboard_screen.dart';
 import 'package:my_ai_app/screens/onboarding_screen.dart';
+import 'package:my_ai_app/widgets/app_frame.dart';
 
 import 'app_harness.dart';
 import 'fixture_loader.dart';
@@ -88,5 +90,24 @@ void main() {
     await tester.tap(find.text('Cá nhân'));
     await tester.pumpAndSettle();
     expect(find.text('Hồ sơ của bạn'), findsOneWidget);
+  });
+
+  testWidgets('cửa sổ rộng (web, Windows, macOS) → app nằm trong cột giữa; đổi cỡ cửa sổ không mất tab đang mở', (
+    tester,
+  ) async {
+    final harness = await Harness.create(tester, saved: savedPlan());
+    tester.view.physicalSize = const Size(1280, 800);
+    tester.view.devicePixelRatio = 1;
+    await tester.pumpWidget(harness.app());
+    await tester.tap(find.text('Đi chợ'));
+    await tester.pumpAndSettle();
+    final wide = tester.getRect(find.byType(Scaffold).first);
+    expect(wide.width, AppFrame.maxContentWidth);
+    expect(wide.center.dx, 640);
+
+    tester.view.physicalSize = const Size(400, 800);
+    await tester.pumpAndSettle();
+    expect(tester.getRect(find.byType(Scaffold).first).width, 400);
+    expect(find.text('Danh sách đi chợ 3 ngày'), findsOneWidget);
   });
 }

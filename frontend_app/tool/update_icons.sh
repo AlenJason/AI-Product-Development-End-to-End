@@ -1,5 +1,5 @@
 #!/bin/bash
-# Vẽ lại icon SmartFit AI và chép đủ kích thước cho Android, iOS, macOS, web (PLAN 6.8). Chạy trên macOS
+# Vẽ lại icon SmartFit AI và chép đủ kích thước cho Android, iOS, macOS, Windows, web (PLAN 6.8). Chạy trên macOS
 # (cần swift và sips có sẵn):  cd frontend_app && tool/update_icons.sh
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -34,4 +34,10 @@ for size in 192 512; do
   resize "$full" "$size" "web/icons/Icon-$size.png"
   resize "$full" "$size" "web/icons/Icon-maskable-$size.png"
 done
+# Windows: một file .ico gồm nhiều kích thước (thanh tác vụ, Explorer, tiêu đề cửa sổ).
+tmp=$(mktemp -d)
+for size in 16 24 32 48 64 128 256; do resize "$full" "$size" "$tmp/$size.png"; done
+swift tool/make_ico.swift windows/runner/resources/app_icon.ico "$tmp"/{16,24,32,48,64,128,256}.png
+rm -rf "$tmp"
+
 echo "Đã cập nhật icon."

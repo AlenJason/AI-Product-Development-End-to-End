@@ -41,13 +41,14 @@ Kiểm app gọi backend thật trên máy ảo Android (tạo máy ảo trong A
 flutter test integration_test -d emulator-5554   # xoá dữ liệu đã lưu của app trên máy ảo
 ```
 
-Trên máy Mac có Xcode, cùng bài kiểm đó chạy được trên macOS và iOS Simulator (không cần CocoaPods):
+Trên máy Mac có Xcode, cùng bài kiểm đó chạy được trên macOS (không cần CocoaPods):
 
 ```bash
 export DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer   # nếu xcode-select đang trỏ Command Line Tools
 flutter test integration_test -d macos
-flutter devices                                  # lấy id của iPhone Simulator, rồi: flutter test integration_test -d <id>
 ```
+
+Nền tảng nhắm tới: Android, web, Windows, macOS (iOS tạm bỏ — PLAN D7). Mỗi lần push, CI build bản release của cả bốn; tải về ở tab Actions → lần chạy "Frontend CI" → mục Artifacts (`smartfit-apk`, `smartfit-web`, `smartfit-windows`, `smartfit-macos`). Các bản này gọi backend ở `localhost:3000`.
 
 App gọi backend ở `http://localhost:3000` (máy ảo Android: `http://10.0.2.2:3000`). Chạy trên điện thoại thật thì chỉ địa chỉ máy đang chạy backend, hai máy cùng Wi-Fi:
 
@@ -86,6 +87,11 @@ Kết quả build và test tự động của từng commit: tab [Actions](https
 ## Nhật ký thay đổi (Changelog)
 
 Đối chiếu theo phiên bản BRD (mục "Phiên bản" trong [BRD.md](BRD.md)), để giảng viên/trợ giảng theo dõi tiến độ trực tiếp trên repo mà không cần đọc từng commit.
+
+### BRD v2.6.1 — 2026-09-29
+- Chốt nền tảng: Android, web, Windows, macOS; iOS tạm bỏ. CI build bản release của cả bốn mỗi lần push (bản Windows chỉ build được trên CI vì máy phát triển là Mac)
+- Bản Windows có tên "SmartFit AI" và icon riêng (trước đó là `my_ai_app` với icon Flutter)
+- Trên cửa sổ rộng (web, Windows, macOS), app nằm trong cột giữa màn hình thay vì kéo ô nhập và nút dài hết chiều ngang. Kiểm thử: 90 test Flutter
 
 ### BRD v2.6.0 — 2026-09-27
 - Giai đoạn 6 — app dùng dữ liệu thật: Onboarding 3 bước (thêm tuổi, giới tính, mức vận động), màn chờ gọi API, kế hoạch 3 ngày mở đúng ngày hôm nay với đủ 3 bữa, tổng calo và macro, đổi món và đổi bài gọi API, danh sách đi chợ (đánh dấu đã mua, ẩn món đã có sẵn), tab Cá nhân sửa hồ sơ. Không còn dữ liệu viết cứng

@@ -123,8 +123,9 @@ Kiểm trong Chrome thật khi lập plan giai đoạn 5: preflight cho POST JSO
 | iOS | `NSAppTransportSecurity` → `NSAllowsLocalNetworking` trong `ios/Runner/Info.plist` |
 | macOS | `com.apple.security.network.client` trong cả `DebugProfile.entitlements` và `Release.entitlements` |
 | Web | không cần; cần CORS phía backend |
+| Windows | không cần cấu hình (app desktop Windows không có sandbox mạng) |
 
-Android: `compileSdk = 36` trong `android/app/build.gradle.kts` — plugin Android của `shared_preferences` đòi biên dịch với API ≥ 36; `targetSdk` vẫn 34. Trước đó file này ghim `compileSdk = 34` và APK không build được. CI chỉ chạy `analyze` + `test` nên không bắt được lỗi kiểu này — đổi package có plugin thì build thử `flutter build apk --debug`.
+Android: `compileSdk = 36` trong `android/app/build.gradle.kts` — plugin Android của `shared_preferences` đòi biên dịch với API ≥ 36; `targetSdk` vẫn 34. Trước đó file này ghim `compileSdk = 34` và APK không build được. Từ D7 (2026-09-29), job `build` của CI build bản release APK, web, Windows, macOS nên lỗi kiểu này đỏ ngay trên CI.
 
 ## Tên app, icon, màn khởi động, thanh hệ thống (PLAN 6.8)
 
@@ -135,9 +136,18 @@ Android: `compileSdk = 36` trong `android/app/build.gradle.kts` — plugin Andro
 
 Đã kiểm trên máy ảo Android 16 (Pixel 8, API 36): icon trên launcher, màn khởi động, thanh trạng thái sáng, luồng Onboarding → Dashboard → Đi chợ → Cá nhân, cỡ chữ 130%. iOS và macOS (Xcode 27, 2026-09-27): `flutter test integration_test -d <máy>` 3/3 xanh trên iPhone 17 Simulator (iOS 27) và trên macOS — gồm luồng Onboarding → plan thật → Dashboard → đổi món và lưu trên máy; mở app trên Simulator thấy Onboarding đúng. Plugin (`shared_preferences`) chạy qua Swift Package Manager (`FlutterGeneratedPluginSwiftPackage` đã có trong `project.pbxproj`), không cần CocoaPods — `flutter doctor` vẫn báo thiếu CocoaPods, bỏ qua được. Tên app macOS là `PRODUCT_NAME` trong `macos/Runner/Configs/AppInfo.xcconfig` ("SmartFit AI"; trước đó `my_ai_app`). `xcode-select` đang trỏ Command Line Tools thì đặt `export DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer` trước lệnh Flutter (đổi `xcode-select` cần sudo).
 
+## Nền tảng (PLAN D7)
+
+Nhắm tới Android, web, Windows, macOS; iOS tạm bỏ (vẫn build được — xem trên — nhưng không kiểm thử, không cấu hình riêng).
+
+- `frontend.yml` có job `build` (chạy sau `flutter analyze` + `flutter test`): `flutter build apk|web|windows|macos --release` trên Ubuntu / Windows / macOS; file build để ở tab Actions 7 ngày (`smartfit-apk`, `-web`, `-windows`, `-macos` — bản macOS nén bằng `ditto` vì `upload-artifact` làm mất symlink và quyền chạy trong `.app`). Bản build trỏ backend mặc định (localhost; máy ảo Android `10.0.2.2`). JDK 21 cho APK (AGP 9 cần ≥ 17).
+- Máy dev là Mac: bản Windows chỉ build được trên CI. Chưa chạy thử trên máy Windows thật.
+- Windows: `BINARY_NAME` = `smartfit_ai` (`windows/CMakeLists.txt`), tiêu đề cửa sổ ở `windows/runner/main.cpp`, thông tin file ở `windows/runner/Runner.rc`; icon `windows/runner/resources/app_icon.ico` do `tool/update_icons.sh` gói từ 7 ảnh PNG 16–256 px bằng `tool/make_ico.swift` (mỗi mục giữ dạng PNG — Windows Vista trở lên đọc được).
+- Cửa sổ rộng: `AppFrame` (`lib/widgets/app_frame.dart`) đặt ở `MaterialApp.builder` giữ cả app — thanh tab, bảng trượt, hộp thoại, SnackBar — trong cột giữa rộng tối đa 640, hai bên nền xám nhạt, và sửa `MediaQuery.size` cho khớp bề rộng cột. Kéo cửa sổ qua ngưỡng không mất màn hình đang mở (Navigator của `MaterialApp` có `GlobalKey`). Test: `widget_test.dart` ("cửa sổ rộng …").
+
 ## Test
 
-- `cd frontend_app && flutter test` — 89 test, không cần backend chạy:
+- `cd frontend_app && flutter test` — 90 test, không cần backend chạy:
   - `test/models/` — vòng tròn fixture (`contract_test.dart`), luật hồ sơ, chip hạn chế so với `restriction_labels.json`, lịch ngày;
   - `test/services/api_client_test.dart` — `MockClient` của `package:http/testing`;
   - `test/providers/` — `SharedPreferences.setMockInitialValues()`, đồng hồ giả;
@@ -147,7 +157,7 @@ Android: `compileSdk = 36` trong `android/app/build.gradle.kts` — plugin Andro
 - `integration_test/backend_smoke_test.dart` — chạy **tay** trên máy ảo/điện thoại khi backend đang chạy ở chế độ giả lập: `flutter test integration_test -d emulator-5554` (điện thoại thật thêm `--dart-define=API_BASE_URL=http://<IP LAN>:3000`). Gọi backend thật qua mạng của thiết bị, dùng `shared_preferences` thật, xoá dữ liệu đã lưu của app trên thiết bị đó; có một test thao tác giao diện (điền Onboarding → plan thật → Dashboard → đổi món). Tự dừng nếu `/health` báo `gemini: configured` (không tốn hạn mức Gemini — #17) hoặc không phải `auth_mode: mock`. `flutter test` (và CI) chỉ chạy thư mục `test/`.
 - Chưa có máy ảo: Android Studio → Device Manager → tạo thiết bị (ví dụ Pixel 8, API 36).
 - `Container` có màu nền bọc `ListTile`/`SwitchListTile`/`ExpansionTile` → Flutter báo lỗi ở bản debug (hiệu ứng bấm bị che) — dùng `Material` có `shape` thay cho `Container`.
-- CI: `.github/workflows/frontend.yml` chạy `flutter analyze` + `flutter test` với Flutter 3.47.5 khi `frontend_app/**` đổi.
+- CI: `.github/workflows/frontend.yml` chạy `flutter analyze` + `flutter test` với Flutter 3.47.5 khi `frontend_app/**` đổi, rồi build 4 nền tảng (mục "Nền tảng").
 - Code viết từ giai đoạn 6 theo `dart format --line-length 120`; file cũ chưa theo định dạng nào thì không format lại cả file (sẽ gộp dòng ở các widget không liên quan). CI không kiểm format.
 
 ## Việc của giai đoạn sau

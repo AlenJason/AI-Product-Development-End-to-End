@@ -32,3 +32,53 @@ jobs:
       - run: flutter pub get
       - run: flutter analyze
       - run: flutter test
+
+  # Nền tảng đang nhắm (PLAN D7): Android, web, Windows, macOS — iOS tạm bỏ. Máy dev là Mac nên bản Windows chỉ
+  # build được ở đây. Bản build trỏ backend mặc định (localhost; máy ảo Android 10.0.2.2), tải ở tab Actions để thử.
+  build:
+    name: build ${{ matrix.target }}
+    needs: flutter
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: apk
+            os: ubuntu-latest
+            output: frontend_app/build/app/outputs/flutter-apk/app-release.apk
+          - target: web
+            os: ubuntu-latest
+            output: frontend_app/build/web
+          - target: windows
+            os: windows-latest
+            output: frontend_app/build/windows/x64/runner/Release
+          - target: macos
+            os: macos-latest
+            output: frontend_app/build/SmartFit-AI-macos.zip
+    defaults:
+      run:
+        working-directory: frontend_app
+    steps:
+      - uses: actions/checkout@v7
+      # AGP 9 cần JDK 17 trở lên; máy dev dùng JDK 21 đi kèm Android Studio.
+      - if: matrix.target == 'apk'
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: 3.47.5
+          cache: true
+      - run: flutter pub get
+      - run: flutter build ${{ matrix.target }} --release
+      # .app có symlink và quyền chạy — upload-artifact làm mất cả hai, nên nén bằng ditto trước.
+      - if: matrix.target == 'macos'
+        run: ditto -c -k --keepParent "build/macos/Build/Products/Release/SmartFit AI.app" build/SmartFit-AI-macos.zip
+      - uses: actions/upload-artifact@v7
+        with:
+          name: smartfit-${{ matrix.target }}
+          path: ${{ matrix.output }}
+          retention-days: 7

@@ -22,7 +22,7 @@ Auth và database của backend nằm ở `backend_api/src/auth/`, `src/database
 | `backend_api/src/plan/profile-safety.ts`, `backend_api/src/plan/dto/profile-safety.validator.ts`, `backend_api/src/plan/exercise-level.ts` | `plan-data-contract.md`, `swap-and-feedback.md`, `critical-constraints.md` (#30, #31) |
 | `frontend_app/lib/models/**`, `frontend_app/lib/services/**`, `frontend_app/lib/providers/**`, `frontend_app/lib/config/**`, `frontend_app/test/**` | `flutter-ui.md`, `critical-constraints.md` (#26, #28) |
 | `backend_api/src/cors-options.ts`, `backend_api/test/cors.e2e-spec.ts`, `backend_api/test/contract-fixtures.e2e-spec.ts` | `flutter-ui.md`, `critical-constraints.md` (#26, #27) |
-| `frontend_app/pubspec.yaml`, `frontend_app/android/**/AndroidManifest.xml`, `frontend_app/ios/Runner/Info.plist`, `frontend_app/macos/Runner/*.entitlements`, `.github/workflows/frontend.yml`, `frontend_app/android/app/src/main/res/**`, `frontend_app/web/**`, `frontend_app/tool/**`, `frontend_app/assets/icon/**` | `flutter-ui.md`, `critical-constraints.md` (#29) |
+| `frontend_app/pubspec.yaml`, `frontend_app/android/**/AndroidManifest.xml`, `frontend_app/ios/Runner/Info.plist`, `frontend_app/macos/Runner/*.entitlements`, `.github/workflows/frontend.yml`, `frontend_app/android/app/src/main/res/**`, `frontend_app/web/**`, `frontend_app/tool/**`, `frontend_app/assets/icon/**`, `frontend_app/windows/**`, `frontend_app/macos/Runner/Configs/**` | `flutter-ui.md`, `critical-constraints.md` (#29) |
 | `BRD.md` | `product-spec.md` *(chưa có — đọc thẳng BRD.md)* |
 
 Trigger bổ sung (bất kỳ thay đổi nào sau đây → bắt buộc cập nhật khi commit):

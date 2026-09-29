@@ -16,6 +16,7 @@ import 'screens/profile_screen.dart';
 import 'services/api_client.dart';
 import 'services/api_exception.dart';
 import 'theme/app_colors.dart';
+import 'widgets/app_frame.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -69,6 +70,7 @@ class SmartFitApp extends StatelessWidget {
               surface: const Color(0xFFF8F9FA),
             ),
           ),
+          builder: (context, child) => AppFrame(child: child ?? const SizedBox.shrink()),
           home: const MainShell(),
         ),
       ),

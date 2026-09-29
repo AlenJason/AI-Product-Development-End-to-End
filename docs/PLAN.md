@@ -85,6 +85,13 @@ Giao diện Flutter (thiết kế từ Figma) và backend/BRD từng lệch nhau
 
 A1–A4 đổi hợp đồng và luật dinh dưỡng → BRD v2.6.0 ở giai đoạn 6 (FR-1.1, FR-1.4, FR-1.5, FR-2.2, NFR an toàn). **Để sau** (đã cân nhắc, chưa làm): đi chợ theo số người nấu; tuỳ chọn ăn chay (cần thêm món chay và nhóm từ khoá); đánh dấu bữa ăn ngoài (phải đổi cách backend tính danh sách đi chợ); cảnh báo nhẹ khi BMI ≥ 30 chọn "Tăng cơ". **Đã làm sau giai đoạn 6 (27/09/2026):** cân macro của thực đơn mẫu và kho món đổi (phát hiện khi chạy thử giai đoạn 6: thực đơn mẫu chỉ được nhân khẩu phần theo calo nên tinh bột ~120%, chất béo ~70% mục tiêu) — nay mỗi ngày lệch 25/45/30 không quá 3 điểm, có test (ràng buộc #33).
 
+**D7 — Nền tảng (2026-09-29):** tập trung **Android, web, Windows, macOS**; **iOS tạm bỏ** — không kiểm thử, không sửa cấu hình riêng cho iOS, giữ nguyên thư mục `ios/` (không xoá). BRD v2.6.1 (mục 7.3). Hệ quả:
+
+- CI (`.github/workflows/frontend.yml`, job `build`) build bản release của cả 4 nền tảng mỗi lần `frontend_app/` đổi và để file tải về ở tab Actions 7 ngày. Máy dev là Mac nên **bản Windows chỉ build được trên CI**; CI chỉ chứng minh build được, chưa ai chạy thử trên máy Windows thật.
+- Cửa sổ rộng (web, Windows, macOS): cả app nằm trong một cột giữa rộng tối đa 640 (`lib/widgets/app_frame.dart`) — trước đó ô nhập, nút, thanh tab kéo dài hết 1280 px.
+- Windows: tên "SmartFit AI" ở tiêu đề cửa sổ và thông tin file, file chạy `smartfit_ai.exe`, icon `.ico` sinh cùng `tool/update_icons.sh`.
+- Giai đoạn 8 (đăng nhập): package `google_sign_in` không có bản Windows (kiểm lại khi làm) → cần chọn cách riêng cho Windows, ví dụ đăng nhập qua trình duyệt hoặc chỉ dùng chế độ khách; macOS cần cấu hình riêng (Client ID, keychain).
+
 ---
 
 ## Giai đoạn 0 — Dọn dẹp & chuẩn bị · S
@@ -197,13 +204,13 @@ Chi tiết: brainstorm `docs/superpowers/brainstorms/phase-6-connect-mvp.md` (qu
 - [ ] **8.1** Màn đăng nhập, chọn chế độ bằng `--dart-define=AUTH_MODE`: giả lập → nút "Đăng nhập demo"; thật → package `google_sign_in`. Có nút bỏ qua đăng nhập (đăng nhập là tuỳ chọn theo FR-7)
 - [ ] **8.2** Gắn JWT vào request; nhận 401 → yêu cầu đăng nhập lại
 - [ ] **8.3** Đổi tab "Thống kê" thành "Lịch sử": danh sách plan cũ, bấm vào xem chi tiết
-- [ ] **8.4** `SETUP_CREDENTIALS.md` — phần **Google Sign-In (Flutter)**: Client ID, thẻ meta cho bản web, SHA-1 cho Android
+- [ ] **8.4** `SETUP_CREDENTIALS.md` — phần **Google Sign-In (Flutter)**: Client ID, thẻ meta cho bản web, SHA-1 cho Android, cấu hình macOS; cách đăng nhập trên Windows (D7)
 
 ## Giai đoạn 9 — Deploy, nghiệm thu, nộp bài · M
 
 - [ ] **9.1** Chọn nơi deploy: (a) giữ SQLite, dùng host có ổ lưu trữ bền (Railway volume, Fly.io volume, VPS), hoặc (b) chuyển sang Postgres. **Không** dùng Render bản free với SQLite
 - [ ] **9.2** Deploy backend, cấu hình biến môi trường trên host: `NODE_ENV=production`, `AUTH_MODE=google`, `GOOGLE_CLIENT_ID`, `JWT_SECRET`, `DATABASE_PATH` trỏ vào ổ lưu trữ bền, `GEMINI_API_KEY`, `CORS_ORIGINS` (địa chỉ bản web, nếu deploy bản web)
-- [ ] **9.3** Build app để demo: bản web và/hoặc APK Android, với `--dart-define=API_BASE_URL=https://<địa chỉ backend>`
+- [ ] **9.3** Build app để demo: bản web, APK Android, Windows, macOS (D7), với `--dart-define=API_BASE_URL=https://<địa chỉ backend>` — có thể thêm vào job `build` của CI
 - [ ] **9.4** Chạy checklist kiểm thử toàn luồng ở cả hai chế độ (giả lập / khoá thật)
 - [ ] **9.5** Cập nhật README (cách chạy, ảnh chụp màn hình), Changelog, BRD mục 9, wiki
 - [ ] **9.6** Slide báo cáo và video demo

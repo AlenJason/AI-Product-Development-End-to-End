@@ -3,8 +3,8 @@
 **Tên sản phẩm:** Trợ lý AI Gợi ý & Điều chỉnh Thực đơn, Lịch tập Thông minh  
 **Môn học:** AI Product Development End-to-End (Đồ án Kỹ sư / Cử nhân Năm 4)  
 **Đơn vị thực hiện:** Trường Đại học Công nghệ Thông tin và Truyền thông Việt - Hàn (VKU)  
-**Phiên bản:** 2.6.0 (Dành cho Sinh viên thực hành: Flutter & NestJS)  
-**Ngày cập nhật:** 27/09/2026  
+**Phiên bản:** 2.6.1 (Dành cho Sinh viên thực hành: Flutter & NestJS)  
+**Ngày cập nhật:** 29/09/2026  
 **Trạng thái:** Đã phê duyệt (Approved)  
 
 ---
@@ -419,6 +419,7 @@ Giá trị cho feedback:
 3. **Môi trường chạy đơn giản (Local Environment):**
    * Backend chạy trực tiếp trên máy cá nhân bằng lệnh `npm run start:dev` (Node.js 18+ LTS), Nest CLI dùng để scaffold module/controller/service (`nest generate ...`).
    * Flutter chạy mượt mà trên Chrome (Flutter Web) hoặc máy ảo Android / điện thoại thật qua cáp USB.
+   * Nền tảng nhắm tới: Android, web, Windows, macOS. iOS tạm chưa nhắm tới — không kiểm thử, không cấu hình riêng. Trên cửa sổ rộng (web, máy tính), giao diện giữ bề rộng như điện thoại, nằm giữa màn hình. *(bổ sung bản 2.6.1)*
 4. **Độ tin cậy dữ liệu dinh dưỡng (Nutrition Data Sanity Check):**
    * Gemini có thể "bịa" calo/macro không nhất quán. Mọi kết quả Gemini (thực đơn, món thay thế, ngày cân đối lại), thực đơn mẫu và plan client gửi lại phải qua cùng một bộ kiểm tra trước khi trả cho Flutter:
      * đúng cấu trúc mục 6.2, kiểm bằng `class-validator` — giá trị ngoài danh sách mã cố định bị coi là sai, không được bỏ qua;
