@@ -1,0 +1,74 @@
+{
+  "slug": "phase-6-connect-mvp",
+  "features": [
+    { "id": "F01", "name": "Backend: hồ sơ an toàn (tuổi ≥ 18, không Giảm mỡ khi thiếu cân / mang thai) + fixture + model Dart Profile", "scope": "API" },
+    { "id": "F02", "name": "Backend: độ khó động tác theo tuổi, mức vận động, thai kỳ ở mọi đường; prompt; ai_workspace", "scope": "API" },
+    { "id": "F03", "name": "App: luật hồ sơ, danh sách hạn chế, lịch ngày, PlanProvider, GroceryProvider", "scope": "UI" },
+    { "id": "F04", "name": "App: Onboarding 3 bước, màn chờ, Kế hoạch (đổi món/bài), Đi chợ, Cá nhân, khung app", "scope": "UI" },
+    { "id": "F05", "name": "Tên app, icon, màn khởi động, thanh hệ thống", "scope": "UI" },
+    { "id": "F06", "name": "BRD v2.6.0, wiki #30–#32, CLAUDE.md, README, PLAN", "scope": "Docs" }
+  ],
+  "dependencies": {
+    "F02": ["F01"],
+    "F03": ["F01"],
+    "F04": ["F03"],
+    "F05": ["F04"],
+    "F06": ["F05"]
+  },
+  "phase_gates": [
+    {
+      "after": "F01",
+      "checks": [
+        "cd backend_api && npm run fixtures:update",
+        "cd backend_api && npm run typecheck && npm run build",
+        "cd backend_api && npm test",
+        "cd backend_api && npm run test:e2e",
+        "cd backend_api && npm run test:smoke && npm run lint",
+        "cd frontend_app && flutter analyze && flutter test"
+      ],
+      "expected": ["Tests  1 passed (1)", "", "Tests  268 passed (268)", "Tests  74 passed (74)", "", "+45: All tests passed!"]
+    },
+    {
+      "after": "F02",
+      "checks": [
+        "cd backend_api && npm run typecheck && npm run build",
+        "cd backend_api && npm test",
+        "cd backend_api && npm run test:e2e",
+        "cd backend_api && npm run test:smoke && npm run lint",
+        "cd ai_workspace && npx tsc --noEmit"
+      ],
+      "expected": ["", "Tests  320 passed (320)", "Tests  74 passed (74)", "", ""]
+    },
+    {
+      "after": "F03",
+      "checks": ["cd frontend_app && flutter analyze", "cd frontend_app && flutter test"],
+      "expected": ["No issues found!", "+67: All tests passed!"]
+    },
+    {
+      "after": "F04",
+      "checks": ["cd frontend_app && flutter analyze", "cd frontend_app && flutter test"],
+      "expected": ["No issues found!", "+89: All tests passed!"]
+    },
+    {
+      "after": "F05",
+      "checks": [
+        "cd frontend_app && tool/update_icons.sh",
+        "cd frontend_app && plutil -lint ios/Runner/Info.plist",
+        "cd frontend_app && xmllint --noout android/app/src/main/AndroidManifest.xml android/app/src/main/res/*/*.xml",
+        "cd frontend_app && flutter test",
+        "cd frontend_app && flutter build apk --debug",
+        "cd frontend_app && flutter build web --dart-define=API_BASE_URL=http://localhost:3000"
+      ],
+      "expected": ["Đã cập nhật icon.", "OK", "", "+89: All tests passed!", "✓ Built", "✓ Built build/web"]
+    },
+    {
+      "after": "F06",
+      "checks": [
+        "grep -c \"^| 3[0-2] |\" docs/knowledge/wiki/critical-constraints.md",
+        "grep -c \"^- \\[x\\] \\*\\*6\\.\" docs/PLAN.md"
+      ],
+      "expected": ["3", "11"]
+    }
+  ],
+  "executor": "direct (feature-build chưa hỗ trợ NestJS/Flutter)"
+}

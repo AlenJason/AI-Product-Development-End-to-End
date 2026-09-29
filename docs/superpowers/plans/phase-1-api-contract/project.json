@@ -1,0 +1,53 @@
+{
+  "slug": "phase-1-api-contract",
+  "features": [
+    { "id": "F01", "name": "BRD v2.3.0 — hợp đồng API", "scope": "Docs" },
+    { "id": "F02", "name": "Kiểu dữ liệu plan và bộ kiểm tra hợp đồng", "scope": "API" },
+    { "id": "F03", "name": "Mục tiêu calo: D1, sàn BMR, BMI", "scope": "API" },
+    { "id": "F04", "name": "Ghép plan phía server: ID và danh sách đi chợ", "scope": "API" },
+    { "id": "F05", "name": "Thực đơn mẫu 3 ngày theo hợp đồng mới", "scope": "API" },
+    { "id": "F06", "name": "Luồng generate-plan: văn bản tự do, prompt mới, timeout, kiểm tra, fallback", "scope": "API" },
+    { "id": "F07", "name": "Wiki, CLAUDE.md, hướng dẫn gắn khoá, Changelog, tiến độ", "scope": "Docs" }
+  ],
+  "dependencies": {
+    "F02": ["F01"],
+    "F03": ["F02"],
+    "F04": ["F02"],
+    "F05": ["F02", "F04"],
+    "F06": ["F03", "F05"],
+    "F07": ["F06"]
+  },
+  "phase_gates": [
+    {
+      "after": "F01",
+      "checks": [
+        "python3 -c \"import re,json; blocks=re.findall(r'```json\\n(.*?)\\n```', open('BRD.md').read(), re.S); [json.loads(b) for b in blocks]; print(len(blocks), 'json blocks ok')\""
+      ]
+    },
+    { "after": "F02", "checks": ["cd backend_api && npm run build", "cd backend_api && npm test"] },
+    { "after": "F03", "checks": ["cd backend_api && npm run build", "cd backend_api && npm test"] },
+    { "after": "F04", "checks": ["cd backend_api && npm run build", "cd backend_api && npm test"] },
+    { "after": "F05", "checks": ["cd backend_api && npm run build", "cd backend_api && npm test"] },
+    {
+      "after": "F06",
+      "checks": [
+        "cd backend_api && npm run build",
+        "cd backend_api && npm test",
+        "cd backend_api && npm run test:e2e",
+        "curl -s -X POST localhost:3000/api/v1/generate-plan -H 'Content-Type: application/json' -d '{\"age\":22,\"gender\":\"female\",\"height_cm\":168,\"weight_kg\":62,\"activity_level\":\"light\",\"goal\":\"cut\",\"restrictions\":{\"allergies\":\"Hải sản\"}}' | grep -o '\"source\":\"sample\"'",
+        "curl -s -o /dev/null -w '%{http_code}' -X POST localhost:3000/api/v1/generate-plan -H 'Content-Type: application/json' -d '{\"age\":22,\"gender\":\"female\",\"height_cm\":168,\"weight_kg\":62,\"activity_level\":\"light\",\"goal\":\"cut\",\"restrictions\":{\"allergies\":[\"Hải sản\"]}}'",
+        "curl -s -o /dev/null -w '%{http_code}' -X POST localhost:3000/api/v1/generate-plan -H 'Content-Type: application/json' -d '{\"age\":22,\"gender\":\"female\",\"height_cm\":168,\"weight_kg\":62,\"activity_level\":\"light\",\"goal\":\"cut\"}'",
+        "curl -s localhost:3000/docs-json | grep -o '\"MealPlanResponseDto\"' | head -1"
+      ],
+      "expected": ["\"source\":\"sample\"", "400", "200", "\"MealPlanResponseDto\""]
+    },
+    {
+      "after": "F07",
+      "checks": [
+        "grep -c 'plan-data-contract' docs/knowledge/wiki/INDEX.md",
+        "grep -c '^- \\[x\\] \\*\\*1\\.' docs/PLAN.md"
+      ]
+    }
+  ],
+  "executor": "direct"
+}
