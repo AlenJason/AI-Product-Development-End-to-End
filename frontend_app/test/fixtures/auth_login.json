@@ -1,0 +1,8 @@
+{
+  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.fixture.signature",
+  "user": {
+    "id": "00000000-0000-4000-8000-000000000001",
+    "email": "sv@vku.edu.vn",
+    "name": "sv"
+  }
+}

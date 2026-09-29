@@ -4,4 +4,8 @@
          to allow setting breakpoints, to provide hot reload, etc.
     -->
     <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- Chỉ bản debug: cho gọi backend chạy http:// trên máy dev (10.0.2.2 hoặc IP mạng LAN).
+         HTTP của Dart không bị chính sách cleartext của Android chặn (đã thử bỏ dòng này trên Android 16,
+         app vẫn gọi được); giữ cho thư viện dùng HTTP của hệ thống. Bản release chỉ gọi https://. -->
+    <application android:usesCleartextTraffic="true"/>
 </manifest>

@@ -1,11 +1,11 @@
 {
-    "name": "my_ai_app",
-    "short_name": "my_ai_app",
+    "name": "SmartFit AI",
+    "short_name": "SmartFit AI",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#FDFBF7",
+    "theme_color": "#059669",
+    "description": "Kế hoạch ăn uống món Việt và tập luyện tại nhà 3 ngày.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

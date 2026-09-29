@@ -1,0 +1,5 @@
+{
+  "message": "Kế hoạch này được tạo cho hồ sơ khác (mục tiêu calo đã đổi). Hãy tạo kế hoạch mới.",
+  "error": "Conflict",
+  "statusCode": 409
+}

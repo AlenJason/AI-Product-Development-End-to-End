@@ -1,0 +1,893 @@
+[
+  {
+    "meal_type": "breakfast",
+    "name": "Xôi gà",
+    "portion": "1 gói vừa",
+    "calories": 401,
+    "protein_g": 25,
+    "carbs_g": 46,
+    "fat_g": 13,
+    "ingredients": [
+      {
+        "name": "Gạo nếp",
+        "amount": 55,
+        "unit": "g",
+        "category": "pantry"
+      },
+      {
+        "name": "Thịt gà bỏ da",
+        "amount": 100,
+        "unit": "g",
+        "category": "protein"
+      },
+      {
+        "name": "Hành phi",
+        "amount": 2,
+        "unit": "tbsp",
+        "category": "pantry"
+      },
+      {
+        "name": "Dưa leo",
+        "amount": 30,
+        "unit": "g",
+        "category": "produce"
+      }
+    ]
+  },
+  {
+    "meal_type": "breakfast",
+    "name": "Cháo gà hành gừng",
+    "portion": "1 tô vừa",
+    "calories": 409,
+    "protein_g": 25,
+    "carbs_g": 48,
+    "fat_g": 13,
+    "ingredients": [
+      {
+        "name": "Gạo tẻ",
+        "amount": 55,
+        "unit": "g",
+        "category": "pantry"
+      },
+      {
+        "name": "Thịt gà bỏ da",
+        "amount": 100,
+        "unit": "g",
+        "category": "protein"
+      },
+      {
+        "name": "Gừng",
+        "amount": 10,
+        "unit": "g",
+        "category": "produce"
+      },
+      {
+        "name": "Hành lá",
+        "amount": 10,
+        "unit": "g",
+        "category": "produce"
+      },
+      {
+        "name": "Hành phi",
+        "amount": 2,
+        "unit": "tbsp",
+        "category": "pantry"
+      }
+    ]
+  },
+  {
+    "meal_type": "breakfast",
+    "name": "Bánh cuốn nhân thịt",
+    "portion": "1 đĩa vừa",
+    "calories": 414,
+    "protein_g": 25,
+    "carbs_g": 47,
+    "fat_g": 14,
+    "ingredients": [
+      {
+        "name": "Bánh cuốn",
+        "amount": 140,
+        "unit": "g",
+        "category": "pantry"
+      },
+      {
+        "name": "Thịt nạc băm",
+        "amount": 105,
+        "unit": "g",
+        "category": "protein"
+      },
+      {
+        "name": "Nấm mèo",
+        "amount": 10,
+        "unit": "g",
+        "category": "produce"
+      },
+      {
+        "name": "Nước mắm",
+        "amount": 1,
+        "unit": "tbsp",
+        "category": "pantry"
+      },
+      {
+        "name": "Hành phi",
+        "amount": 0.5,
+        "unit": "tbsp",
+        "category": "pantry"
+      }
+    ]
+  },
+  {
+    "meal_type": "breakfast",
+    "name": "Bún riêu cua",
+    "portion": "1 tô vừa",
+    "calories": 423,
+    "protein_g": 25,
+    "carbs_g": 47,
+    "fat_g": 15,
+    "ingredients": [
+      {
+        "name": "Bún tươi",
+        "amount": 155,
+        "unit": "g",
+        "category": "pantry"
+      },
+      {
+        "name": "Cua đồng",
+        "amount": 80,
+        "unit": "g",
+        "category": "protein"
+      },
+      {
+        "name": "Cà chua",
+        "amount": 80,
+        "unit": "g",
+        "category": "produce"
+      },
+      {
+        "name": "Đậu phụ",
+        "amount": 105,
+        "unit": "g",
+        "category": "protein"
+      },
+      {
+        "name": "Rau sống",
+        "amount": 30,
+        "unit": "g",
+        "category": "produce"
+      },
+      {
+        "name": "Dầu ăn",
+        "amount": 0.5,
+        "unit": "tbsp",
+        "category": "pantry"
+      }
+    ]
+  },
+  {
+    "meal_type": "breakfast",
+    "name": "Bánh mì chả lụa",
+    "portion": "1 ổ",
+    "calories": 397,
+    "protein_g": 26,
+    "carbs_g": 44,
+    "fat_g": 13,
+    "ingredients": [
+      {
+        "name": "Bánh mì",
+        "amount": 1,
+        "unit": "piece",
+        "category": "pantry"
+      },
+      {
+        "name": "Chả lụa",
+        "amount": 70,
+        "unit": "g",
+        "category": "protein"
+      },
+      {
+        "name": "Pate gan heo",
+        "amount": 30,
+        "unit": "g",
+        "category": "protein"
+      },
+      {
+        "name": "Dưa leo",
+        "amount": 40,
+        "unit": "g",
+        "category": "produce"
+      }
+    ]
+  },
+  {
+    "meal_type": "breakfast",
+    "name": "Cháo yến mạch sữa chuối, trứng luộc",
+    "portion": "1 bát vừa",
+    "calories": 452,
+    "protein_g": 22,
+    "carbs_g": 55,
+    "fat_g": 16,
+    "ingredients": [
+      {
+        "name": "Yến mạch",
+        "amount": 50,
+        "unit": "g",
+        "category": "pantry"
+      },
+      {
+        "name": "Sữa tươi không đường",
+        "amount": 200,
+        "unit": "ml",
+        "category": "protein"
+      },
+      {
+        "name": "Chuối",
+        "amount": 0.5,
+        "unit": "piece",
+        "category": "produce"
+      },
+      {
+        "name": "Trứng gà",
+        "amount": 1,
+        "unit": "piece",
+        "category": "protein"
+      }
+    ]
+  },
+  {
+    "meal_type": "breakfast",
+    "name": "Khoai lang luộc, trứng luộc",
+    "portion": "2 củ khoai nhỏ + 2 quả trứng",
+    "calories": 428,
+    "protein_g": 21,
+    "carbs_g": 50,
+    "fat_g": 16,
+    "ingredients": [
+      {
+        "name": "Khoai lang",
+        "amount": 170,
+        "unit": "g",
+        "category": "produce"
+      },
+      {
+        "name": "Trứng gà",
+        "amount": 3,
+        "unit": "piece",
+        "category": "protein"
+      }
+    ]
+  },
+  {
+    "meal_type": "lunch",
+    "name": "Cơm cá kho tộ, canh chua",
+    "portion": "1 chén cơm + 1 khúc cá + 1 bát canh",
+    "calories": 651,
+    "protein_g": 39,
+    "carbs_g": 72,
+    "fat_g": 23,
+    "ingredients": [
+      {
+        "name": "Gạo tẻ",
+        "amount": 80,
+        "unit": "g",
+        "category": "pantry"
+      },
+      {
+        "name": "Cá basa",
+        "amount": 175,
+        "unit": "g",
+        "category": "protein"
+      },
+      {
+        "name": "Cà chua",
+        "amount": 60,
+        "unit": "g",
+        "category": "produce"
+      },
+      {
+        "name": "Dứa",
+        "amount": 50,
+        "unit": "g",
+        "category": "produce"
+      },
+      {
+        "name": "Giá đỗ",
+        "amount": 50,
+        "unit": "g",
+        "category": "produce"
+      },
+      {
+        "name": "Nước mắm",
+        "amount": 1,
+        "unit": "tbsp",
+        "category": "pantry"
+      },
+      {
+        "name": "Dầu ăn",
+        "amount": 1,
+        "unit": "tbsp",
+        "category": "pantry"
+      }
+    ]
+  },
+  {
+    "meal_type": "lunch",
+    "name": "Cơm tôm rim, rau luộc",
+    "portion": "1 chén cơm + 1 đĩa tôm + 1 đĩa rau",
+    "calories": 660,
+    "protein_g": 39,
+    "carbs_g": 72,
+    "fat_g": 24,
+    "ingredients": [
+      {
+        "name": "Gạo tẻ",
+        "amount": 90,
+        "unit": "g",
+        "category": "pantry"
+      },
+      {
+        "name": "Tôm",
+        "amount": 140,
+        "unit": "g",
+        "category": "protein"
+      },
+      {
+        "name": "Rau muống",
+        "amount": 150,
+        "unit": "g",
+        "category": "produce"
+      },
+      {
+        "name": "Nước mắm",
+        "amount": 1,
+        "unit": "tbsp",
+        "category": "pantry"
+      },
+      {
+        "name": "Dầu ăn",
+        "amount": 1.5,
+        "unit": "tbsp",
+        "category": "pantry"
+      }
+    ]
+  },
+  {
+    "meal_type": "lunch",
+    "name": "Cơm bò xào hành tây, canh bí xanh",
+    "portion": "1 chén cơm + 1 đĩa bò + 1 bát canh",
+    "calories": 628,
+    "protein_g": 40,
+    "carbs_g": 72,
+    "fat_g": 20,
+    "ingredients": [
+      {
+        "name": "Gạo tẻ",
+        "amount": 80,
+        "unit": "g",
+        "category": "pantry"
+      },
+      {
+        "name": "Thịt bò nạc",
+        "amount": 150,
+        "unit": "g",
+        "category": "protein"
+      },
+      {
+        "name": "Hành tây",
+        "amount": 80,
+        "unit": "g",
+        "category": "produce"
+      },
+      {
+        "name": "Bí xanh",
+        "amount": 150,
+        "unit": "g",
+        "category": "produce"
+      },
+      {
+        "name": "Dầu ăn",
+        "amount": 1,
+        "unit": "tbsp",
+        "category": "pantry"
+      }
+    ]
+  },
+  {
+    "meal_type": "lunch",
+    "name": "Cơm đậu phụ nhồi thịt sốt cà",
+    "portion": "1 chén cơm + 1 đĩa đậu",
+    "calories": 656,
+    "protein_g": 39,
+    "carbs_g": 71,
+    "fat_g": 24,
+    "ingredients": [
+      {
+        "name": "Gạo tẻ",
+        "amount": 85,
+        "unit": "g",
+        "category": "pantry"
+      },
+      {
+        "name": "Đậu phụ",
+        "amount": 195,
+        "unit": "g",
+        "category": "protein"
+      },
+      {
+        "name": "Thịt nạc băm",
+        "amount": 60,
+        "unit": "g",
+        "category": "protein"
+      },
+      {
+        "name": "Cà chua",
+        "amount": 100,
+        "unit": "g",
+        "category": "produce"
+      },
+      {
+        "name": "Dầu ăn",
+        "amount": 0.5,
+        "unit": "tbsp",
+        "category": "pantry"
+      }
+    ]
+  },
+  {
+    "meal_type": "lunch",
+    "name": "Bún chả",
+    "portion": "1 suất vừa",
+    "calories": 629,
+    "protein_g": 40,
+    "carbs_g": 70,
+    "fat_g": 21,
+    "ingredients": [
+      {
+        "name": "Bún tươi",
+        "amount": 250,
+        "unit": "g",
+        "category": "pantry"
+      },
+      {
+        "name": "Thịt heo nạc",
+        "amount": 120,
+        "unit": "g",
+        "category": "protein"
+      },
+      {
+        "name": "Thịt heo ba chỉ",
+        "amount": 60,
+        "unit": "g",
+        "category": "protein"
+      },
+      {
+        "name": "Rau sống",
+        "amount": 50,
+        "unit": "g",
+        "category": "produce"
+      },
+      {
+        "name": "Đu đủ xanh",
+        "amount": 50,
+        "unit": "g",
+        "category": "produce"
+      },
+      {
+        "name": "Nước mắm",
+        "amount": 1,
+        "unit": "tbsp",
+        "category": "pantry"
+      }
+    ]
+  },
+  {
+    "meal_type": "lunch",
+    "name": "Cơm gà xé phay, canh cải",
+    "portion": "1 chén cơm + 1 đĩa gà + 1 bát canh",
+    "calories": 637,
+    "protein_g": 40,
+    "carbs_g": 72,
+    "fat_g": 21,
+    "ingredients": [
+      {
+        "name": "Gạo tẻ",
+        "amount": 85,
+        "unit": "g",
+        "category": "pantry"
+      },
+      {
+        "name": "Thịt gà bỏ da",
+        "amount": 150,
+        "unit": "g",
+        "category": "protein"
+      },
+      {
+        "name": "Hành tây",
+        "amount": 50,
+        "unit": "g",
+        "category": "produce"
+      },
+      {
+        "name": "Rau cải ngọt",
+        "amount": 150,
+        "unit": "g",
+        "category": "produce"
+      },
+      {
+        "name": "Rau răm",
+        "amount": 10,
+        "unit": "g",
+        "category": "produce"
+      },
+      {
+        "name": "Dầu ăn",
+        "amount": 1,
+        "unit": "tbsp",
+        "category": "pantry"
+      }
+    ]
+  },
+  {
+    "meal_type": "lunch",
+    "name": "Mì Quảng gà",
+    "portion": "1 tô vừa",
+    "calories": 647,
+    "protein_g": 39,
+    "carbs_g": 71,
+    "fat_g": 23,
+    "ingredients": [
+      {
+        "name": "Mì Quảng",
+        "amount": 210,
+        "unit": "g",
+        "category": "pantry"
+      },
+      {
+        "name": "Thịt gà bỏ da",
+        "amount": 120,
+        "unit": "g",
+        "category": "protein"
+      },
+      {
+        "name": "Đậu phộng",
+        "amount": 15,
+        "unit": "g",
+        "category": "pantry"
+      },
+      {
+        "name": "Trứng cút",
+        "amount": 3,
+        "unit": "piece",
+        "category": "protein"
+      },
+      {
+        "name": "Rau sống",
+        "amount": 50,
+        "unit": "g",
+        "category": "produce"
+      },
+      {
+        "name": "Dầu ăn",
+        "amount": 0.5,
+        "unit": "tbsp",
+        "category": "pantry"
+      }
+    ]
+  },
+  {
+    "meal_type": "dinner",
+    "name": "Canh chua cá lóc, cơm trắng",
+    "portion": "1 chén cơm + 1 bát canh cá",
+    "calories": 546,
+    "protein_g": 35,
+    "carbs_g": 61,
+    "fat_g": 18,
+    "ingredients": [
+      {
+        "name": "Gạo tẻ",
+        "amount": 65,
+        "unit": "g",
+        "category": "pantry"
+      },
+      {
+        "name": "Cá lóc",
+        "amount": 145,
+        "unit": "g",
+        "category": "protein"
+      },
+      {
+        "name": "Cà chua",
+        "amount": 60,
+        "unit": "g",
+        "category": "produce"
+      },
+      {
+        "name": "Dứa",
+        "amount": 50,
+        "unit": "g",
+        "category": "produce"
+      },
+      {
+        "name": "Đậu bắp",
+        "amount": 50,
+        "unit": "g",
+        "category": "produce"
+      },
+      {
+        "name": "Nước mắm",
+        "amount": 1,
+        "unit": "tbsp",
+        "category": "pantry"
+      },
+      {
+        "name": "Dầu ăn",
+        "amount": 1,
+        "unit": "tbsp",
+        "category": "pantry"
+      }
+    ]
+  },
+  {
+    "meal_type": "dinner",
+    "name": "Gà nướng mật ong, salad dưa leo",
+    "portion": "1 chén cơm + 1 đĩa gà + 1 đĩa salad",
+    "calories": 560,
+    "protein_g": 35,
+    "carbs_g": 60,
+    "fat_g": 20,
+    "ingredients": [
+      {
+        "name": "Gạo tẻ",
+        "amount": 50,
+        "unit": "g",
+        "category": "pantry"
+      },
+      {
+        "name": "Thịt gà bỏ da",
+        "amount": 150,
+        "unit": "g",
+        "category": "protein"
+      },
+      {
+        "name": "Mật ong",
+        "amount": 1,
+        "unit": "tbsp",
+        "category": "pantry"
+      },
+      {
+        "name": "Dưa leo",
+        "amount": 100,
+        "unit": "g",
+        "category": "produce"
+      },
+      {
+        "name": "Cà chua",
+        "amount": 50,
+        "unit": "g",
+        "category": "produce"
+      },
+      {
+        "name": "Dầu ăn",
+        "amount": 1,
+        "unit": "tbsp",
+        "category": "pantry"
+      }
+    ]
+  },
+  {
+    "meal_type": "dinner",
+    "name": "Thịt heo luộc, rau lang luộc",
+    "portion": "1 chén cơm + 1 đĩa thịt + 1 đĩa rau",
+    "calories": 555,
+    "protein_g": 34,
+    "carbs_g": 62,
+    "fat_g": 19,
+    "ingredients": [
+      {
+        "name": "Gạo tẻ",
+        "amount": 75,
+        "unit": "g",
+        "category": "pantry"
+      },
+      {
+        "name": "Thịt heo nạc",
+        "amount": 65,
+        "unit": "g",
+        "category": "protein"
+      },
+      {
+        "name": "Thịt heo ba chỉ",
+        "amount": 65,
+        "unit": "g",
+        "category": "protein"
+      },
+      {
+        "name": "Rau lang",
+        "amount": 150,
+        "unit": "g",
+        "category": "produce"
+      },
+      {
+        "name": "Nước mắm",
+        "amount": 1,
+        "unit": "tbsp",
+        "category": "pantry"
+      }
+    ]
+  },
+  {
+    "meal_type": "dinner",
+    "name": "Tôm hấp, bông cải xanh xào tỏi",
+    "portion": "1 chén cơm + 1 đĩa tôm + 1 đĩa rau",
+    "calories": 537,
+    "protein_g": 35,
+    "carbs_g": 61,
+    "fat_g": 17,
+    "ingredients": [
+      {
+        "name": "Gạo tẻ",
+        "amount": 65,
+        "unit": "g",
+        "category": "pantry"
+      },
+      {
+        "name": "Tôm",
+        "amount": 140,
+        "unit": "g",
+        "category": "protein"
+      },
+      {
+        "name": "Bông cải xanh",
+        "amount": 150,
+        "unit": "g",
+        "category": "produce"
+      },
+      {
+        "name": "Tỏi",
+        "amount": 5,
+        "unit": "g",
+        "category": "produce"
+      },
+      {
+        "name": "Dầu ăn",
+        "amount": 1,
+        "unit": "tbsp",
+        "category": "pantry"
+      }
+    ]
+  },
+  {
+    "meal_type": "dinner",
+    "name": "Đậu phụ kho nấm, canh cải bẹ xanh",
+    "portion": "1 chén cơm + 1 đĩa đậu + 1 bát canh",
+    "calories": 560,
+    "protein_g": 35,
+    "carbs_g": 60,
+    "fat_g": 20,
+    "ingredients": [
+      {
+        "name": "Gạo tẻ",
+        "amount": 65,
+        "unit": "g",
+        "category": "pantry"
+      },
+      {
+        "name": "Đậu phụ",
+        "amount": 235,
+        "unit": "g",
+        "category": "protein"
+      },
+      {
+        "name": "Nấm hương",
+        "amount": 30,
+        "unit": "g",
+        "category": "produce"
+      },
+      {
+        "name": "Cải bẹ xanh",
+        "amount": 150,
+        "unit": "g",
+        "category": "produce"
+      },
+      {
+        "name": "Nước tương",
+        "amount": 1,
+        "unit": "tbsp",
+        "category": "pantry"
+      },
+      {
+        "name": "Dầu ăn",
+        "amount": 0.5,
+        "unit": "tbsp",
+        "category": "pantry"
+      }
+    ]
+  },
+  {
+    "meal_type": "dinner",
+    "name": "Bò lúc lắc, salad xà lách",
+    "portion": "1 chén cơm + 1 đĩa bò + 1 đĩa salad",
+    "calories": 551,
+    "protein_g": 35,
+    "carbs_g": 60,
+    "fat_g": 19,
+    "ingredients": [
+      {
+        "name": "Gạo tẻ",
+        "amount": 70,
+        "unit": "g",
+        "category": "pantry"
+      },
+      {
+        "name": "Thịt bò nạc",
+        "amount": 130,
+        "unit": "g",
+        "category": "protein"
+      },
+      {
+        "name": "Xà lách",
+        "amount": 80,
+        "unit": "g",
+        "category": "produce"
+      },
+      {
+        "name": "Hành tây",
+        "amount": 50,
+        "unit": "g",
+        "category": "produce"
+      },
+      {
+        "name": "Dầu ăn",
+        "amount": 1,
+        "unit": "tbsp",
+        "category": "pantry"
+      }
+    ]
+  },
+  {
+    "meal_type": "dinner",
+    "name": "Trứng chiên cà chua, canh mồng tơi thịt băm",
+    "portion": "1 chén cơm + 1 đĩa trứng + 1 bát canh",
+    "calories": 605,
+    "protein_g": 35,
+    "carbs_g": 60,
+    "fat_g": 25,
+    "ingredients": [
+      {
+        "name": "Gạo tẻ",
+        "amount": 70,
+        "unit": "g",
+        "category": "pantry"
+      },
+      {
+        "name": "Trứng gà",
+        "amount": 2,
+        "unit": "piece",
+        "category": "protein"
+      },
+      {
+        "name": "Cà chua",
+        "amount": 100,
+        "unit": "g",
+        "category": "produce"
+      },
+      {
+        "name": "Mồng tơi",
+        "amount": 150,
+        "unit": "g",
+        "category": "produce"
+      },
+      {
+        "name": "Thịt nạc băm",
+        "amount": 70,
+        "unit": "g",
+        "category": "protein"
+      },
+      {
+        "name": "Dầu ăn",
+        "amount": 0.5,
+        "unit": "tbsp",
+        "category": "pantry"
+      }
+    ]
+  }
+]

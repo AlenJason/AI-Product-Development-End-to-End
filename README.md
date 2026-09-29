@@ -15,11 +15,14 @@
 ## Cấu trúc thư mục
 
 ```
-frontend_app/    Ứng dụng Flutter (đang phát triển UI, dùng dữ liệu mẫu)
-backend_api/     API NestJS — khung dự án đã dựng, endpoint /health + /api/v1/generate-plan (fallback demo)
+frontend_app/    Ứng dụng Flutter: Onboarding, kế hoạch 3 ngày (đổi món, đổi bài), đi chợ, hồ sơ — nối backend
+backend_api/     API NestJS — generate-plan (Gemini hoặc thực đơn mẫu), đổi món, đổi bài tập, feedback, đăng nhập Google, lịch sử (SQLite)
 ai_workspace/    Script Node/TS thử nghiệm prompt & schema Gemini, độc lập với backend
+docs/            Kế hoạch triển khai, hướng dẫn gắn khoá, wiki nội bộ
 BRD.md           Tài liệu đặc tả yêu cầu (nguồn spec chính thức)
 ```
+
+Dự án chạy được ngay khi chưa có khoá nào (chế độ giả lập: thực đơn mẫu thay cho Gemini, đăng nhập bằng `mock:<email>` thay cho Google). Muốn dùng Gemini hay Google Sign-In thật: xem [docs/SETUP_CREDENTIALS.md](docs/SETUP_CREDENTIALS.md).
 
 ## Bắt đầu
 
@@ -29,15 +32,40 @@ BRD.md           Tài liệu đặc tả yêu cầu (nguồn spec chính thức)
 cd frontend_app
 flutter pub get
 flutter run -d chrome   # hoặc flutter run cho thiết bị/máy ảo
+flutter test            # không cần backend chạy
 ```
+
+Kiểm app gọi backend thật trên máy ảo Android (tạo máy ảo trong Android Studio → Device Manager; backend chạy giả lập, `.env` không có `GEMINI_API_KEY`):
+
+```bash
+flutter test integration_test -d emulator-5554   # xoá dữ liệu đã lưu của app trên máy ảo
+```
+
+Trên máy Mac có Xcode, cùng bài kiểm đó chạy được trên macOS và iOS Simulator (không cần CocoaPods):
+
+```bash
+export DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer   # nếu xcode-select đang trỏ Command Line Tools
+flutter test integration_test -d macos
+flutter devices                                  # lấy id của iPhone Simulator, rồi: flutter test integration_test -d <id>
+```
+
+App gọi backend ở `http://localhost:3000` (máy ảo Android: `http://10.0.2.2:3000`). Chạy trên điện thoại thật thì chỉ địa chỉ máy đang chạy backend, hai máy cùng Wi-Fi:
+
+```bash
+flutter run --dart-define=API_BASE_URL=http://192.168.1.10:3000
+```
+
+- Xem IP của máy chạy backend: `ipconfig getifaddr en0` (macOS) hoặc `ipconfig` (Windows, dòng IPv4). Backend đã nghe mọi địa chỉ mạng, không cần cấu hình thêm.
+- Điện thoại vẫn báo "Không kết nối được máy chủ" → kiểm tường lửa của máy chạy backend có cho kết nối vào cổng 3000 không, và mở thử `http://<IP>:3000/health` bằng trình duyệt trên điện thoại.
+- Bản web báo lỗi kết nối trong khi backend vẫn chạy → thường do CORS: trình duyệt chặn nhưng không cho app biết lý do. Khi phát triển để trống `CORS_ORIGINS` trong `backend_api/.env`; khi deploy bản web thì đặt đúng địa chỉ bản web.
 
 ### Backend (NestJS)
 
 ```bash
 cd backend_api
 npm install
-cp .env.example .env   # điền GEMINI_API_KEY để dùng Gemini thật, để trống sẽ tự fallback sang sample_plan.json
-npm run start:dev      # http://localhost:3000, Swagger UI tại /docs
+cp .env.example .env   # để nguyên = chạy giả lập (thực đơn mẫu, đăng nhập giả lập); điền khoá = dùng thật
+npm run start:dev      # http://localhost:3000, Swagger UI tại /docs, /health báo đang dùng Gemini hay dữ liệu mẫu
 ```
 
 ### AI Workspace (thử nghiệm prompt Gemini)
@@ -51,11 +79,52 @@ npm run experiment
 
 ## Trạng thái dự án
 
-Xem tiến độ chi tiết theo tuần và tiêu chí nghiệm thu tại [BRD.md mục 8–9](BRD.md#8-kế-hoạch-triển-khai-theo-tuần-weekly-roadmap-cho-đồ-án).
+Tiến độ từng bước (có checkbox) theo dõi tại **[docs/PLAN.md](docs/PLAN.md)**. Tiêu chí nghiệm thu gốc ở [BRD.md mục 9](BRD.md#9-tiêu-chí-nghiệm-thu-môn-học-rubric-checklist).
+
+Kết quả build và test tự động của từng commit: tab [Actions](https://github.com/AlenJason/AI-Product-Development-End-to-End/actions) trên GitHub.
 
 ## Nhật ký thay đổi (Changelog)
 
 Đối chiếu theo phiên bản BRD (mục "Phiên bản" trong [BRD.md](BRD.md)), để giảng viên/trợ giảng theo dõi tiến độ trực tiếp trên repo mà không cần đọc từng commit.
+
+### BRD v2.6.0 — 2026-09-27
+- Giai đoạn 6 — app dùng dữ liệu thật: Onboarding 3 bước (thêm tuổi, giới tính, mức vận động), màn chờ gọi API, kế hoạch 3 ngày mở đúng ngày hôm nay với đủ 3 bữa, tổng calo và macro, đổi món và đổi bài gọi API, danh sách đi chợ (đánh dấu đã mua, ẩn món đã có sẵn), tab Cá nhân sửa hồ sơ. Không còn dữ liệu viết cứng
+- Nhập hạn chế mới: công tắc "Tôi có dị ứng / chấn thương / bệnh nền" → chọn từ danh sách phổ biến hoặc tự ghi — người không có hạn chế nào không phải tích gì
+- An toàn: không phục vụ người dưới 18 tuổi; không cho chọn Giảm mỡ khi thiếu cân hoặc đang mang thai / cho con bú; bài tập nhẹ hơn cho người lớn tuổi, ít vận động hoặc mang thai (trước đây mọi người nhận cùng một buổi tập)
+- Tên "SmartFit AI", icon và màn khởi động riêng; sửa dải đen trên thanh trạng thái Android. Kiểm thử: 89 test Flutter, 320 unit và 74 e2e backend; chạy thật trên máy ảo Android 16
+- Sau khi chạy thử: cân lại đạm/tinh bột/béo của thực đơn mẫu và 21 món đổi — trước đây cả ngày ~24/53/23 (Dashboard báo tinh bột ~120%, chất béo ~69% mục tiêu), nay mỗi ngày lệch mục tiêu 25/45/30 không quá 3 điểm, kể cả khi món bị thay vì dị ứng; có test giữ tỉ lệ này. Món đổi "Xôi đậu xanh" (78% tinh bột) thay bằng "Xôi gà"
+- Đo lại Gemini thật: hôm đo, API chậm gấp 2–3 lần (tắt suy nghĩ: 28–30 giây, bật: 56–63 giây) nên vượt giới hạn 20 giây và người dùng nhận thực đơn mẫu. Sửa lỗi: khi Google tự cắt vì hết giờ (504), backend trước đây vẫn gọi lại nên người dùng chờ 34 giây; nay dùng thực đơn mẫu ngay sau 20 giây
+- App chạy được trên iOS Simulator và macOS (Xcode 27): bài kiểm gọi backend thật đạt 3/3 trên cả hai; tên app macOS đổi thành "SmartFit AI". Kiểm thử: 89 test Flutter, 372 unit và 74 e2e backend
+
+### BRD v2.5.1 — 2026-09-24 → 2026-09-26
+- Giai đoạn 5 — nền tảng kết nối app với backend: app Flutter có model theo đúng hợp đồng API, lớp gọi API báo lỗi bằng tiếng Việt thay vì crash (mất mạng, hết giờ, phiên hết hạn…), lưu kế hoạch và phiên đăng nhập trên máy — mở lại app vẫn xem được kế hoạch khi không có mạng. Backend bật CORS cho bản web (`CORS_ORIGINS`). Backend xuất 14 mẫu JSON thật để test hai phía cùng dùng — đổi hợp đồng mà quên cập nhật phía nào thì test phía đó đỏ. Thêm CI cho Flutter (44 test); sửa quyền mạng Android/iOS/macOS và cấu hình build Android (trước đó APK không build được sau khi thêm package lưu dữ liệu). Màn hình vẫn dùng dữ liệu mẫu tới giai đoạn 6
+- Thử bằng khoá Gemini thật: tạo kế hoạch mất 37–42 giây vì model "suy nghĩ" trước khi trả lời, vượt giới hạn 15 giây nên gần như luôn rơi về thực đơn mẫu. Sửa: tắt chế độ suy nghĩ mặc định (còn 8–15 giây), giới hạn 20 giây mỗi lần gọi và 40 giây tổng; prompt ghi rõ nguyên liệu và động tác backend sẽ loại (trước đó Gemini cho cá nước ngọt khi người dùng dị ứng hải sản). Qua backend thật: `generate-plan` trả kết quả Gemini sau 14 giây
+- Model mặc định đổi sang `gemini-3.5-flash` (`gemini-3.8-flash` liên tục báo quá tải); gói miễn phí chỉ cho 20 lần gọi mỗi ngày cho mỗi model — hết thì app vẫn chạy bằng dữ liệu soạn sẵn. Thêm `npm run measure:gemini` để đo lại khi đổi model
+
+### BRD v2.5.0 — 2026-09-24
+- Giai đoạn 4 — đổi món, đổi bài tập, feedback cuối ngày: `POST /api/v1/meals/swap`, `/exercises/swap`, `/feedback` (BRD mục 6.4), chạy được cả khi chưa có khoá nhờ kho 21 món Việt và 39 động tác có mức độ khó. Có khoá thì Gemini đề xuất trước, backend kiểm lại: calo ±10%, cùng nhóm cơ, không nặng hơn, tránh dị ứng và chấn thương
+- Feedback: quy tắc cố định cho buổi tập ngày kế tiếp; dấu hiệu nguy hiểm (chóng mặt, khó thở, đau ngực) → ngày nghỉ kèm khuyến cáo ngừng tập, hỏi ý kiến bác sĩ, gọi 115; feedback ngày 3 tạo plan mới. Đã đăng nhập thì các thao tác này cập nhật lịch sử
+- Sửa lỗi dinh dưỡng: trước đây tổng calo thực đơn mỗi ngày không được kiểm, còn thực đơn mẫu cố định khoảng 1550 kcal/ngày — thấp hơn mức chuyển hoá cơ bản (BMR) của mọi hồ sơ nam trong bộ test. Nay khoảng calo tính theo mục tiêu của từng người và thực đơn mẫu được nhân khẩu phần cho khớp (BRD NFR-4)
+- Chế độ giả lập nhận ra dị ứng, chấn thương phổ biến (gõ có dấu hay không dấu) để lọc thực đơn mẫu; kết quả Gemini có nguyên liệu người dùng dị ứng bị loại. Kiểm thử: thêm 114 unit test và 22 e2e; smoke test gọi thêm 3 endpoint mới trên bản build
+
+### BRD v2.4.0 — 2026-09-24
+- Giai đoạn 3 — tài khoản & lịch sử: đăng nhập Google (`POST /api/v1/auth/google`), JWT hết hạn sau 7 ngày, lịch sử 50 kế hoạch mới nhất xem lại được trên mọi thiết bị (`GET /api/v1/plans/history`, `/:id`), dữ liệu lưu bằng SQLite + TypeORM với migration. Mặc định chạy chế độ đăng nhập giả lập (`mock:<email>`), không cần tài khoản Google Cloud; cách gắn Client ID thật ở [docs/SETUP_CREDENTIALS.md](docs/SETUP_CREDENTIALS.md) mục 2
+- Tạo kế hoạch khi đã đăng nhập thì tự lưu vào lịch sử; lưu lỗi vẫn trả kế hoạch kèm cảnh báo. Kế hoạch trong lịch sử không chứa dị ứng, chấn thương hay tình trạng sức khoẻ (có test kiểm thẳng trong DB). Xem kế hoạch của tài khoản khác → 404
+- Thêm `DELETE /api/v1/me` (FR-6.4): xoá tài khoản cùng toàn bộ lịch sử. Backend không khởi động nếu deploy (`NODE_ENV=production`) mà vẫn để đăng nhập giả lập, trừ khi bật cờ `ALLOW_MOCK_AUTH=true` có chủ đích
+- Kiểm thử: thêm 65 unit test và 24 e2e (không test nào gọi Google hay ghi file DB thật); thêm smoke test chạy bản build như server thật trong CI, bắt được một lỗi khởi động mà toàn bộ unit test và e2e không thấy
+
+### BRD v2.3.0 — 2026-09-24
+- Chốt hợp đồng API (BRD mục 6) trước khi làm frontend. Nguyên liệu từng món có định lượng; danh sách đi chợ do server tự tính nên luôn khớp thực đơn. Bữa ăn, nhóm cơ, loại nguyên liệu dùng mã cố định. Server tự gán ID. Response có `source` (Gemini thật hay thực đơn mẫu) và `warnings`
+- Hồ sơ: dị ứng, chấn thương, tình trạng sức khoẻ do người dùng tự nhập; chỉ lưu trên máy, backend không lưu và không ghi log. Calo mục tiêu không bao giờ thấp hơn BMR; mức điều chỉnh đổi thành −300 (giảm mỡ) / +250 (tăng cơ) theo thiết kế giao diện
+- Feedback cuối ngày gồm 3 câu hỏi, có quy tắc riêng cho dấu hiệu nguy hiểm (chóng mặt, khó thở, đau ngực); feedback ngày 3 tạo luôn plan mới. Thêm hợp đồng cho đổi món, đổi bài tập, feedback (BRD mục 6.4) — code làm ở giai đoạn 4
+- Backend: mọi kết quả Gemini được kiểm tra theo hợp đồng trước khi trả về (trước đây Gemini chỉ cần viết tên bữa ăn khác đi là lọt bước kiểm tra calo); thực đơn mẫu đủ 3 ngày; mỗi lần gọi Gemini có giới hạn 15 giây; thêm 29 test
+- Giai đoạn 2 — kiểm thử backend: ma trận 18 trường hợp BMR/TDEE (tính độc lập để đối chiếu), test phần gọi Gemini bằng SDK thật với server Gemini giả (hết giờ, khoá sai, không tự gọi lại), e2e toàn luồng `generate-plan`; GitHub Actions chạy build + test mỗi lần push (Node 24 và 26), không cần khoá
+
+### BRD v2.2.0 — 2026-09-22 → 2026-09-24
+- Chốt thêm tài khoản người dùng (đăng nhập Google) và lịch sử kế hoạch xem được trên nhiều thiết bị (FR-6, FR-7); backend sẽ dùng SQLite + TypeORM. Đã có trong BRD, chưa có code
+- Lập kế hoạch triển khai toàn dự án [docs/PLAN.md](docs/PLAN.md) (giai đoạn 0–9); chốt 4 điểm lệch giữa giao diện Flutter và backend (mức điều chỉnh calo, feedback cuối ngày, dữ liệu đi chợ, thông tin sức khoẻ do người dùng tự nhập)
+- Giai đoạn 0: `/health` báo backend đang dùng Gemini thật hay dữ liệu mẫu; `POST /api/v1/generate-plan` trả HTTP 200 đúng như BRD; thêm hướng dẫn gắn khoá [docs/SETUP_CREDENTIALS.md](docs/SETUP_CREDENTIALS.md)
+- Sửa BRD mục 7.6: host dùng SQLite phải có ổ lưu trữ bền (Render bản free xoá file DB khi service ngủ/restart)
 
 ### BRD v2.1.0 — 2026-09-22
 - Chuyển tech stack backend từ FastAPI/Python sang **NestJS/TypeScript** (BRD mục 4, 6, 7, 8, 9)

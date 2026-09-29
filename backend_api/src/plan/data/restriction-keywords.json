@@ -1,0 +1,250 @@
+{
+  "allergies": [
+    {
+      "labels": [
+        "hải sản",
+        "đồ biển"
+      ],
+      "avoid": [
+        "tôm",
+        "tép",
+        "cua",
+        "ghẹ",
+        "mực",
+        "bạch tuộc",
+        "nghêu",
+        "ngao",
+        "sò",
+        "ốc",
+        "hến",
+        "cá",
+        "mắm"
+      ]
+    },
+    {
+      "labels": [
+        "tôm",
+        "tép"
+      ],
+      "avoid": [
+        "tôm",
+        "tép"
+      ]
+    },
+    {
+      "labels": [
+        "cua",
+        "ghẹ"
+      ],
+      "avoid": [
+        "cua",
+        "ghẹ"
+      ]
+    },
+    {
+      "labels": [
+        "cá"
+      ],
+      "avoid": [
+        "cá",
+        "mắm"
+      ]
+    },
+    {
+      "labels": [
+        "mực",
+        "bạch tuộc"
+      ],
+      "avoid": [
+        "mực",
+        "bạch tuộc"
+      ]
+    },
+    {
+      "labels": [
+        "nghêu",
+        "ngao",
+        "sò",
+        "ốc",
+        "hến",
+        "có vỏ"
+      ],
+      "avoid": [
+        "nghêu",
+        "ngao",
+        "sò",
+        "ốc",
+        "hến"
+      ]
+    },
+    {
+      "labels": [
+        "đậu phộng",
+        "lạc"
+      ],
+      "avoid": [
+        "đậu phộng",
+        "lạc"
+      ]
+    },
+    {
+      "labels": [
+        "trứng"
+      ],
+      "avoid": [
+        "trứng"
+      ]
+    },
+    {
+      "labels": [
+        "sữa",
+        "lactose",
+        "lactoza"
+      ],
+      "avoid": [
+        "sữa",
+        "phô mai",
+        "váng sữa"
+      ]
+    },
+    {
+      "labels": [
+        "đậu nành",
+        "đậu phụ",
+        "đậu hũ"
+      ],
+      "avoid": [
+        "đậu nành",
+        "đậu phụ",
+        "đậu hũ",
+        "tàu hũ",
+        "nước tương"
+      ]
+    },
+    {
+      "labels": [
+        "gluten",
+        "lúa mì",
+        "bột mì"
+      ],
+      "avoid": [
+        "bánh mì",
+        "mì",
+        "bột mì"
+      ]
+    },
+    {
+      "labels": [
+        "thịt bò",
+        "bò"
+      ],
+      "avoid": [
+        "bò"
+      ]
+    },
+    {
+      "labels": [
+        "thịt heo",
+        "thịt lợn",
+        "heo",
+        "lợn"
+      ],
+      "avoid": [
+        "heo",
+        "lợn",
+        "chả lụa"
+      ]
+    },
+    {
+      "labels": [
+        "thịt gà",
+        "gà"
+      ],
+      "avoid": [
+        "gà"
+      ]
+    },
+    {
+      "labels": [
+        "mè",
+        "vừng"
+      ],
+      "avoid": [
+        "mè",
+        "vừng"
+      ]
+    },
+    {
+      "labels": [
+        "nấm"
+      ],
+      "avoid": [
+        "nấm"
+      ]
+    }
+  ],
+  "injuries": [
+    {
+      "labels": [
+        "gối",
+        "đầu gối"
+      ],
+      "avoid_tags": [
+        "jumping",
+        "kneeling"
+      ]
+    },
+    {
+      "labels": [
+        "cổ chân",
+        "mắt cá chân",
+        "bàn chân",
+        "gót chân"
+      ],
+      "avoid_tags": [
+        "jumping"
+      ]
+    },
+    {
+      "labels": [
+        "cổ tay",
+        "bàn tay",
+        "khuỷu tay"
+      ],
+      "avoid_tags": [
+        "wrist_load"
+      ]
+    },
+    {
+      "labels": [
+        "lưng",
+        "thắt lưng",
+        "cột sống",
+        "thoát vị"
+      ],
+      "avoid_tags": [
+        "back_load"
+      ]
+    },
+    {
+      "labels": [
+        "vai"
+      ],
+      "avoid_tags": [
+        "overhead",
+        "wrist_load"
+      ]
+    }
+  ],
+  "none": [
+    "không",
+    "không có",
+    "ko",
+    "k",
+    "không bị",
+    "chưa",
+    "chưa có",
+    "none",
+    "no"
+  ]
+}
