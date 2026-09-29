@@ -58,6 +58,12 @@ void main() {
     await tester.enterText(find.byType(TextField), first.name.substring(0, 3));
     await tester.pump();
     expect(find.text(first.name), findsOneWidget);
+    // Gõ không dấu vẫn ra (trước đây "ga" không ra "Thịt gà").
+    await tester.enterText(find.byType(TextField), 'ga');
+    await tester.pump();
+    expect(find.text('Thịt gà bỏ da'), findsOneWidget);
+    expect(find.text('Gạo tẻ'), findsOneWidget);
+    expect(find.text('Tỏi'), findsNothing);
     await tester.enterText(find.byType(TextField), '');
     await tester.tap(find.text('Rau củ quả').first);
     await tester.pump();

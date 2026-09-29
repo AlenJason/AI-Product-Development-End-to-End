@@ -92,6 +92,7 @@ Kết quả build và test tự động của từng commit: tab [Actions](https
 - Chốt nền tảng: Android, web, Windows, macOS; iOS tạm bỏ. CI build bản release của cả bốn mỗi lần push (bản Windows chỉ build được trên CI vì máy phát triển là Mac)
 - Bản Windows có tên "SmartFit AI" và icon riêng (trước đó là `my_ai_app` với icon Flutter)
 - Trên cửa sổ rộng (web, Windows, macOS), app nằm trong cột giữa màn hình thay vì kéo ô nhập và nút dài hết chiều ngang. Kiểm thử: 90 test Flutter
+- Kiểm lại trên máy ảo Android (bản release) và macOS: tìm nguyên liệu gõ không dấu nay ra kết quả ("ga" → "Thịt gà", "Gạo tẻ"; trước đây không ra gì); cửa sổ macOS mở ở khổ đứng 600×760 thay cho 800×600. Kiểm thử: 94 test Flutter
 
 ### BRD v2.6.0 — 2026-09-27
 - Giai đoạn 6 — app dùng dữ liệu thật: Onboarding 3 bước (thêm tuổi, giới tính, mức vận động), màn chờ gọi API, kế hoạch 3 ngày mở đúng ngày hôm nay với đủ 3 bữa, tổng calo và macro, đổi món và đổi bài gọi API, danh sách đi chợ (đánh dấu đã mua, ẩn món đã có sẵn), tab Cá nhân sửa hồ sơ. Không còn dữ liệu viết cứng

@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../models/api/codes.dart';
 import '../models/api/meal_plan.dart';
+import '../models/search_text.dart';
 import '../providers/grocery_provider.dart';
 import '../providers/plan_provider.dart';
 import '../theme/app_colors.dart';
@@ -55,10 +56,9 @@ class _GroceryScreenState extends State<GroceryScreen> {
     final toBuy = rows.where((row) => !grocery.isHave(row.key)).toList();
     final have = rows.where((row) => grocery.isHave(row.key)).toList();
     final bought = toBuy.where((row) => grocery.isBought(row.key)).length;
-    final query = _query.trim().toLowerCase();
     final visible = toBuy
         .where((row) => _filter == null || row.category == _filter)
-        .where((row) => query.isEmpty || row.entry.name.toLowerCase().contains(query))
+        .where((row) => matchesSearch(row.entry.name, _query))
         .toList();
 
     return SafeArea(
