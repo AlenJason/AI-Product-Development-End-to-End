@@ -1,5 +1,9 @@
+import 'dart:convert';
+
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:my_ai_app/models/api/profile.dart';
+import 'package:my_ai_app/providers/plan_provider.dart';
 import 'package:my_ai_app/screens/dashboard_screen.dart';
 
 import '../app_harness.dart';
@@ -76,5 +80,76 @@ void main() {
     expect(find.text('Hồ sơ đã thay đổi. Tạo kế hoạch mới để áp dụng.'), findsOneWidget);
     await tester.tap(find.text('Tạo kế hoạch mới'));
     expect(created, ['tạo mới']);
+  });
+
+  // Giai đoạn 7, quyết định Q2: hôm nay và hôm qua nếu chưa gửi; ngày 3 cả khi plan đã hết; đã gửi thì khoá.
+  group('thẻ feedback cuối ngày', () {
+    Future<List<int>> pumpWithFeedback(WidgetTester tester, {DateTime? now, Set<int> sent = const {}}) async {
+      final saved = savedPlan();
+      final planId = jsonDecode(saved[PlanProvider.planKey]! as String)['plan_id'];
+      final harness = await Harness.create(
+        tester,
+        saved: {
+          ...saved,
+          if (sent.isNotEmpty) PlanProvider.feedbackKey: jsonEncode({'plan_id': planId, 'days': sent.toList()}),
+        },
+        now: now,
+      );
+      final opened = <int>[];
+      await tester.pumpWidget(harness.screen(DashboardScreen(onCreatePlan: () {}, onFeedback: opened.add)));
+      return opened;
+    }
+
+    // Danh sách chỉ dựng phần đang hiện và độ dài tăng dần khi dựng thêm: nhảy tới cuối cho tới khi hết tăng.
+    Future<void> showDay(WidgetTester tester, int day) async {
+      final position = tester.state<ScrollableState>(find.byType(Scrollable).first).position;
+      position.jumpTo(0);
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.descendant(of: find.byType(SegmentedButton<int>), matching: find.textContaining('Ngày $day')),
+      );
+      await tester.pumpAndSettle();
+      double? end;
+      while (end != position.maxScrollExtent) {
+        end = position.maxScrollExtent;
+        position.jumpTo(end);
+        await tester.pumpAndSettle();
+      }
+    }
+
+    testWidgets('ngày 1: có thẻ, bấm mở đúng ngày; ngày 2 chưa tới → không có thẻ', (tester) async {
+      final opened = await pumpWithFeedback(tester);
+      await showDay(tester, 1);
+      expect(find.text('Hôm nay thế nào? Đánh giá 1 phút để SmartFit điều chỉnh ngày 2.'), findsOneWidget);
+      await tester.tap(find.text('Đánh giá ngày 1'));
+      expect(opened, [1]);
+      await showDay(tester, 2);
+      expect(find.text('ĐÁNH GIÁ CUỐI NGÀY'), findsNothing);
+    });
+
+    testWidgets('ngày 3: ngày 1 đã quá cũ → không có; hôm qua (ngày 2) và hôm nay (ngày 3) có', (tester) async {
+      await pumpWithFeedback(tester, now: planStart.add(const Duration(days: 2)));
+      await showDay(tester, 1);
+      expect(find.text('ĐÁNH GIÁ CUỐI NGÀY'), findsNothing);
+      await showDay(tester, 2);
+      expect(find.text('Bạn chưa đánh giá ngày 2 — gửi ngay để điều chỉnh hôm nay.'), findsOneWidget);
+      await showDay(tester, 3);
+      expect(find.text('Đánh giá 1 phút để SmartFit lập kế hoạch 3 ngày tiếp theo.'), findsOneWidget);
+    });
+
+    testWidgets('plan đã hết: vẫn đánh giá được ngày 3 (tạo plan mới)', (tester) async {
+      await pumpWithFeedback(tester, now: planStart.add(const Duration(days: 6)));
+      await showDay(tester, 3);
+      expect(find.text('Đánh giá ngày 3'), findsOneWidget);
+    });
+
+    testWidgets('đã gửi ngày 1 → "Đã gửi đánh giá ngày 1", không còn nút; ngày 2 vẫn gửi được', (tester) async {
+      await pumpWithFeedback(tester, now: planStart.add(const Duration(days: 1)), sent: {1});
+      await showDay(tester, 1);
+      expect(find.text('Đã gửi đánh giá ngày 1'), findsOneWidget);
+      expect(find.text('Đánh giá ngày 1'), findsNothing);
+      await showDay(tester, 2);
+      expect(find.text('Đánh giá ngày 2'), findsOneWidget);
+    });
   });
 }

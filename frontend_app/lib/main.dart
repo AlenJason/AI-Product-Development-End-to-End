@@ -17,6 +17,7 @@ import 'services/api_client.dart';
 import 'services/api_exception.dart';
 import 'theme/app_colors.dart';
 import 'widgets/app_frame.dart';
+import 'widgets/feedback_sheet.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -106,13 +107,27 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver, Rest
   @override
   String get restorationId => 'shell';
 
+  // Bảng feedback cuối ngày (giai đoạn 7) mở từ đây, không từ Dashboard: feedback ngày 3 trả plan mới làm Dashboard
+  // dựng lại (khoá theo plan_id). Route khôi phục được (#35). Bảng trả true → plan đã cũ (409), tạo plan mới.
+  late final _feedbackRoute = RestorableRouteFuture<bool?>(
+    onPresent: (navigator, arguments) => navigator.restorablePush(feedbackSheetRoute, arguments: arguments),
+    onComplete: (createPlan) {
+      final profile = context.read<PlanProvider>().editableProfile;
+      if (createPlan == true && profile != null) _generate(profile);
+    },
+  );
+
   @override
-  void restoreState(RestorationBucket? oldBucket, bool initialRestore) => registerForRestoration(_tab, 'tab');
+  void restoreState(RestorationBucket? oldBucket, bool initialRestore) {
+    registerForRestoration(_tab, 'tab');
+    registerForRestoration(_feedbackRoute, 'feedback_sheet');
+  }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _tab.dispose();
+    _feedbackRoute.dispose();
     super.dispose();
   }
 
@@ -161,7 +176,11 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver, Rest
   Widget _home(PlanProvider plans) => Scaffold(
     body: switch (_tab.value) {
       // Khoá theo plan_id: plan mới thì Dashboard mở lại đúng ngày hôm nay.
-      0 => DashboardScreen(key: ValueKey(plans.plan?.planId), onCreatePlan: () => _generate(plans.editableProfile!)),
+      0 => DashboardScreen(
+        key: ValueKey(plans.plan?.planId),
+        onCreatePlan: () => _generate(plans.editableProfile!),
+        onFeedback: (day) => _feedbackRoute.present(day),
+      ),
       1 => const GroceryScreen(),
       2 => _placeholder(
         icon: Icons.history_rounded,

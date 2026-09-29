@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../models/api/codes.dart';
 import '../models/api/meal_plan.dart';
+import '../models/feedback_rules.dart';
 import '../models/plan_schedule.dart';
 import '../providers/plan_provider.dart';
 import '../services/api_exception.dart';
@@ -12,10 +13,12 @@ import '../widgets/macro_ring.dart';
 // Kế hoạch 3 ngày (BRD FR-2): mở đúng ngày hôm nay (D6-B1), đủ 3 bữa, tổng calo + macro mỗi ngày (FR-2.3),
 // buổi tập, `warnings` (NFR-9). Đổi món / đổi bài gọi API (FR-4.1, FR-4.2 — chuyển lên giai đoạn 6).
 class DashboardScreen extends StatefulWidget {
-  const DashboardScreen({super.key, required this.onCreatePlan});
+  const DashboardScreen({super.key, required this.onCreatePlan, this.onFeedback});
 
   // Tạo plan mới từ hồ sơ hiện tại (bản nháp nếu có) — plan hết hạn, hồ sơ đã đổi, hoặc server báo 409.
   final VoidCallback onCreatePlan;
+  // Mở bảng feedback cuối ngày cho ngày được chọn (giai đoạn 7). null → không có thẻ feedback.
+  final ValueChanged<int>? onFeedback;
 
   @override
   State<DashboardScreen> createState() => _DashboardScreenState();
@@ -115,6 +118,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           _NutritionSummary(day: day, target: plan.dailyTarget),
           for (final meal in day.meals) _mealCard(plans, meal),
           _workoutCard(plans, day.workout),
+          ?_feedbackCard(plans, dayNumber, today),
         ],
       ),
     );
@@ -289,6 +293,59 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ],
     ),
   );
+
+  // Thẻ feedback cuối ngày: đã gửi → báo đã gửi (khoá — BRD 6.4); được đánh giá (quyết định Q2) → nút mở bảng.
+  Widget? _feedbackCard(PlanProvider plans, int dayNumber, int today) {
+    final onFeedback = widget.onFeedback;
+    if (onFeedback == null) return null;
+    if (plans.feedbackDays.contains(dayNumber)) {
+      return _Card(
+        child: Row(
+          children: [
+            const Icon(Icons.check_circle, color: AppColors.primary),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                'Đã gửi đánh giá ngày $dayNumber',
+                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.primaryDark),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+    if (!canReviewDay(dayNumber, today: today, sent: plans.feedbackDays)) return null;
+    final text = dayNumber == 3
+        ? 'Đánh giá 1 phút để SmartFit lập kế hoạch 3 ngày tiếp theo.'
+        : dayNumber == today
+        ? 'Hôm nay thế nào? Đánh giá 1 phút để SmartFit điều chỉnh ngày ${dayNumber + 1}.'
+        : 'Bạn chưa đánh giá ngày $dayNumber — gửi ngay để điều chỉnh hôm nay.';
+    return _Card(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'ĐÁNH GIÁ CUỐI NGÀY',
+            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.muted, letterSpacing: 0.5),
+          ),
+          const SizedBox(height: 6),
+          Text(text, style: const TextStyle(fontSize: 14, color: AppColors.heading)),
+          const SizedBox(height: 10),
+          ElevatedButton.icon(
+            onPressed: plans.busy ? null : () => onFeedback(dayNumber),
+            icon: const Icon(Icons.rate_review_outlined, size: 18),
+            label: Text('Đánh giá ngày $dayNumber'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primaryBright,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
   static Meal? _findMeal(MealPlan? plan, String id) =>
       plan?.days.expand((day) => day.meals).where((meal) => meal.mealId == id).firstOrNull;

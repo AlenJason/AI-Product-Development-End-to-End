@@ -39,7 +39,7 @@ Trigger bổ sung (bất kỳ thay đổi nào sau đây → bắt buộc cập 
 | BMR / TDEE / calo / macro / dinh dưỡng / mức vận động / Mifflin-St Jeor | `plan-data-contract.md` |
 | gemini / prompt / structured output / JSON schema / ảo giác (hallucination) | `gemini-integration.md` |
 | endpoint / controller / swagger / health / validation / DTO | `plan-data-contract.md`, `auth-and-history.md`, `swap-and-feedback.md` |
-| đổi món / đổi bài / swap / feedback / dị ứng / chấn thương / từ khoá / kho món / kho động tác / dấu hiệu nguy hiểm / khẩu phần | `swap-and-feedback.md` |
+| đổi món / đổi bài / swap / feedback / dị ứng / chấn thương / từ khoá / kho món / kho động tác / dấu hiệu nguy hiểm / khẩu phần | `swap-and-feedback.md`, `flutter-ui.md` và `critical-constraints.md` (#36) khi là phần app |
 | đăng nhập / auth / JWT / token / Google Sign-In / tài khoản / lịch sử / history / SQLite / TypeORM / migration / database / guard | `auth-and-history.md` |
 | screen / widget / onboarding / dashboard / giao diện đi chợ / Flutter | `flutter-ui.md` |
 | CORS / API_BASE_URL / dart-define / ApiClient / provider / shared_preferences / fixture hợp đồng / quyền mạng | `flutter-ui.md`, `critical-constraints.md` |

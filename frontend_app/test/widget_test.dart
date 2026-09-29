@@ -153,4 +153,31 @@ void main() {
     expect(find.text('Hồ sơ của bạn'), findsOneWidget);
     expect(tester.widget<TextField>(field('Cân nặng (kg)')).controller!.text, '70');
   });
+
+  // PLAN giai đoạn 7 + D8: câu trả lời đang chọn trong bảng feedback chỉ lưu tạm.
+  testWidgets('bảng feedback đang mở dở, hệ thống tắt app → mở lại vẫn thấy bảng và lựa chọn; không ghi xuống máy', (
+    tester,
+  ) async {
+    final harness = await Harness.create(tester, saved: savedPlan());
+    await tester.pumpWidget(harness.app());
+    await scrollTo(tester, find.text('Đánh giá ngày 1'));
+    await tester.tap(find.text('Đánh giá ngày 1'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Rất mệt'));
+    await tester.tap(find.text('Đau khớp (gối, cổ tay, vai…)'));
+    await tester.pump();
+    final keys = harness.prefs.getKeys();
+
+    await tester.restartAndRestore();
+    expect(find.text('Đánh giá cuối ngày 1'), findsOneWidget);
+    for (final label in ['Rất mệt', 'Đau khớp (gối, cổ tay, vai…)']) {
+      final chip = tester.widget(
+        find
+            .ancestor(of: find.text(label), matching: find.byWidgetPredicate((w) => w is SelectableChipAttributes))
+            .first,
+      ) as SelectableChipAttributes;
+      expect(chip.selected, isTrue, reason: label);
+    }
+    expect(harness.prefs.getKeys(), keys);
+  });
 }

@@ -3,8 +3,8 @@
 **Tên sản phẩm:** Trợ lý AI Gợi ý & Điều chỉnh Thực đơn, Lịch tập Thông minh  
 **Môn học:** AI Product Development End-to-End (Đồ án Kỹ sư / Cử nhân Năm 4)  
 **Đơn vị thực hiện:** Trường Đại học Công nghệ Thông tin và Truyền thông Việt - Hàn (VKU)  
-**Phiên bản:** 2.7.0 (Dành cho Sinh viên thực hành: Flutter & NestJS)  
-**Ngày cập nhật:** 29/09/2026  
+**Phiên bản:** 2.7.1 (Dành cho Sinh viên thực hành: Flutter & NestJS)  
+**Ngày cập nhật:** 30/09/2026  
 **Trạng thái:** Đã phê duyệt (Approved)  
 
 ---
@@ -151,6 +151,7 @@ sequenceDiagram
 | Tình trạng cơ thể khi hoặc sau khi tập (chọn nhiều) | Bình thường · Căng mỏi cơ · Đau khớp (gối, cổ tay, vai…) · Uể oải, thiếu ngủ · ⚠️ Chóng mặt, khó thở bất thường, đau ngực |
 | Ăn uống (chọn 1) | Đúng thực đơn / Ăn nhiều hơn / Ăn ít hơn hoặc bỏ bữa |
 
+* **FR-5.1 — trên app** *(bổ sung bản 2.7.1)*: thẻ "Đánh giá cuối ngày" ở cuối mỗi ngày mở bảng 3 câu hỏi. Được gửi cho hôm nay và hôm qua (quên gửi tối qua thì sáng nay vẫn gửi, điều chỉnh đúng hôm nay); ngày 3 vẫn gửi được khi plan đã hết; ngày chưa tới hoặc quá cũ thì không. Mỗi ngày gửi một lần — gửi xong app khoá (máy chỉ ghi số ngày đã gửi, không ghi câu trả lời). "Bình thường" không chọn cùng trạng thái khác. Chọn dấu hiệu nguy hiểm → khuyến cáo hiện ngay, không cần mạng. Gửi xong, app báo đúng điều đã đổi ở ngày kế tiếp (nghỉ ngơi, thay động tác, số hiệp, thời lượng, thực đơn cân đối lại hay giữ nguyên); ngày 3 báo plan mới bắt đầu từ ngày nào.
 * **FR-5.2:** Điều chỉnh ngày kế tiếp:
   * Bài tập theo quy tắc cố định (không cần AI): Nhẹ nhàng và cơ thể bình thường → mỗi động tác tăng 1 hiệp (tối đa 6); Rất mệt hoặc uể oải → mỗi động tác giảm 1 hiệp, buổi tập ngắn đi 25%; Căng mỏi cơ → giảm hiệp cho nhóm cơ vừa tập, thêm giãn cơ; Đau khớp → thay động tác bật nhảy, chống quỳ, gập gối chịu sức nặng (bản 2.7.0) bằng động tác cùng nhóm cơ không có kiểu tải đó.
   * Món ăn cân đối lại theo câu trả lời về ăn uống (cần AI): ăn nhiều hơn → ngày kế tiếp nhẹ hơn (khoảng 90% mục tiêu); ăn ít hơn hoặc bỏ bữa → giữ mục tiêu, không ăn bù. Không bao giờ hạ calo xuống dưới BMR. Chế độ giả lập giữ nguyên món và báo cho người dùng biết. *(chi tiết hoá ở bản 2.5.0)*

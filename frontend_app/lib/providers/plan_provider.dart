@@ -8,6 +8,7 @@ import '../models/api/account.dart';
 import '../models/api/json_read.dart';
 import '../models/api/meal_plan.dart';
 import '../models/api/profile.dart';
+import '../models/feedback_rules.dart';
 import '../models/plan_schedule.dart';
 import '../models/profile_rules.dart';
 import '../services/api_client.dart';
@@ -27,6 +28,7 @@ class PlanProvider extends ChangeNotifier {
   static const profileKey = 'smartfit.profile.v1';
   static const scheduleKey = 'smartfit.plan_schedule.v1';
   static const draftKey = 'smartfit.profile_draft.v1';
+  static const feedbackKey = 'smartfit.feedback.v1';
 
   final ApiClient _api;
   final SharedPreferences _prefs;
@@ -36,6 +38,7 @@ class PlanProvider extends ChangeNotifier {
   MealPlan? _plan;
   PlanSchedule? _schedule;
   Profile? _draft;
+  FeedbackLog? _feedback;
   bool _busy = false;
 
   // Hồ sơ đã tạo plan hiện tại.
@@ -55,12 +58,16 @@ class PlanProvider extends ChangeNotifier {
   // Ngày thứ mấy của plan hôm nay (< 1: chưa bắt đầu, > 3: đã hết). null khi chưa có plan.
   int? get todayNumber => _schedule?.dayNumberOn(_now());
 
+  // Ngày của plan đang mở đã gửi feedback — khoá nút gửi lại (BRD 6.4). Plan mới → trống.
+  Set<int> get feedbackDays => _feedback?.days ?? const {};
+
   // Mọi hàm gọi server: lỗi → ApiException (plan đang có giữ nguyên); đang bận → bỏ qua, không gọi server.
   // Tạo plan mới: bắt đầu từ hôm nay, bỏ bản nháp (hồ sơ đã được dùng).
   Future<void> generate(Profile profile) => _run(() async {
     final plan = await _api.generatePlan(profile);
     _draft = null;
     await _prefs.remove(draftKey);
+    await _clearFeedback();
     await _save(profile, plan, PlanSchedule.startingOn(plan.planId, _now()));
   });
 
@@ -75,14 +82,20 @@ class PlanProvider extends ChangeNotifier {
   });
 
   // null khi đang bận. `safetyWarning` khác null → UI hiện cảnh báo nổi bật (BRD 6.4, dấu hiệu nguy hiểm).
-  // Feedback ngày 3 trả plan mới (`plan_id` khác) — plan đó bắt đầu từ ngày mai.
+  // Feedback ngày 3 trả plan mới (`plan_id` khác) — plan đó bắt đầu từ ngày mai. Chỉ khoá ngày khi server đã trả
+  // plan: lỗi mạng thì người dùng gửi lại được.
   Future<FeedbackResult?> submitFeedback(FeedbackAnswers answers) => _run(() async {
     final (profile, plan) = _current();
     final result = await _api.submitFeedback(profile, plan, answers);
-    final schedule = result.plan.planId == plan.planId
+    final samePlan = result.plan.planId == plan.planId;
+    final schedule = samePlan
         ? _schedule
         : PlanSchedule.startingOn(result.plan.planId, _now().add(const Duration(days: 1)));
     await _save(profile, result.plan, schedule);
+    if (samePlan) {
+      _feedback = (_feedback ?? FeedbackLog(planId: plan.planId)).withDay(answers.dayNumber);
+      await _prefs.setString(feedbackKey, jsonEncode(_feedback!.toJson()));
+    }
     return result;
   });
 
@@ -105,6 +118,12 @@ class PlanProvider extends ChangeNotifier {
     notifyListeners();
     await _prefs.remove(planKey);
     await _prefs.remove(scheduleKey);
+    await _clearFeedback();
+  }
+
+  Future<void> _clearFeedback() async {
+    _feedback = null;
+    await _prefs.remove(feedbackKey);
   }
 
   Future<T?> _run<T>(Future<T> Function() task) async {
@@ -127,6 +146,8 @@ class PlanProvider extends ChangeNotifier {
   }
 
   Future<void> _save(Profile profile, MealPlan plan, PlanSchedule? schedule) async {
+    // Plan khác (feedback ngày 3 trả plan mới) → chưa gửi feedback ngày nào; đổi món/bài giữ `plan_id` nên giữ khoá.
+    if (plan.planId != _plan?.planId) await _clearFeedback();
     _profile = profile;
     _plan = plan;
     _schedule = schedule ?? PlanSchedule.startingOn(plan.planId, _now());
@@ -154,6 +175,9 @@ class PlanProvider extends ChangeNotifier {
         : schedule != null && schedule.planId == plan.planId
         ? schedule
         : PlanSchedule.startingOn(plan.planId, _now());
+    // Khoá feedback của plan khác (hoặc hỏng) → coi như chưa gửi ngày nào.
+    final feedback = plan == null ? null : _read(feedbackKey, FeedbackLog.fromJson);
+    _feedback = feedback != null && feedback.planId == plan?.planId ? feedback : null;
   }
 
   T? _read<T>(String key, T Function(Json json) parse) {

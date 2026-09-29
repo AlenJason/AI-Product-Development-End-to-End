@@ -88,6 +88,11 @@ Kết quả build và test tự động của từng commit: tab [Actions](https
 
 Đối chiếu theo phiên bản BRD (mục "Phiên bản" trong [BRD.md](BRD.md)), để giảng viên/trợ giảng theo dõi tiến độ trực tiếp trên repo mà không cần đọc từng commit.
 
+### BRD v2.7.1 — 2026-09-30
+- Giai đoạn 7 — đánh giá cuối ngày: cuối mỗi ngày có thẻ "Đánh giá cuối ngày" mở bảng 3 câu hỏi (cường độ, tình trạng cơ thể, ăn uống). Gửi xong app báo đúng điều đã đổi ở ngày kế tiếp (ví dụ bớt hiệp, thêm giãn cơ, buổi tập ngắn lại; thực đơn cân đối lại hay giữ nguyên); ngày 3 tạo kế hoạch mới bắt đầu từ ngày mai
+- Báo chóng mặt, khó thở hay đau ngực → khuyến cáo ngừng tập hiện ngay (cả khi mất mạng); ngày kế tiếp thành ngày nghỉ; cảnh báo chỉ đóng khi bấm "Tôi đã hiểu"
+- Mỗi ngày chỉ gửi một lần (gửi lại sẽ bị điều chỉnh hai lần); được gửi cho hôm nay và hôm qua. Máy chỉ ghi ngày đã gửi, không ghi câu trả lời. Kiểm thử: 125 test Flutter; chạy thật trên máy ảo Android 16 và macOS
+
 ### BRD v2.7.0 — 2026-09-29
 - Không mất dữ liệu đang nhập: nhấn Back ở bước đầu Onboarding thì app lui xuống nền thay vì đóng; điện thoại tự tắt app ở nền thì mở lại còn nguyên bước và dữ liệu (cả phần sửa hồ sơ dở). Chỉ khi người dùng tự tắt hẳn app (vuốt khỏi đa nhiệm) mới xoá
 - Người đau gối không còn bị giao squat, lunge, ngồi dựa tường… (trước đây chỉ tránh bật nhảy và quỳ gối). Backend nhận ra động tác gập gối qua tên nên kể cả khi AI ghi thiếu thông tin vẫn loại được; thêm 2 bài chân an toàn cho gối. Kiểm thử: 390 unit và 74 e2e backend, 96 test Flutter; chạy thật trên máy ảo Android 16

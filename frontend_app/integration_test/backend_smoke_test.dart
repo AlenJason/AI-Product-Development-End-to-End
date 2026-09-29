@@ -1,4 +1,4 @@
-import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:my_ai_app/config/api_config.dart';
@@ -14,7 +14,7 @@ import 'package:my_ai_app/services/api_client.dart';
 import 'package:my_ai_app/services/api_exception.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../test/app_harness.dart' show fillOnboarding;
+import '../test/app_harness.dart' show fillOnboarding, scrollTo;
 
 // Chạy TAY trên máy ảo hoặc điện thoại thật, khi backend_api đang chạy ở chế độ giả lập — không chạy trong CI
 // (`flutter test` chỉ chạy thư mục test/):
@@ -111,8 +111,9 @@ void main() {
     await expectLater(closedPort.health(), throwsA(isA<NetworkException>()));
   });
 
-  // Thao tác giao diện thật trên thiết bị (giai đoạn 6): Onboarding → backend thật tạo plan → Dashboard → đổi món.
-  testWidgets('giao diện trên thiết bị: điền Onboarding → plan thật → Dashboard → đổi món', (tester) async {
+  // Thao tác giao diện thật trên thiết bị (giai đoạn 6, 7): Onboarding → backend thật tạo plan → Dashboard → đổi món
+  // → feedback cuối ngày 1 (bảng trượt, báo điều đã đổi, khoá ngày).
+  testWidgets('giao diện trên thiết bị: Onboarding → plan thật → Dashboard → đổi món → feedback ngày 1', (tester) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.clear();
     final api = ApiClient(baseUrl: resolveApiBaseUrl());
@@ -129,6 +130,24 @@ void main() {
 
     await tester.tap(find.text('Đổi món').first);
     await pumpUntil(tester, find.textContaining('Đã đổi bữa sáng sang'));
+    // SnackBar nổi đè lên thẻ cuối trang khi cửa sổ thấp (macOS 800×600) — ẩn trước khi bấm.
+    tester.state<ScaffoldMessengerState>(find.byType(ScaffoldMessenger)).hideCurrentSnackBar();
+    await tester.pumpAndSettle();
+
+    await scrollTo(tester, find.text('Đánh giá ngày 1'));
+    await tester.tap(find.text('Đánh giá ngày 1'));
+    await tester.pumpAndSettle();
+    for (final label in ['Rất mệt', 'Căng mỏi cơ', 'Đúng thực đơn', 'Gửi và điều chỉnh ngày 2']) {
+      await tester.ensureVisible(find.text(label));
+      await tester.tap(find.text(label));
+      await tester.pump();
+    }
+    await pumpUntil(tester, find.text('Đã lưu đánh giá ngày 1'));
+    expect(find.textContaining('Ngày 2: giảm số hiệp'), findsOneWidget);
+    await tester.tap(find.text('Xong'));
+    await tester.pumpAndSettle();
+    await scrollTo(tester, find.text('Đã gửi đánh giá ngày 1'));
+    expect(plans.feedbackDays, {1});
     await tester.pumpWidget(const SizedBox());
     await prefs.clear();
   });

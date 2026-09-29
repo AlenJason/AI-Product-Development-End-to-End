@@ -17,10 +17,12 @@ App Flutter nằm trong `frontend_app/` (package `my_ai_app`, tên hiển thị 
 | `models/profile_rules.dart` | Giới hạn và luật an toàn giống backend: tuổi 18–100, chiều cao, cân nặng, BMI < 18,5, mang thai → không Giảm mỡ (#30) |
 | `models/restriction_options.dart` | Danh sách chip dị ứng / chấn thương / bệnh nền, ghép và tách chuỗi gửi đi (D5, #32) |
 | `models/plan_schedule.dart` | Ngày bắt đầu của plan, hôm nay là ngày mấy (D6-B1) |
+| `models/feedback_rules.dart` | Ngày nào được gửi feedback (`canReviewDay()`), `FeedbackLog` — ngày đã gửi của một plan (#36) |
+| `models/feedback_summary.dart` | `describeFeedbackChanges()` — so plan trước/sau khi gửi feedback, liệt kê điều đã đổi |
 | `services/` | `ApiClient`, `ApiException` |
 | `providers/` | `PlanProvider` (plan, hồ sơ của plan, lịch, bản nháp hồ sơ), `AuthProvider`, `GroceryProvider` (đã mua / đã có sẵn) |
 | `screens/` | `onboarding_screen.dart`, `loading_screen.dart`, `dashboard_screen.dart`, `grocery_screen.dart`, `profile_screen.dart` |
-| `widgets/` | `profile_form.dart` (form hồ sơ dùng chung cho Onboarding và tab Cá nhân), `macro_ring.dart` |
+| `widgets/` | `profile_form.dart` (form hồ sơ dùng chung cho Onboarding và tab Cá nhân), `macro_ring.dart`, `app_frame.dart`, `feedback_sheet.dart` (bảng feedback cuối ngày + `feedbackSheetRoute`) |
 | `theme/app_colors.dart` | Bảng màu dùng chung |
 
 Ngoài `lib/`: `tool/make_icon.swift` + `tool/update_icons.sh` vẽ lại icon, `assets/icon/` là hai ảnh gốc. Chữ trên giao diện và comment viết tiếng Việt; số thập phân hiển thị kiểu Việt ("24,8").
@@ -43,7 +45,7 @@ Ngoài `lib/`: `tool/make_icon.swift` + `tool/update_icons.sh` vẽ lại icon, 
 | Đi chợ | Dựng từ `grocery_list` (#7), tên nhóm theo BRD FR-3.1; tích "đã mua"; "đã có sẵn" ẩn khỏi danh sách cần mua, "Hiện lại" → "Cần mua"; tìm kiếm (`matchesSearch()` trong `lib/models/search_text.dart`: gõ không dấu "ga" ra "Thịt gà", "Gạo tẻ"; gõ có dấu thì so đúng dấu — "cá" không ra "Cà chua"), lọc nhóm. Không có nút thêm nguyên liệu |
 | Cá nhân | Tóm tắt hồ sơ (BMI, calo mục tiêu); sửa bằng cùng form, lưu thành **bản nháp** — plan đang mở vẫn dùng hồ sơ cũ nên đổi món không bị 409; dải "Tạo kế hoạch mới" dùng bản nháp |
 | Lịch sử | Chỗ giữ — đăng nhập và lịch sử ở giai đoạn 8 |
-| Feedback cuối ngày | Chưa có nút — làm lại theo D2 ở giai đoạn 7 |
+| Feedback cuối ngày | Thẻ "Đánh giá cuối ngày" ở cuối tab ngày được đánh giá (hôm nay, hôm qua; ngày 3 cả khi plan đã hết — #36) → bảng trượt 3 câu hỏi (D2): "Bình thường" loại trừ trạng thái khác; chọn dấu hiệu nguy hiểm → ô đỏ khuyến cáo ngay, không cần mạng; gửi → vòng xoay (ngày 3: "có thể mất tới 40 giây"); lỗi → câu của `ApiException`, giữ lựa chọn; 409 → "Tạo kế hoạch mới". Kết quả trong bảng: `safety_warning` → ô đỏ, chỉ nút "Tôi đã hiểu" đóng được (Back, chạm ra ngoài bị chặn, kéo xuống tắt); tóm tắt điều đã đổi từ `describeFeedbackChanges()`. Đã gửi → thẻ "Đã gửi đánh giá ngày d" |
 
 ## Địa chỉ backend
 
@@ -103,6 +105,7 @@ Quên bước 1 → test backend đỏ ("… đã cũ — chạy npm run fixture
 | `smartfit.grocery.v1` | `GroceryProvider` | `plan_id` + món đã mua + món đã có sẵn; khoá mỗi dòng = nhóm + tên + lượng (lượng đổi sau khi đổi món → dòng đó bỏ tích); plan mới → xoá |
 | `smartfit.access_token` | `AuthProvider` | JWT của backend (7 ngày) |
 | `smartfit.user.v1` | `AuthProvider` | `id`, `email`, `name` |
+| `smartfit.feedback.v1` | `PlanProvider` | `plan_id` + số ngày đã gửi feedback — **không** có câu trả lời; khoá chỉ đặt sau khi server trả plan; tạo plan mới hoặc feedback ngày 3 → xoá; của plan khác hoặc hỏng → coi như chưa gửi (#36) |
 
 - Số phiên bản trong khoá: đổi định dạng theo cách bản cũ không đọc được thì tăng số.
 - Bản lưu hỏng: plan hỏng → bỏ plan, giữ hồ sơ; hồ sơ hỏng → bỏ cả plan (không có hồ sơ thì không đổi món/feedback được); token không có user → bỏ cả hai; lịch thiếu hoặc của plan khác → coi như bắt đầu hôm nay.
@@ -111,7 +114,7 @@ Quên bước 1 → test backend đỏ ("… đã cũ — chạy npm run fixture
 
 ### Dữ liệu đang nhập dở (PLAN D8, #35)
 
-Không ghi xuống `shared_preferences` — chỉ lưu tạm bằng state restoration: `MaterialApp.restorationScopeId: 'smartfit'`; `OnboardingScreen` (bước + form), `ProfileScreen` (phần sửa hồ sơ dở), `MainShell` (tab đang mở) dùng `RestorationMixin`. Form được chụp thành JSON bằng `ProfileFormController.toSnapshot()` / `restoreSnapshot()` (cả ô chưa hợp lệ). Android: Back ở màn gốc gọi `MainActivity.popSystemNavigator()` → `moveTaskToBack(true)` (như nút Home) thay vì `finish()`.
+Không ghi xuống `shared_preferences` — chỉ lưu tạm bằng state restoration: `MaterialApp.restorationScopeId: 'smartfit'`; `OnboardingScreen` (bước + form), `ProfileScreen` (phần sửa hồ sơ dở), `MainShell` (tab đang mở, bảng feedback đang mở — `RestorableRouteFuture` + `Navigator.restorablePush(feedbackSheetRoute)`, đặt ở `MainShell` vì Dashboard dựng lại khi plan đổi), `FeedbackSheet` (câu trả lời đang chọn) dùng `RestorationMixin`. Form được chụp thành JSON bằng `ProfileFormController.toSnapshot()` / `restoreSnapshot()` (cả ô chưa hợp lệ). Android: Back ở màn gốc gọi `MainActivity.popSystemNavigator()` → `moveTaskToBack(true)` (như nút Home) thay vì `finish()`.
 
 | Tình huống (đã thử trên Android 16, bản release) | Kết quả |
 |---|---|
@@ -160,14 +163,14 @@ Nhắm tới Android, web, Windows, macOS; iOS tạm bỏ (vẫn build được 
 
 ## Test
 
-- `cd frontend_app && flutter test` — 96 test, không cần backend chạy:
+- `cd frontend_app && flutter test` — 125 test, không cần backend chạy:
   - `test/models/` — vòng tròn fixture (`contract_test.dart`), luật hồ sơ, chip hạn chế so với `restriction_labels.json`, lịch ngày;
   - `test/services/api_client_test.dart` — `MockClient` của `package:http/testing`;
   - `test/providers/` — `SharedPreferences.setMockInitialValues()`, đồng hồ giả;
-  - `test/screens/` — từng màn hình; `test/widget_test.dart` — luồng của cả app;
+  - `test/screens/` — từng màn hình; `test/widgets/feedback_sheet_test.dart` — bảng feedback trong cả app; `test/widget_test.dart` — luồng của cả app;
   - `test/app_harness.dart` — dựng app/màn hình cỡ điện thoại (411×914 dp) với backend giả, dữ liệu đã lưu, đồng hồ giả; `fillOnboarding()`, `scrollTo()` (danh sách chỉ dựng phần đang hiện — cuộn rồi `ensureVisible` trước khi bấm);
   - `test/fake_backend.dart` — backend giả trả fixture theo đường dẫn, `responses` thay JSON cho một đường dẫn, ghi lại request.
-- `integration_test/backend_smoke_test.dart` — chạy **tay** trên máy ảo/điện thoại khi backend đang chạy ở chế độ giả lập: `flutter test integration_test -d emulator-5554` (điện thoại thật thêm `--dart-define=API_BASE_URL=http://<IP LAN>:3000`). Gọi backend thật qua mạng của thiết bị, dùng `shared_preferences` thật, xoá dữ liệu đã lưu của app trên thiết bị đó; có một test thao tác giao diện (điền Onboarding → plan thật → Dashboard → đổi món). Tự dừng nếu `/health` báo `gemini: configured` (không tốn hạn mức Gemini — #17) hoặc không phải `auth_mode: mock`. `flutter test` (và CI) chỉ chạy thư mục `test/`. Máy ảo mở lại từ snapshot đôi khi làm test treo ở màn khởi động (bản debug chờ `flutter` kết nối mãi) — tắt máy ảo rồi khởi động nguội: `emulator -avd <tên> -no-snapshot-load`.
+- `integration_test/backend_smoke_test.dart` — chạy **tay** trên máy ảo/điện thoại khi backend đang chạy ở chế độ giả lập: `flutter test integration_test -d emulator-5554` (điện thoại thật thêm `--dart-define=API_BASE_URL=http://<IP LAN>:3000`). Gọi backend thật qua mạng của thiết bị, dùng `shared_preferences` thật, xoá dữ liệu đã lưu của app trên thiết bị đó; có một test thao tác giao diện (điền Onboarding → plan thật → Dashboard → đổi món → feedback ngày 1). Tự dừng nếu `/health` báo `gemini: configured` (không tốn hạn mức Gemini — #17) hoặc không phải `auth_mode: mock`. `flutter test` (và CI) chỉ chạy thư mục `test/`. Máy ảo mở lại từ snapshot đôi khi làm test treo ở màn khởi động (bản debug chờ `flutter` kết nối mãi) — tắt máy ảo rồi khởi động nguội: `emulator -avd <tên> -no-snapshot-load`.
 - Chưa có máy ảo: Android Studio → Device Manager → tạo thiết bị (ví dụ Pixel 8, API 36).
 - `Container` có màu nền bọc `ListTile`/`SwitchListTile`/`ExpansionTile` → Flutter báo lỗi ở bản debug (hiệu ứng bấm bị che) — dùng `Material` có `shape` thay cho `Container`.
 - CI: `.github/workflows/frontend.yml` chạy `flutter analyze` + `flutter test` với Flutter 3.47.5 khi `frontend_app/**` đổi, rồi build 4 nền tảng (mục "Nền tảng").
@@ -175,6 +178,5 @@ Nhắm tới Android, web, Windows, macOS; iOS tạm bỏ (vẫn build được 
 
 ## Việc của giai đoạn sau
 
-- **7:** bảng feedback cuối ngày theo D2 (3 câu hỏi, chọn nhiều tình trạng cơ thể), khoá sau khi gửi cho một ngày; `FeedbackResult.safetyWarning` → cảnh báo nổi bật. `PlanProvider.submitFeedback()` đã có (plan ngày 3 bắt đầu từ ngày mai).
 - **8:** Google Sign-In → `AuthProvider.signIn(idToken)`; tab Lịch sử.
 - Thực đơn mẫu lệch macro so với mục tiêu (ví dụ tinh bột ~120%, chất béo ~70%) vì chỉ được nhân khẩu phần theo calo; backend không kiểm tỉ lệ macro — Dashboard hiện đúng phần trăm thật. Ghi ở mục "Để sau" của PLAN.

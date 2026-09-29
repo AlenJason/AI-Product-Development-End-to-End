@@ -55,7 +55,7 @@ Ba endpoint của BRD mục 6.4 — `POST /api/v1/meals/swap`, `/exercises/swap`
 
 **Ngày 3:** `PlanService.generatePlan(profile, { feedbackNote })`, rồi áp quy tắc bài tập cho ngày 1 của plan mới.
 
-**Gửi hai lần cho cùng một ngày sẽ điều chỉnh hai lần** — server không biết, app phải khoá nút.
+**Gửi hai lần cho cùng một ngày sẽ điều chỉnh hai lần** — server không biết, app phải khoá nút. App (giai đoạn 7, [[flutter-ui]]): khoá theo ngày trong `smartfit.feedback.v1`, chỉ đặt sau khi server trả plan; server không trả bản tóm tắt thay đổi và cảnh báo `mealsNotRebalanced` mất ở lần đổi món sau, nên app tự so plan trước/sau để báo (#36).
 
 ## Bộ khớp từ khoá (`restriction-matcher.ts`)
 

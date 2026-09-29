@@ -32,7 +32,7 @@ Cả hai dịch vụ bên ngoài đều có chế độ giả lập, nên toàn 
 - [x] BRD v2.6.0 (MVP, tính năng nâng cao, tài khoản & lịch sử, hợp đồng API đầy đủ)
 - [x] Backend: `GET /health`, `POST /api/v1/generate-plan` (tính BMR/TDEE, gọi Gemini, kiểm tra khoảng calo, fallback), đổi món, đổi bài tập, feedback, đăng nhập Google (giả lập mặc định), lịch sử kế hoạch (SQLite), validate DTO, Swagger UI, CORS cho bản web
 - [x] `ai_workspace/`: script thử prompt Gemini
-- [x] Frontend: Onboarding 3 bước, màn chờ, kế hoạch 3 ngày (đổi món, đổi bài), đi chợ, hồ sơ — đọc/ghi qua provider, không còn dữ liệu viết cứng (giai đoạn 6). Chưa có: bảng feedback cuối ngày (giai đoạn 7), đăng nhập và lịch sử (giai đoạn 8)
+- [x] Frontend: Onboarding 3 bước, màn chờ, kế hoạch 3 ngày (đổi món, đổi bài), đi chợ, hồ sơ — đọc/ghi qua provider, không còn dữ liệu viết cứng (giai đoạn 6); feedback cuối ngày (giai đoạn 7). Chưa có: đăng nhập và lịch sử (giai đoạn 8)
 - [x] Wiki nội bộ `docs/knowledge/`, `CLAUDE.md`
 
 ---
@@ -204,7 +204,9 @@ Chi tiết: brainstorm `docs/superpowers/brainstorms/phase-6-connect-mvp.md` (qu
 
 - [x] **7.1** Nút "Đổi món" gọi API (hiện đang xoay vòng trong danh sách món viết cứng); thay cả plan và checklist bằng plan server trả về. 409 → báo hồ sơ đã đổi, gợi ý tạo plan mới; 422 → báo không còn món thay thế phù hợp *(làm ở giai đoạn 6, quyết định Q3)*
 - [x] **7.2** Nút "Đổi bài" gọi API *(làm ở giai đoạn 6, quyết định Q3)*
-- [ ] **7.3** Làm lại bảng feedback theo D2 (3 câu hỏi, câu tình trạng cơ thể chọn nhiều); gọi API, cập nhật ngày kế tiếp; nhận `safety_warning` → hiện khuyến cáo ngừng tập, hỏi ý kiến bác sĩ. **Khoá nút sau khi đã gửi feedback cho một ngày** — backend không lưu trạng thái, gửi lại sẽ điều chỉnh thêm lần nữa. Bỏ câu báo viết sẵn "AI đã cân đối lại thực đơn Ngày 2!" (hiện hiện ra dù không có gì thay đổi)
+- [x] **7.3** Làm lại bảng feedback theo D2 (3 câu hỏi, câu tình trạng cơ thể chọn nhiều); gọi API, cập nhật ngày kế tiếp; nhận `safety_warning` → hiện khuyến cáo ngừng tập, hỏi ý kiến bác sĩ. **Khoá nút sau khi đã gửi feedback cho một ngày** — backend không lưu trạng thái, gửi lại sẽ điều chỉnh thêm lần nữa. Bỏ câu báo viết sẵn "AI đã cân đối lại thực đơn Ngày 2!" (hiện hiện ra dù không có gì thay đổi)
+
+Chi tiết: brainstorm `docs/superpowers/brainstorms/phase-7-feedback.md` (quyết định Q1–Q4 ở mục 8), plan `docs/superpowers/plans/phase-7-feedback/`. Được đánh giá hôm nay và hôm qua; khoá theo ngày lưu `smartfit.feedback.v1` (chỉ số ngày); bảng trượt khôi phục được (D8); app tự so plan trước/sau để báo điều đã đổi (BRD v2.7.1).
 
 ## Giai đoạn 8 — Frontend: Tài khoản & Lịch sử (FR-6, FR-7) · M
 

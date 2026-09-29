@@ -201,4 +201,65 @@ void main() {
     expect(provider.editableProfile!.age, 17);
     expect(prefs.containsKey(PlanProvider.planKey), isFalse);
   });
+
+  // Giai đoạn 7: backend không lưu trạng thái, gửi lại sẽ điều chỉnh thêm lần nữa (BRD 6.4) → app khoá theo ngày.
+  group('khoá feedback theo ngày', () {
+    const day1 = FeedbackAnswers(dayNumber: 1, intensity: Intensity.hard, bodyStates: {BodyState.sore}, eating: Eating.onPlan);
+    final planId = loadFixture('generate_plan')['plan_id'];
+
+    test('gửi xong → khoá ngày đó và lưu lại, chỉ số ngày; mở lại app vẫn khoá', () async {
+      final (provider, backend, prefs) = await create(saved);
+      await provider.submitFeedback(day1);
+      expect(provider.feedbackDays, {1});
+      expect(jsonDecode(prefs.getString(PlanProvider.feedbackKey)!), {
+        'plan_id': planId,
+        'days': [1],
+      });
+      expect(PlanProvider(api: backend.api, prefs: prefs, now: () => now).feedbackDays, {1});
+    });
+
+    test('server lỗi → không khoá, gửi lại được', () async {
+      final (provider, backend, prefs) = await create(saved);
+      backend.failWith = 409;
+      await expectLater(provider.submitFeedback(day1), throwsA(isA<PlanOutdatedException>()));
+      expect(provider.feedbackDays, isEmpty);
+      expect(prefs.containsKey(PlanProvider.feedbackKey), isFalse);
+    });
+
+    test('đổi món giữ khoá (cùng plan_id); tạo plan mới → hết khoá', () async {
+      final (provider, _, prefs) = await create(saved);
+      await provider.submitFeedback(day1);
+      await provider.swapMeal('m2_1');
+      expect(provider.feedbackDays, {1});
+      await provider.generate(profile);
+      expect(provider.feedbackDays, isEmpty);
+      expect(prefs.containsKey(PlanProvider.feedbackKey), isFalse);
+    });
+
+    test('feedback ngày 3 trả plan mới → plan mới chưa khoá ngày nào', () async {
+      final (provider, backend, prefs) = await create(saved);
+      await provider.submitFeedback(day1);
+      final next = loadFixture('generate_plan')..['plan_id'] = '11111111-2222-4333-8444-555555555555';
+      backend.responses['/api/v1/feedback'] = {'plan': next, 'safety_warning': null};
+      await provider.submitFeedback(
+        const FeedbackAnswers(dayNumber: 3, intensity: Intensity.easy, bodyStates: {BodyState.normal}, eating: Eating.onPlan),
+      );
+      expect(provider.plan!.planId, next['plan_id']);
+      expect(provider.feedbackDays, isEmpty);
+      expect(prefs.containsKey(PlanProvider.feedbackKey), isFalse);
+    });
+
+    test('khoá lưu của plan khác hoặc bị hỏng → coi như chưa gửi ngày nào', () async {
+      for (final stored in [
+        jsonEncode({
+          'plan_id': 'khac',
+          'days': [1, 2],
+        }),
+        '{"days": "hỏng"}',
+      ]) {
+        final (provider, _, _) = await create({...saved, PlanProvider.feedbackKey: stored});
+        expect(provider.feedbackDays, isEmpty);
+      }
+    });
+  });
 }
