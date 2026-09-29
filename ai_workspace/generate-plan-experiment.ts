@@ -52,9 +52,10 @@ function buildPrompt(): string {
     'Quy tắc bắt buộc:',
     '- Chỉ dùng món ăn gia đình Việt Nam bình dân, dễ mua, dễ nấu; không lặp lại tên món trong cả 3 ngày.',
     '- Không dùng nguyên liệu người dùng dị ứng; không chọn động tác gây tải lên vùng chấn thương; chọn món phù hợp tình trạng sức khoẻ đã khai.',
-    // Backend dựng hai dòng dưới từ bộ khớp từ khoá (ingredientAvoidRule/exerciseAvoidRule) cho "Hải sản", "Đau gối".
+    // Backend dựng ba dòng dưới từ bộ khớp từ khoá (ingredientAvoidRule/exerciseAvoidRule) cho "Hải sản", "Đau gối".
     `- Tuyệt đối không dùng món hay nguyên liệu có các từ sau (kể cả trong tên món): tôm, tép, cua, ghẹ, mực, bạch tuộc, nghêu, ngao, sò, ốc, hến, cá, mắm. Hiểu theo nghĩa rộng: "cá" là mọi loại cá, kể cả cá nước ngọt; "mắm" gồm cả nước mắm.`,
-    `- Không dùng động tác có tags: jumping (bật nhảy), kneeling (quỳ, chống gối). Ghi đủ tags cho mọi động tác.`,
+    `- Không dùng động tác có tags: jumping (bật nhảy), kneeling (quỳ, chống gối), knee_bend (gập gối chịu sức nặng: squat, lunge, ngồi dựa tường, bước lên bục). Ghi đủ tags cho mọi động tác.`,
+    `- Tuyệt đối không dùng động tác có các từ sau trong tên, kể cả biến thể nhẹ hay có ghế đỡ: squat, lunge, ngồi xổm, ngồi xuống đứng lên, đứng lên ngồi xuống, ngồi dựa tường, wall sit, step up, bước lên, burpee, pistol, nhảy, jump, jumping, quỳ, khuỵu gối, kneeling, kneel.`,
     `- Tổng calo mỗi ngày: ${DAY_BOUNDS.min}–${DAY_BOUNDS.max} kcal.`,
     `- Calo từng bữa: ${Object.entries(MEAL_BOUNDS).map(([mealType, { min, max }]) => `${mealType} ${min}–${max}`).join(', ')}. calories phải lệch không quá 15% so với 4×protein_g + 4×carbs_g + 9×fat_g.`,
     '- ingredients[].category chỉ được là: protein (thịt, cá, trứng, đậu phụ, sữa), produce (rau, củ, quả), pantry (gạo, bún, mì, gia vị, dầu ăn).',
@@ -63,7 +64,7 @@ function buildPrompt(): string {
     // Backend dựng dòng dưới bằng exerciseLevelRule() từ kho động tác: hồ sơ này (22 tuổi, vận động nhẹ) được tối đa mức 2.
     '- Không dùng động tác nâng cao: Squat nhảy, Bulgarian split squat (chân sau gác ghế), Chống đẩy tiêu chuẩn, Superman giữ tư thế, Leo núi (Mountain climber), Pike push-up, Chống đẩy kim cương, Burpee, Nhảy dây không dây.',
     '- exercises[].muscle_group chỉ được là: legs, chest, back, core, shoulders, arms, full_body, cardio.',
-    '- exercises[].tags chọn trong: jumping, kneeling, wrist_load, back_load, overhead (để mảng rỗng nếu không có).',
+    '- exercises[].tags chọn trong: jumping, kneeling, knee_bend, wrist_load, back_load, overhead (để mảng rỗng nếu không có).',
     '',
     'Chỉ trả về JSON, không kèm giải thích, đúng cấu trúc:',
     PLAN_JSON_SHAPE,

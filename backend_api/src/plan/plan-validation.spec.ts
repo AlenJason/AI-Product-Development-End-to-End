@@ -1,4 +1,6 @@
-import { dayCalorieBounds, mealCalorieBounds, parsePlanContent } from './plan-validation.js';
+import { ExerciseContentDto } from './dto/plan-content.dto.js';
+import { ExerciseTag } from './enums/exercise.enum.js';
+import { dayCalorieBounds, mealCalorieBounds, parseContent, parsePlanContent } from './plan-validation.js';
 
 // 3 bữa × 500 kcal = 1500: nằm trong khoảng ngày [max(0,85 × 1500, 1300); 1,1 × 1500] = [1300; 1650].
 const TARGET = { target_calories: 1500, bmr: 1300 };
@@ -127,5 +129,24 @@ describe('calorie bounds follow the daily target (BRD NFR-4, v2.5.0)', () => {
       Object.assign(day.meals[2], { calories: 1000, protein_g: 60, carbs_g: 120, fat_g: 30 });
     }
     expect(parsePlanContent(raw, { target_calories: 2806, bmr: 1649 }).errors).toEqual([]);
+  });
+});
+
+// #34: Gemini có thể ghi thiếu tag, hoặc bỏ hẳn trường tags — "Squat" vẫn phải mang knee_bend để bị lọc khi đau gối.
+describe('implied exercise tags', () => {
+  it('adds knee_bend to a squat whose tags are empty or missing', () => {
+    const raw = validPlan();
+    delete (raw.days[2].workout.exercises[0] as { tags?: unknown }).tags;
+    const { plan } = parsePlanContent(raw, TARGET);
+    expect(plan?.days.map((day) => day.workout.exercises[0].tags)).toEqual([
+      [ExerciseTag.KNEE_BEND],
+      [ExerciseTag.KNEE_BEND],
+      [ExerciseTag.KNEE_BEND],
+    ]);
+  });
+
+  it('adds implied tags to a single exercise (exercise swap)', () => {
+    const { value } = parseContent(ExerciseContentDto, { name: 'Lunge lùi', sets: 3, reps_or_duration: '10 lần', muscle_group: 'legs' });
+    expect(value?.tags).toEqual([ExerciseTag.KNEE_BEND]);
   });
 });

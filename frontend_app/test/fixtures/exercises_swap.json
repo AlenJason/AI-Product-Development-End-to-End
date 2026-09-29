@@ -173,13 +173,11 @@
               "exercise_id": "e1_2"
             },
             {
-              "name": "Chống đẩy nghiêng trên ghế",
+              "name": "Chống đẩy tường",
               "sets": 3,
-              "reps_or_duration": "10-12 lần",
+              "reps_or_duration": "12-15 lần",
               "muscle_group": "chest",
-              "tags": [
-                "wrist_load"
-              ],
+              "tags": [],
               "exercise_id": "e1_3"
             },
             {
@@ -330,9 +328,9 @@
               "exercise_id": "e2_1"
             },
             {
-              "name": "Lunge lùi",
+              "name": "Nhón gót (Calf raise)",
               "sets": 3,
-              "reps_or_duration": "10 lần mỗi chân",
+              "reps_or_duration": "15-20 lần",
               "muscle_group": "legs",
               "tags": [],
               "exercise_id": "e2_2"

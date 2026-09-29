@@ -110,4 +110,47 @@ void main() {
     expect(tester.getRect(find.byType(Scaffold).first).width, 400);
     expect(find.text('Danh sách đi chợ 3 ngày'), findsOneWidget);
   });
+
+  // PLAN D8: dữ liệu đang nhập chỉ lưu tạm (state restoration) — hệ thống tắt app ở nền thì mở lại còn nguyên,
+  // không ghi gì xuống máy nên force-quit là mất.
+  testWidgets('hệ thống tắt app giữa Onboarding → mở lại đúng bước, đủ dữ liệu; không ghi xuống máy', (tester) async {
+    final harness = await Harness.create(tester);
+    await tester.pumpWidget(harness.app());
+    await tester.tap(find.text('Nam'));
+    await tester.enterText(field('Tuổi'), '30');
+    await tester.enterText(field('Chiều cao (cm)'), '172');
+    await tester.enterText(field('Cân nặng (kg)'), '68');
+    await tester.pump();
+    await tester.tap(find.text('Tiếp tục'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Vận động nhẹ'));
+    await tester.pump();
+    expect(harness.prefs.getKeys(), isEmpty);
+
+    await tester.restartAndRestore();
+    expect(find.textContaining('Bước 2/3'), findsOneWidget);
+    await tester.tap(find.text('Duy trì vóc dáng'));
+    await tester.pump();
+    expect(enabled(tester, 'Tiếp tục'), isTrue, reason: 'mức vận động đã chọn trước khi bị tắt vẫn còn');
+    await tester.tap(find.text('Quay lại'));
+    await tester.pumpAndSettle();
+    expect(tester.widget<TextField>(field('Tuổi')).controller!.text, '30');
+    expect(tester.widget<TextField>(field('Chiều cao (cm)')).controller!.text, '172');
+    expect(tester.widget<TextField>(field('Cân nặng (kg)')).controller!.text, '68');
+  });
+
+  testWidgets('đang sửa hồ sơ dở ở tab Cá nhân, hệ thống tắt app → mở lại đúng tab, còn phần đang sửa', (tester) async {
+    final harness = await Harness.create(tester, saved: savedPlan());
+    await tester.pumpWidget(harness.app());
+    await tester.tap(find.text('Cá nhân'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Sửa hồ sơ'));
+    await tester.pumpAndSettle();
+    await tester.enterText(field('Cân nặng (kg)'), '70');
+    await tester.pump();
+
+    await tester.restartAndRestore();
+    expect(find.text('Hồ sơ của bạn'), findsOneWidget);
+    expect(tester.widget<TextField>(field('Cân nặng (kg)')).controller!.text, '70');
+  });
 }

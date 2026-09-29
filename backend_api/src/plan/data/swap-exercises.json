@@ -16,12 +16,30 @@
     "tags": []
   },
   {
+    "name": "Nằm ngửa nâng thẳng chân (Straight-leg raise)",
+    "muscle_group": "legs",
+    "level": 1,
+    "sets": 3,
+    "reps_or_duration": "10 lần mỗi chân",
+    "tags": []
+  },
+  {
+    "name": "Nằm nghiêng nâng chân (Side-lying leg raise)",
+    "muscle_group": "legs",
+    "level": 1,
+    "sets": 3,
+    "reps_or_duration": "12 lần mỗi chân",
+    "tags": []
+  },
+  {
     "name": "Squat tay không",
     "muscle_group": "legs",
     "level": 2,
     "sets": 3,
     "reps_or_duration": "12-15 lần",
-    "tags": []
+    "tags": [
+      "knee_bend"
+    ]
   },
   {
     "name": "Lunge lùi",
@@ -29,7 +47,9 @@
     "level": 2,
     "sets": 3,
     "reps_or_duration": "10 lần mỗi chân",
-    "tags": []
+    "tags": [
+      "knee_bend"
+    ]
   },
   {
     "name": "Ngồi dựa tường (Wall sit)",
@@ -37,7 +57,9 @@
     "level": 2,
     "sets": 3,
     "reps_or_duration": "30 giây",
-    "tags": []
+    "tags": [
+      "knee_bend"
+    ]
   },
   {
     "name": "Squat nhảy",
@@ -46,7 +68,8 @@
     "sets": 3,
     "reps_or_duration": "10 lần",
     "tags": [
-      "jumping"
+      "jumping",
+      "knee_bend"
     ]
   },
   {
@@ -55,7 +78,9 @@
     "level": 3,
     "sets": 3,
     "reps_or_duration": "8 lần mỗi chân",
-    "tags": []
+    "tags": [
+      "knee_bend"
+    ]
   },
   {
     "name": "Chống đẩy tường",
@@ -285,6 +310,7 @@
     "sets": 3,
     "reps_or_duration": "12 lần",
     "tags": [
+      "knee_bend",
       "overhead"
     ]
   },
@@ -296,6 +322,7 @@
     "reps_or_duration": "8 lần",
     "tags": [
       "jumping",
+      "knee_bend",
       "wrist_load"
     ]
   },

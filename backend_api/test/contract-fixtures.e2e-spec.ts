@@ -85,7 +85,8 @@ describe('Fixture hợp đồng cho Flutter (e2e)', () => {
     check('generate_plan', plan);
     check('history', (await http().get('/api/v1/plans/history').set('Authorization', auth).expect(200)).body);
     check('meals_swap', (await http().post('/api/v1/meals/swap').send({ profile: PROFILE, plan, meal_id: 'm1_2' }).expect(200)).body);
-    check('exercises_swap', (await http().post('/api/v1/exercises/swap').send({ profile: PROFILE, plan, exercise_id: 'e1_2' }).expect(200)).body);
+    // e1_3 (chống đẩy nghiêng, mức 2): đau gối nên squat ở e1_2 đã thành động tác mức 1 — không còn gì nhẹ hơn để đổi.
+    check('exercises_swap', (await http().post('/api/v1/exercises/swap').send({ profile: PROFILE, plan, exercise_id: 'e1_3' }).expect(200)).body);
     const feedback = { profile: PROFILE, plan, day_number: 1, eating: 'on_plan' };
     check('feedback', (await http().post('/api/v1/feedback').send({ ...feedback, intensity: 'hard', body_states: ['sore'] }).expect(200)).body);
     check('feedback_danger', (await http().post('/api/v1/feedback').send({ ...feedback, intensity: 'easy', body_states: ['danger_sign'] }).expect(200)).body);

@@ -43,7 +43,7 @@ Ba endpoint của BRD mục 6.4 — `POST /api/v1/meals/swap`, `/exercises/swap`
 | Điều kiện | Buổi tập ngày kế tiếp |
 |---|---|
 | `danger_sign` | Ngày nghỉ (`REST_WORKOUT`), bỏ qua mọi quy tắc khác kể cả ăn uống; `safety_warning` (#14) |
-| `joint_pain` | Thay động tác `jumping`/`kneeling` bằng động tác cùng nhóm cơ trong kho, mức không quá mức của hồ sơ |
+| `joint_pain` | Thay động tác `jumping`/`kneeling`/`knee_bend` (từ v2.7.0) bằng động tác cùng nhóm cơ trong kho, mức không quá mức của hồ sơ |
 | `hard` hoặc `fatigued` | −1 hiệp mỗi động tác, thời lượng ×0,75 (≥ 10 phút) |
 | `sore` | −1 hiệp cho nhóm cơ vừa tập (không cộng dồn), thêm giãn cơ |
 | `easy`, chỉ `normal` | +1 hiệp (≤ 6) |

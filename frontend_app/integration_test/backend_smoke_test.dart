@@ -71,9 +71,11 @@ void main() {
     expect(plans.plan!.planId, plan.planId);
     expect(plans.plan!.days.first.meals[1].name, isNot(oldMeal.name));
 
-    final oldExercise = plans.plan!.days.first.workout.exercises[1];
+    // Động tác thứ 3 (chống đẩy nghiêng, mức 2): đau gối nên squat ở vị trí 2 đã thành động tác mức 1 — không còn
+    // gì nhẹ hơn để đổi (BRD v2.7.0).
+    final oldExercise = plans.plan!.days.first.workout.exercises[2];
     await plans.swapExercise(oldExercise.exerciseId);
-    expect(plans.plan!.days.first.workout.exercises[1].name, isNot(oldExercise.name));
+    expect(plans.plan!.days.first.workout.exercises[2].name, isNot(oldExercise.name));
 
     final feedback = await plans.submitFeedback(const FeedbackAnswers(
         dayNumber: 1, intensity: Intensity.hard, bodyStates: {BodyState.sore}, eating: Eating.onPlan));

@@ -149,6 +149,8 @@ describe('PlanService — calorie totals and restrictions (v2.5.0)', () => {
     const tags = plan.days.flatMap((day) => day.workout.exercises.flatMap((exercise) => exercise.tags));
     expect(tags).not.toContain('jumping');
     expect(tags).not.toContain('kneeling');
+    expect(tags).not.toContain('knee_bend'); // PLAN D8: không squat, lunge khi đau gối
+    expect(plan.days.flatMap((day) => day.workout.exercises.map((exercise) => exercise.name)).join(' ')).not.toMatch(/squat|lunge/i);
     expect(plan.warnings).toContain(WARNINGS.sampleKeywordFiltered);
     expect(plan.warnings).not.toContain(WARNINGS.restrictionsIncomplete);
   });
@@ -168,6 +170,27 @@ describe('PlanService — calorie totals and restrictions (v2.5.0)', () => {
     const logged = warn.mock.calls.flat().map(String).join('\n');
     expect(logged).toContain('có nguyên liệu người dùng cần tránh');
     expect(logged).not.toMatch(/mắm|hải sản/i);
+  });
+
+  // #34: Gemini cho "Squat tay không" mà không ghi tag — backend vẫn nhận ra là gập gối và loại khi đau gối.
+  it('rejects a Gemini squat for knee pain even when Gemini left its tags empty', async () => {
+    const content = structuredClone(SAMPLE_CONTENT) as { days: { workout: { exercises: unknown[] } }[] };
+    for (const day of content.days) {
+      day.workout.exercises = [
+        { name: 'Squat tay không', sets: 3, reps_or_duration: '12 lần', muscle_group: 'legs', tags: [] },
+        { name: 'Plank cẳng tay', sets: 3, reps_or_duration: '30 giây', muscle_group: 'core', tags: [] },
+      ];
+    }
+    const kneePain = geminiAnswering(content, content);
+    // Hồ sơ mặc định (1624 kcal) hợp calo với thực đơn mẫu — chỉ còn tag là lý do loại.
+    const plan = await new PlanService(kneePain.gemini).generatePlan(profile({}, { injuries: 'Đau gối' }));
+    expect(kneePain.generatePlanContent).toHaveBeenCalledTimes(2);
+    expect(plan.source).toBe('sample');
+
+    const healthy = geminiAnswering(content);
+    const accepted = await new PlanService(healthy.gemini).generatePlan(profile());
+    expect(accepted.source).toBe('gemini');
+    expect(accepted.days[0].workout.exercises[0].tags).toEqual(['knee_bend']);
   });
 
   it('passes the feedback note to Gemini for a follow-up plan (FR-5.3)', async () => {

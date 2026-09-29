@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 
 import '../models/api/profile.dart';
@@ -6,6 +8,8 @@ import '../widgets/profile_form.dart';
 
 // Onboarding 3 bước (D6-B2): cơ thể → mục tiêu & vận động → hạn chế. Nút luôn ở đáy (màn hình nhỏ không đẩy nút
 // xuống dưới mép), nút Back của hệ thống quay lại bước trước. [initial] điền sẵn khi quay lại sửa hồ sơ.
+// Bước và dữ liệu đang nhập được lưu tạm (state restoration, PLAN D8): Back ở bước 1 chỉ đưa app xuống nền
+// (MainActivity), hệ thống tắt app ở nền thì mở lại còn nguyên; force-quit mới mất.
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key, this.initial, required this.onSubmit});
 
@@ -16,19 +20,35 @@ class OnboardingScreen extends StatefulWidget {
   State<OnboardingScreen> createState() => _OnboardingScreenState();
 }
 
-class _OnboardingScreenState extends State<OnboardingScreen> {
+class _OnboardingScreenState extends State<OnboardingScreen> with RestorationMixin {
   static const _titles = ['Thông tin cơ thể', 'Mục tiêu & vận động', 'Hạn chế & sức khoẻ'];
 
-  late final ProfileFormController _form = ProfileFormController(widget.initial);
-  int _step = 0;
+  late final ProfileFormController _form = ProfileFormController(widget.initial)..addListener(_remember);
+  final _step = RestorableInt(0);
+  final _typed = RestorableStringN(null);
+
+  @override
+  String get restorationId => 'onboarding';
+
+  @override
+  void restoreState(RestorationBucket? oldBucket, bool initialRestore) {
+    registerForRestoration(_step, 'step');
+    registerForRestoration(_typed, 'form');
+    final saved = _typed.value;
+    if (saved != null) _form.restoreSnapshot(jsonDecode(saved) as Map<String, Object?>);
+  }
+
+  void _remember() => _typed.value = jsonEncode(_form.toSnapshot());
 
   @override
   void dispose() {
     _form.dispose();
+    _step.dispose();
+    _typed.dispose();
     super.dispose();
   }
 
-  bool get _stepValid => switch (_step) {
+  bool get _stepValid => switch (_step.value) {
     0 => _form.bodyValid,
     1 => _form.goalValid,
     _ => _form.restrictionsValid,
@@ -36,8 +56,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   void _next() {
     FocusScope.of(context).unfocus();
-    if (_step < 2) {
-      setState(() => _step++);
+    if (_step.value < 2) {
+      setState(() => _step.value++);
     } else {
       widget.onSubmit(_form.toProfile());
     }
@@ -46,9 +66,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   @override
   Widget build(BuildContext context) {
     return PopScope(
-      canPop: _step == 0,
+      canPop: _step.value == 0,
       onPopInvokedWithResult: (didPop, _) {
-        if (!didPop) setState(() => _step--);
+        if (!didPop) setState(() => _step.value--);
       },
       child: Scaffold(
         backgroundColor: AppColors.page,
@@ -78,7 +98,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     Row(
                       children: [
                         Text(
-                          'Bước ${_step + 1}/3 · ${_titles[_step]}',
+                          'Bước ${_step.value + 1}/3 · ${_titles[_step.value]}',
                           style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.muted),
                         ),
                       ],
@@ -87,7 +107,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     ClipRRect(
                       borderRadius: BorderRadius.circular(4),
                       child: LinearProgressIndicator(
-                        value: (_step + 1) / 3,
+                        value: (_step.value + 1) / 3,
                         minHeight: 6,
                         backgroundColor: AppColors.border,
                         color: AppColors.primaryBright,
@@ -99,7 +119,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               Expanded(
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
-                  child: switch (_step) {
+                  child: switch (_step.value) {
                     0 => BodySection(form: _form),
                     1 => GoalSection(form: _form),
                     _ => RestrictionsSection(form: _form),
@@ -116,9 +136,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   ),
                   child: Row(
                     children: [
-                      if (_step > 0) ...[
+                      if (_step.value > 0) ...[
                         OutlinedButton(
-                          onPressed: () => setState(() => _step--),
+                          onPressed: () => setState(() => _step.value--),
                           style: OutlinedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 18),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
@@ -138,7 +158,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                             elevation: 0,
                           ),
                           child: Text(
-                            _step < 2 ? 'Tiếp tục' : 'Tạo kế hoạch 3 ngày',
+                            _step.value < 2 ? 'Tiếp tục' : 'Tạo kế hoạch 3 ngày',
                             style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
                           ),
                         ),

@@ -3,7 +3,13 @@ import { RestrictionsDto } from './dto/restrictions.dto.js';
 import { ExerciseTag } from './enums/exercise.enum.js';
 import { IngredientCategory, IngredientUnit } from './enums/ingredient.enum.js';
 import { MealType } from './enums/meal-type.enum.js';
-import { findAvoidedIngredient, hasAvoidedTag, matchRestrictions } from './restriction-matcher.js';
+import {
+  findAvoidedIngredient,
+  hasAvoidedTag,
+  impliedExerciseTags,
+  matchRestrictions,
+  withImpliedTags,
+} from './restriction-matcher.js';
 
 const restrictions = (values: Partial<RestrictionsDto>) => Object.assign(new RestrictionsDto(), values);
 
@@ -31,7 +37,12 @@ describe('matchRestrictions', () => {
       expect(matchRestrictions(restrictions({ allergies: text })).avoidIngredients).toContain('tôm');
     }
     for (const text of ['Đau gối', 'dau goi', 'đau đầu gối trái']) {
-      expect(matchRestrictions(restrictions({ injuries: text })).avoidTags).toEqual([ExerciseTag.JUMPING, ExerciseTag.KNEELING]);
+      // Từ bản 2.7.0 đau gối tránh cả động tác gập gối chịu sức nặng (PLAN D8).
+      expect(matchRestrictions(restrictions({ injuries: text })).avoidTags).toEqual([
+        ExerciseTag.JUMPING,
+        ExerciseTag.KNEELING,
+        ExerciseTag.KNEE_BEND,
+      ]);
     }
   });
 
@@ -81,5 +92,34 @@ describe('hasAvoidedTag', () => {
   it('flags an exercise carrying any avoided tag', () => {
     expect(hasAvoidedTag({ tags: [ExerciseTag.KNEELING] }, [ExerciseTag.JUMPING, ExerciseTag.KNEELING])).toBe(true);
     expect(hasAvoidedTag({ tags: [] }, [ExerciseTag.JUMPING])).toBe(false);
+  });
+});
+
+// #34: tag suy từ tên — Gemini hay plan cũ ghi thiếu tag thì "Squat" vẫn bị nhận là gập gối.
+describe('impliedExerciseTags', () => {
+  it.each([
+    ['Squat tay không', [ExerciseTag.KNEE_BEND]],
+    ['Bulgarian split squat (chân sau gác ghế)', [ExerciseTag.KNEE_BEND]],
+    ['Lunge lùi', [ExerciseTag.KNEE_BEND]],
+    ['Ngồi dựa tường (Wall sit)', [ExerciseTag.KNEE_BEND]],
+    ['Step-up lên ghế', [ExerciseTag.KNEE_BEND]],
+    ['Burpee', [ExerciseTag.KNEE_BEND, ExerciseTag.JUMPING]],
+    ['Squat nhảy', [ExerciseTag.KNEE_BEND, ExerciseTag.JUMPING]],
+    ['Nhảy dây không dây', [ExerciseTag.JUMPING]],
+    ['Chống đẩy khuỵu gối', [ExerciseTag.KNEELING]],
+    ['Ngồi xuống đứng lên với ghế', [ExerciseTag.KNEE_BEND]],
+  ])('%s', (name, tags) => {
+    expect(impliedExerciseTags(name)).toEqual(tags);
+  });
+
+  it('does not flag exercises that only mention the knee or bend it without load', () => {
+    for (const name of ['Đi bộ tại chỗ nâng cao gối (khởi động)', 'Cầu mông (Glute bridge)', 'Nhón gót (Calf raise)', 'Plank cẳng tay']) {
+      expect(impliedExerciseTags(name)).toEqual([]);
+    }
+  });
+
+  it('adds implied tags after the given ones, without duplicates', () => {
+    expect(withImpliedTags('Squat kết hợp giơ tay', [ExerciseTag.OVERHEAD])).toEqual([ExerciseTag.OVERHEAD, ExerciseTag.KNEE_BEND]);
+    expect(withImpliedTags('Squat tay không', [ExerciseTag.KNEE_BEND])).toEqual([ExerciseTag.KNEE_BEND]);
   });
 });

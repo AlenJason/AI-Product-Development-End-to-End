@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -19,24 +21,49 @@ class ProfileScreen extends StatefulWidget {
   State<ProfileScreen> createState() => _ProfileScreenState();
 }
 
-class _ProfileScreenState extends State<ProfileScreen> {
+class _ProfileScreenState extends State<ProfileScreen> with RestorationMixin {
   // Chỉ có khi đang sửa — tạo lúc bấm "Sửa hồ sơ" để luôn điền đúng hồ sơ mới nhất.
   ProfileFormController? _form;
+  // Phần đang sửa dở, lưu tạm như Onboarding (PLAN D8); null = không sửa.
+  final _typed = RestorableStringN(null);
 
   bool get _editing => _form != null;
 
   @override
+  String get restorationId => 'profile';
+
+  @override
+  void restoreState(RestorationBucket? oldBucket, bool initialRestore) {
+    registerForRestoration(_typed, 'editing');
+    final saved = _typed.value;
+    if (saved != null && _form == null) _form = _newForm()..restoreSnapshot(jsonDecode(saved) as Map<String, Object?>);
+  }
+
+  ProfileFormController _newForm() =>
+      ProfileFormController(context.read<PlanProvider>().editableProfile)..addListener(_remember);
+
+  void _remember() {
+    final form = _form;
+    if (form != null) _typed.value = jsonEncode(form.toSnapshot());
+  }
+
+  @override
   void dispose() {
     _form?.dispose();
+    _typed.dispose();
     super.dispose();
   }
 
-  void _startEditing() => setState(() => _form = ProfileFormController(context.read<PlanProvider>().editableProfile));
+  void _startEditing() {
+    setState(() => _form = _newForm());
+    _remember();
+  }
 
   // Widget của form còn dùng controller tới hết frame này — huỷ sau frame.
   void _stopEditing() {
     final form = _form;
     setState(() => _form = null);
+    _typed.value = null;
     WidgetsBinding.instance.addPostFrameCallback((_) => form?.dispose());
   }
 

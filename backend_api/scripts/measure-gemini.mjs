@@ -17,7 +17,7 @@ import { buildPlanPrompt } from '../dist/plan/gemini.service.js';
 import { mealCalorieBounds, parseContent, parsePlanContent } from '../dist/plan/plan-validation.js';
 import { exceedsLevel, maxExerciseLevel } from '../dist/plan/exercise-level.js';
 import { findRestrictionViolations } from '../dist/plan/restriction-filter.js';
-import { findAvoidedIngredient, matchRestrictions } from '../dist/plan/restriction-matcher.js';
+import { findAvoidedIngredient, matchRestrictions, withImpliedTags } from '../dist/plan/restriction-matcher.js';
 
 const apiKey = process.env.GEMINI_API_KEY;
 if (!apiKey) {
@@ -25,6 +25,9 @@ if (!apiKey) {
   process.exit(1);
 }
 const MODELS = (process.env.MEASURE_MODELS ?? 'gemini-3.5-flash').split(',').map((m) => m.trim());
+// Chỉ đo hồ sơ có nhãn chứa chuỗi này (vd. MEASURE_ONLY="đau gối"); MEASURE_TASKS="tạo plan" bỏ lần đổi món.
+const ONLY = process.env.MEASURE_ONLY ?? '';
+const TASKS = (process.env.MEASURE_TASKS ?? 'tạo plan,đổi món').split(',').map((t) => t.trim());
 const THINKING = (process.env.MEASURE_THINKING ?? 'default,low,off').split(',').map((t) => t.trim());
 const PACE_MS = Number(process.env.MEASURE_PACE_MS ?? 12_000); // gói miễn phí giới hạn số lần gọi mỗi phút
 const CALL_TIMEOUT_MS = 90_000; // đo thời gian thật, không cắt ở giới hạn của backend
@@ -107,11 +110,18 @@ function planStats(text, p) {
   const maxLevel = maxExerciseLevel(p);
   const exercises = days.flatMap((day) => (Array.isArray(day?.workout?.exercises) ? day.workout.exercises : []));
   const over = exercises.filter((e) => exceedsLevel({ name: String(e?.name ?? ''), tags: Array.isArray(e?.tags) ? e.tags : [] }, maxLevel)).length;
-  return { macro, over, exercises: exercises.length, maxLevel };
+  // Động tác vướng chấn thương đã khai, kể cả tag suy từ tên (#34) — tên động tác không phải dữ liệu người dùng.
+  const { avoidTags } = matchRestrictions(p.restrictions);
+  const blocked = exercises
+    .map((e) => String(e?.name ?? ''))
+    .filter((name, i) => withImpliedTags(name, Array.isArray(exercises[i]?.tags) ? exercises[i].tags : []).some((t) => avoidTags.includes(t)));
+  return { macro, over, exercises: exercises.length, maxLevel, blocked };
 }
 
 const describeStats = (s) =>
-  s.macro ? ` | đạm/tinh bột/béo ${s.macro.join('/')}% | vượt mức ${s.over}/${s.exercises} (tối đa ${s.maxLevel})` : '';
+  s.macro
+    ? ` | đạm/tinh bột/béo ${s.macro.join('/')}% | vượt mức ${s.over}/${s.exercises} (tối đa ${s.maxLevel})${s.blocked?.length ? ` | vướng chấn thương: ${s.blocked.join(', ')}` : ''}`
+    : '';
 
 function checkSwap(text, p, range) {
   let raw;
@@ -130,9 +140,9 @@ const swapRange = { min: Math.max(Math.round(SWAP_MEAL.calories * 0.9), lunchBou
 for (const model of MODELS) {
   for (const thinking of THINKING) {
     const jobs = [
-      ...Object.entries(PROFILES).map(([label, p]) => ({ task: 'tạo plan', label, prompt: buildPlanPrompt(p, computeDailyTarget(p).target), check: (t) => checkPlan(t, p), stats: (t) => planStats(t, p) })),
+      ...Object.entries(PROFILES).filter(([label]) => label.includes(ONLY)).map(([label, p]) => ({ task: 'tạo plan', label, prompt: buildPlanPrompt(p, computeDailyTarget(p).target), check: (t) => checkPlan(t, p), stats: (t) => planStats(t, p) })),
       { task: 'đổi món', label: swapLabel, prompt: buildMealSwapPrompt(swapProfile, SWAP_MEAL, swapRange, [SWAP_MEAL.name]), check: (t) => checkSwap(t, swapProfile, swapRange) },
-    ];
+    ].filter((job) => TASKS.includes(job.task) && job.label.includes(ONLY));
     for (const job of jobs) {
       const r = await call(model, thinking, job.prompt);
       const verdict = r.error ? `LỖI ${r.error}` : job.check(r.text);

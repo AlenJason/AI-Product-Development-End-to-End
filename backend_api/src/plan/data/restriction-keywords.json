@@ -191,7 +191,8 @@
       ],
       "avoid_tags": [
         "jumping",
-        "kneeling"
+        "kneeling",
+        "knee_bend"
       ]
     },
     {
@@ -246,5 +247,41 @@
     "chưa có",
     "none",
     "no"
+  ],
+  "exercise_name_tags": [
+    {
+      "tag": "knee_bend",
+      "keywords": [
+        "squat",
+        "lunge",
+        "ngồi xổm",
+        "ngồi xuống đứng lên",
+        "đứng lên ngồi xuống",
+        "ngồi dựa tường",
+        "wall sit",
+        "step up",
+        "bước lên",
+        "burpee",
+        "pistol"
+      ]
+    },
+    {
+      "tag": "jumping",
+      "keywords": [
+        "nhảy",
+        "jump",
+        "jumping",
+        "burpee"
+      ]
+    },
+    {
+      "tag": "kneeling",
+      "keywords": [
+        "quỳ",
+        "khuỵu gối",
+        "kneeling",
+        "kneel"
+      ]
+    }
   ]
 }

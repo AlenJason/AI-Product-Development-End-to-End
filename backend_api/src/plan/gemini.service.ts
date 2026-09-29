@@ -9,7 +9,7 @@ import { Goal } from './enums/goal.enum.js';
 import { IngredientCategory, IngredientUnit } from './enums/ingredient.enum.js';
 import { MealType } from './enums/meal-type.enum.js';
 import { dayCalorieBounds, MACRO_CALORIE_TOLERANCE, mealCalorieBounds } from './plan-validation.js';
-import { matchRestrictions, type RestrictionMatch } from './restriction-matcher.js';
+import { exerciseNameKeywords, matchRestrictions, type RestrictionMatch } from './restriction-matcher.js';
 import { type ExerciseLevel, SWAP_EXERCISES } from './swap-pools.js';
 import { sanitizeUserText } from './text.util.js';
 
@@ -43,6 +43,7 @@ export interface GeminiBudget {
 const TAG_LABEL: Record<ExerciseTag, string> = {
   [ExerciseTag.JUMPING]: 'bật nhảy',
   [ExerciseTag.KNEELING]: 'quỳ, chống gối',
+  [ExerciseTag.KNEE_BEND]: 'gập gối chịu sức nặng: squat, lunge, ngồi dựa tường, bước lên bục',
   [ExerciseTag.WRIST_LOAD]: 'chống tay',
   [ExerciseTag.BACK_LOAD]: 'tải lên lưng',
   [ExerciseTag.OVERHEAD]: 'đưa tay qua đầu',
@@ -189,8 +190,14 @@ export function ingredientAvoidRule(match: RestrictionMatch): string[] {
 
 export function exerciseAvoidRule(match: RestrictionMatch): string[] {
   if (match.avoidTags.length === 0) return [];
+  const names = exerciseNameKeywords(match.avoidTags);
   return [
     `- Không dùng động tác có tags: ${match.avoidTags.map((tag) => `${tag} (${TAG_LABEL[tag]})`).join(', ')}. Ghi đủ tags cho mọi động tác.`,
+    // Đo 2026-09-29: chỉ ghi tag thì Gemini (tắt suy nghĩ) vẫn cho động tác gập gối khi đau gối — backend loại
+    // theo tên (#34), nên nói thẳng các từ đó như với nguyên liệu dị ứng.
+    ...(names.length > 0
+      ? [`- Tuyệt đối không dùng động tác có các từ sau trong tên, kể cả biến thể nhẹ hay có ghế đỡ: ${names.join(', ')}.`]
+      : []),
   ];
 }
 

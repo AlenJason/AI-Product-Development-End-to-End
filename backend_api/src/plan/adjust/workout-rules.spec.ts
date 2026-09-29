@@ -10,7 +10,7 @@ const workout = (): WorkoutContentDto => ({
   duration_minutes: 20,
   exercises: [
     { name: 'Jumping Jacks (khởi động)', sets: 2, reps_or_duration: '30 giây', muscle_group: MuscleGroup.CARDIO, tags: [ExerciseTag.JUMPING] },
-    { name: 'Squat tay không', sets: 3, reps_or_duration: '12-15 lần', muscle_group: MuscleGroup.LEGS, tags: [] },
+    { name: 'Squat tay không', sets: 3, reps_or_duration: '12-15 lần', muscle_group: MuscleGroup.LEGS, tags: [ExerciseTag.KNEE_BEND] },
     { name: 'Chống đẩy khuỵu gối', sets: 3, reps_or_duration: '10-12 lần', muscle_group: MuscleGroup.CHEST, tags: [ExerciseTag.KNEELING, ExerciseTag.WRIST_LOAD] },
     { name: 'Plank cẳng tay', sets: 6, reps_or_duration: '30 giây', muscle_group: MuscleGroup.CORE, tags: [] },
   ],
@@ -93,11 +93,12 @@ describe('adjustWorkout — regular rules (BRD FR-5.2)', () => {
     for (const exercise of added) expect(exerciseLevel(exercise.name)).toBe(1);
   });
 
-  it('replaces jumping and kneeling exercises on joint pain, respecting declared injuries', () => {
+  it('replaces jumping, kneeling and knee-bending exercises on joint pain, respecting declared injuries', () => {
     const adjusted = adjustWorkout(workout(), feedback(Intensity.MODERATE, [BodyState.JOINT_PAIN]), NONE, [ExerciseTag.WRIST_LOAD], 3);
     const tags = adjusted.exercises.flatMap((exercise) => exercise.tags);
     expect(tags).not.toContain(ExerciseTag.JUMPING);
     expect(tags).not.toContain(ExerciseTag.KNEELING);
+    expect(tags).not.toContain(ExerciseTag.KNEE_BEND); // bản 2.7.0: squat → động tác chân không gập gối
     expect(tags).not.toContain(ExerciseTag.WRIST_LOAD);
     expect(adjusted.exercises.map((exercise) => exercise.muscle_group)).toEqual([
       MuscleGroup.CARDIO,

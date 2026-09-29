@@ -1,10 +1,11 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { energySplit, MACRO_ENERGY_SPLIT } from './daily-target.js';
-import { MuscleGroup } from './enums/exercise.enum.js';
+import { ExerciseTag, MuscleGroup } from './enums/exercise.enum.js';
 import { MealType } from './enums/meal-type.enum.js';
 import { scaleMealToCalories } from './meal-scaling.js';
 import { MACRO_CALORIE_TOLERANCE } from './plan-validation.js';
+import { impliedExerciseTags } from './restriction-matcher.js';
 import { exerciseCandidates, exerciseLevel, mealCandidates, SWAP_EXERCISES, SWAP_MEALS } from './swap-pools.js';
 import { normalizeKey } from './text.util.js';
 
@@ -67,6 +68,19 @@ describe('swap-exercises.json', () => {
     for (const group of Object.values(MuscleGroup)) {
       expect(SWAP_EXERCISES.some((exercise) => exercise.muscle_group === group && exercise.level === 1)).toBe(true);
     }
+  });
+
+  // #34: tag ghi trong dữ liệu phải đủ — không dựa vào lớp suy từ tên để che dữ liệu thiếu.
+  it('writes every tag the exercise name implies, in the pool and in the sample plan', () => {
+    const exercises = [...SWAP_EXERCISES, ...sample.days.flatMap((day) => day.workout.exercises)] as { name: string; tags: string[] }[];
+    const missing = exercises.filter((exercise) => impliedExerciseTags(exercise.name).some((tag) => !exercise.tags.includes(tag)));
+    expect(missing.map((exercise) => exercise.name)).toEqual([]);
+  });
+
+  // PLAN D8: đau gối bỏ mọi động tác gập gối — nhóm chân vẫn còn ít nhất 3 động tác mức 1 để thay.
+  it('keeps at least three level-1 leg exercises without knee bending', () => {
+    const safe = exerciseCandidates(MuscleGroup.LEGS, { avoidTags: [ExerciseTag.KNEE_BEND], excludeNames: new Set(), maxLevel: 1 });
+    expect(safe.length).toBeGreaterThanOrEqual(3);
   });
 
   it('knows the level of every exercise in the sample plan', () => {

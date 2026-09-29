@@ -92,6 +92,13 @@ A1–A4 đổi hợp đồng và luật dinh dưỡng → BRD v2.6.0 ở giai đ
 - Windows: tên "SmartFit AI" ở tiêu đề cửa sổ và thông tin file, file chạy `smartfit_ai.exe`, icon `.ico` sinh cùng `tool/update_icons.sh`.
 - Giai đoạn 8 (đăng nhập): package `google_sign_in` không có bản Windows (kiểm lại khi làm) → cần chọn cách riêng cho Windows, ví dụ đăng nhập qua trình duyệt hoặc chỉ dùng chế độ khách; macOS cần cấu hình riêng (Client ID, keychain).
 
+**D8 — Lưu tạm dữ liệu đang nhập, đau gối tránh động tác gập gối (2026-09-29, chạy thử bản release trên máy ảo Android):**
+
+| # | Vấn đề | Quyết định |
+|---|---|---|
+| 1 | Nhấn Back ở bước 1 Onboarding → app đóng và mất hết dữ liệu vừa nhập | Lưu tạm, force-quit mới xoá: Back ở màn gốc chỉ đưa app xuống nền (`MainActivity.popSystemNavigator()`); bước, dữ liệu đang nhập, tab đang mở, phần sửa hồ sơ dở dùng state restoration của Flutter — hệ thống tắt app ở nền thì mở lại còn nguyên, vuốt khỏi đa nhiệm / buộc dừng thì mất. Không ghi xuống `shared_preferences` |
+| 2 | Người đau gối vẫn được giao Squat, Lunge lùi, Bulgarian split squat (luật cũ chỉ tránh bật nhảy, quỳ gối) | Tránh cả động tác gập gối chịu sức nặng: tag mới `knee_bend` (BRD v2.7.0), "đau gối" và feedback "Đau khớp" tránh tag này; backend suy tag từ tên động tác nên Gemini ghi thiếu tag vẫn bị loại; kho thêm 2 động tác chân an toàn cho gối (nâng thẳng chân, nằm nghiêng nâng chân) |
+
 ---
 
 ## Giai đoạn 0 — Dọn dẹp & chuẩn bị · S

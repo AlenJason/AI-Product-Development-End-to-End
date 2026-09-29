@@ -5,7 +5,7 @@ import type { DailyTargetDto, MealPlanResponseDto } from '../dto/meal-plan-respo
 import type { DayContentDto } from '../dto/plan-content.dto.js';
 import { PlanSource } from '../enums/plan-source.enum.js';
 import { assemblePlan, MEAL_ORDER } from '../plan-assembly.js';
-import { findPlanViolations } from '../plan-validation.js';
+import { addImpliedTags, findPlanViolations } from '../plan-validation.js';
 import { hasRestrictions, profileWarnings, WARNINGS } from '../plan-warnings.js';
 import { matchRestrictions, type RestrictionMatch } from '../restriction-matcher.js';
 
@@ -21,6 +21,8 @@ export interface ClientPlanContext {
 // Cấu trúc đã qua ValidationPipe; ở đây kiểm ID đúng vị trí, quy tắc calo/trùng món, và mục tiêu calo
 // tính lại từ hồ sơ — không tin `daily_target`, `grocery_list`, `warnings` trong plan.
 export function readClientPlan(profile: CreatePlanDto, plan: MealPlanResponseDto): ClientPlanContext {
+  // Plan tạo trước bản 2.7.0 có "Squat" mà chưa có tag knee_bend — thêm để đổi bài, feedback kiểm đúng (#34).
+  addImpliedTags(plan);
   const { target, flooredToBmr } = computeDailyTarget(profile);
   if (plan.daily_target.target_calories !== target.target_calories || plan.daily_target.bmr !== target.bmr) {
     throw new ConflictException('Kế hoạch này được tạo cho hồ sơ khác (mục tiêu calo đã đổi). Hãy tạo kế hoạch mới.');

@@ -58,7 +58,7 @@ void main() {
     expect(provider.plan!.toJson(), loadFixture('meals_swap')['plan']);
     expect(jsonDecode(prefs.getString(PlanProvider.planKey)!), loadFixture('meals_swap')['plan']);
 
-    await provider.swapExercise('e1_2');
+    await provider.swapExercise('e1_3');
     expect(provider.plan!.toJson(), loadFixture('exercises_swap')['plan']);
 
     final result = await provider.submitFeedback(const FeedbackAnswers(

@@ -1,6 +1,7 @@
 import { BadRequestException, ConflictException } from '@nestjs/common';
 import { makeProfile, samplePlan } from '../../../test/plan-fixtures.js';
 import type { MealPlanResponseDto } from '../dto/meal-plan-response.dto.js';
+import { ExerciseTag } from '../enums/exercise.enum.js';
 import { Goal } from '../enums/goal.enum.js';
 import { WARNINGS } from '../plan-warnings.js';
 import { readClientPlan, rebuildPlan } from './client-plan.js';
@@ -15,6 +16,15 @@ describe('readClientPlan', () => {
   it('accepts a plan exactly as the server returned it', () => {
     const context = readClientPlan(makeProfile(), plan);
     expect(context.target.target_calories).toBe(1624);
+  });
+
+  // #34: plan lưu trên máy từ trước bản 2.7.0 có "Squat tay không" mà chưa có tag knee_bend.
+  it('adds implied tags to exercises of a plan saved before v2.7.0', () => {
+    const old = structuredClone(plan);
+    for (const exercise of old.days.flatMap((day) => day.workout.exercises)) exercise.tags = [];
+    const { plan: read } = readClientPlan(makeProfile(), old);
+    const squat = read.days[0].workout.exercises.find((exercise) => exercise.name === 'Squat tay không');
+    expect(squat?.tags).toEqual([ExerciseTag.KNEE_BEND]);
   });
 
   it('answers 409 when the profile no longer matches the plan target (#13)', () => {

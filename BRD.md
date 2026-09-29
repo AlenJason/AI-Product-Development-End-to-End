@@ -3,7 +3,7 @@
 **Tên sản phẩm:** Trợ lý AI Gợi ý & Điều chỉnh Thực đơn, Lịch tập Thông minh  
 **Môn học:** AI Product Development End-to-End (Đồ án Kỹ sư / Cử nhân Năm 4)  
 **Đơn vị thực hiện:** Trường Đại học Công nghệ Thông tin và Truyền thông Việt - Hàn (VKU)  
-**Phiên bản:** 2.6.1 (Dành cho Sinh viên thực hành: Flutter & NestJS)  
+**Phiên bản:** 2.7.0 (Dành cho Sinh viên thực hành: Flutter & NestJS)  
 **Ngày cập nhật:** 29/09/2026  
 **Trạng thái:** Đã phê duyệt (Approved)  
 
@@ -44,7 +44,7 @@ Thay vì cung cấp một kế hoạch 30 ngày cứng nhắc (nguyên nhân khi
 
 1. **Sinh viên & Người mới đi làm:** Cần thực đơn tiết kiệm, bài tập nhanh tại phòng trọ/nhà ở không cần dụng cụ.
 2. **Dân văn phòng bận rộn:** Cần ăn uống linh hoạt theo bữa cơm gia đình hoặc cơm văn phòng, có thể đổi món tức thì khi có lịch liên hoan đột xuất.
-3. **Người có hạn chế thể lực:** Người bị đau cổ tay, đau khớp gối (cần tránh nhảy dây/burpee) hoặc dị ứng thức ăn (hải sản, trứng, sữa...).
+3. **Người có hạn chế thể lực:** Người bị đau cổ tay, đau khớp gối (cần tránh nhảy dây/burpee, và từ bản 2.7.0 cả squat, lunge — động tác gập gối chịu sức nặng) hoặc dị ứng thức ăn (hải sản, trứng, sữa...).
 
 ---
 
@@ -117,7 +117,7 @@ sequenceDiagram
 ### Giai đoạn 1: MVP Cốt lõi (Bắt buộc hoàn thành để nộp đồ án)
 
 #### FR-1: Khảo sát thông tin (Personalized Onboarding)
-* **FR-1.1:** Giao diện Form nhập: Tuổi (từ 18 tuổi — công thức Mifflin-St Jeor dành cho người trưởng thành, đúng đối tượng ở mục 3), giới tính, chiều cao (cm), cân nặng (kg); nữ khai thêm *đang mang thai hoặc cho con bú*. Onboarding chia 3 bước — cơ thể → mục tiêu & vận động → hạn chế — có thanh tiến trình, nút tiếp tục luôn ở đáy màn hình. *(bổ sung bản 2.6.0)*
+* **FR-1.1:** Giao diện Form nhập: Tuổi (từ 18 tuổi — công thức Mifflin-St Jeor dành cho người trưởng thành, đúng đối tượng ở mục 3), giới tính, chiều cao (cm), cân nặng (kg); nữ khai thêm *đang mang thai hoặc cho con bú*. Onboarding chia 3 bước — cơ thể → mục tiêu & vận động → hạn chế — có thanh tiến trình, nút tiếp tục luôn ở đáy màn hình. *(bổ sung bản 2.6.0)* Dữ liệu đang nhập dở (Onboarding, sửa hồ sơ) chỉ được lưu tạm: nhấn Back ở màn đầu tiên thì app lui xuống nền thay vì đóng, hệ thống tự tắt app ở nền thì mở lại còn nguyên; người dùng force-quit (vuốt khỏi đa nhiệm, buộc dừng) thì xoá. *(bổ sung bản 2.7.0)*
 * **FR-1.2:** Chọn mức độ vận động hằng ngày (Activity Level) — bắt buộc để tính TDEE đúng công thức: *Ít vận động (Sedentary, dân văn phòng)*, *Vận động nhẹ (1–3 buổi tập/tuần)*, *Vận động nhiều (4–5 buổi tập/tuần)*.
 * **FR-1.3:** Chọn mục tiêu: *Giảm mỡ (Cut)* — thâm hụt 300 kcal/ngày, *Tăng cơ (Bulk)* — dư 250 kcal/ngày, hoặc *Duy trì vóc dáng (Maintain)*. **Không chọn được Giảm mỡ** khi BMI dưới 18,5 (thiếu cân) hoặc đang mang thai / cho con bú: app khoá lựa chọn kèm lý do, backend trả 400 cho mọi request có hồ sơ như vậy. *(bổ sung bản 2.6.0)*
 * **FR-1.4:** Ba mục *Dị ứng / thực phẩm cần tránh*, *Chấn thương / vùng cơ thể cần tránh*, *Tình trạng sức khoẻ / bệnh nền*, mỗi mục một công tắc "Tôi có …" mặc định tắt (= không có). Bật lên thì hiện danh sách phổ biến để tích nhiều mục — dị ứng: hải sản, cá, đậu phộng, trứng, sữa, đậu nành, gluten, mè, nấm, thịt bò, thịt heo, thịt gà; chấn thương: đầu gối, cổ chân, cổ tay / khuỷu tay, lưng / cột sống, vai; bệnh nền: tiểu đường, cao huyết áp, gout, tim mạch, dạ dày — và lựa chọn "Khác" để tự ghi. App ghép lựa chọn thành văn bản, tối đa 300 ký tự mỗi mục (hợp đồng mục 6.1 không đổi). Danh sách dị ứng và chấn thương lấy đúng các nhóm backend nhận ra bằng từ khoá. *(bản 2.6.0 — thay ô nhập tự do và chip điền sẵn chữ)* Màn hình ghi rõ: gợi ý chỉ mang tính tham khảo, không thay thế tư vấn y tế. Ở chế độ giả lập (chưa có khoá Gemini), backend nhận ra các dị ứng, chấn thương phổ biến bằng từ khoá (gõ có dấu hay không dấu đều được) để lọc thực đơn mẫu; có phần không nhận ra thì app nhận một câu cảnh báo chung, không nhắc lại chữ người dùng đã nhập. *(bổ sung bản 2.5.0)*
@@ -140,7 +140,7 @@ sequenceDiagram
 
 #### FR-4: Đổi món & Đổi bài tập (Interactive Swap)
 * **FR-4.1:** Nhấn nút "Đổi món" tại một bữa ăn $\rightarrow$ Backend gọi AI sinh 1 món khác cùng bữa, calo lệch không quá $\pm 10\%$, tránh các hạn chế người dùng đã nhập, không trùng tên món khác trong plan. **Đồng bộ checklist:** backend tính lại toàn bộ danh sách đi chợ từ thực đơn mới, nên checklist luôn khớp thực đơn. Không có khoá Gemini, hoặc AI trả kết quả không đạt → lấy món từ kho món Việt soạn sẵn, lọc theo từ khoá dị ứng, nhân khẩu phần về đúng calo món cũ. Không còn món phù hợp → báo lỗi, app giữ plan cũ. *(bổ sung bản 2.5.0)*
-* **FR-4.2:** Nhấn nút "Đổi bài tập" $\rightarrow$ gợi ý động tác khác nhẹ hơn, **cùng nhóm cơ**, tránh động tác gây hại cho chấn thương đã khai (ví dụ bỏ bật nhảy, chống quỳ khi đau gối). Có khoá Gemini: AI đề xuất, backend kiểm các điều kiện đo được — cùng nhóm cơ, số hiệp không tăng, không thêm kiểu tải mới (bật nhảy, chống quỳ, chống tay…), không vướng chấn thương đã khai. Không đạt hoặc không có khoá → kho động tác soạn sẵn có mức khó 1–3, lấy động tác mức thấp hơn. Động tác đã ở mức nhẹ nhất → báo lỗi. *(bổ sung bản 2.5.0)*
+* **FR-4.2:** Nhấn nút "Đổi bài tập" $\rightarrow$ gợi ý động tác khác nhẹ hơn, **cùng nhóm cơ**, tránh động tác gây hại cho chấn thương đã khai (ví dụ bỏ bật nhảy, chống quỳ và động tác gập gối chịu sức nặng như squat, lunge khi đau gối — bản 2.7.0). Có khoá Gemini: AI đề xuất, backend kiểm các điều kiện đo được — cùng nhóm cơ, số hiệp không tăng, không thêm kiểu tải mới (bật nhảy, chống quỳ, chống tay…), không vướng chấn thương đã khai. Không đạt hoặc không có khoá → kho động tác soạn sẵn có mức khó 1–3, lấy động tác mức thấp hơn. Động tác đã ở mức nhẹ nhất → báo lỗi. *(bổ sung bản 2.5.0)*
 
 #### FR-5: Đánh giá thích ứng cuối ngày (Adaptive Feedback)
 * **FR-5.1:** Form đánh giá nhanh cuối ngày (1 phút), gồm 3 câu hỏi:
@@ -152,7 +152,7 @@ sequenceDiagram
 | Ăn uống (chọn 1) | Đúng thực đơn / Ăn nhiều hơn / Ăn ít hơn hoặc bỏ bữa |
 
 * **FR-5.2:** Điều chỉnh ngày kế tiếp:
-  * Bài tập theo quy tắc cố định (không cần AI): Nhẹ nhàng và cơ thể bình thường → mỗi động tác tăng 1 hiệp (tối đa 6); Rất mệt hoặc uể oải → mỗi động tác giảm 1 hiệp, buổi tập ngắn đi 25%; Căng mỏi cơ → giảm hiệp cho nhóm cơ vừa tập, thêm giãn cơ; Đau khớp → thay động tác bật nhảy, chống quỳ bằng động tác cùng nhóm cơ không có kiểu tải đó.
+  * Bài tập theo quy tắc cố định (không cần AI): Nhẹ nhàng và cơ thể bình thường → mỗi động tác tăng 1 hiệp (tối đa 6); Rất mệt hoặc uể oải → mỗi động tác giảm 1 hiệp, buổi tập ngắn đi 25%; Căng mỏi cơ → giảm hiệp cho nhóm cơ vừa tập, thêm giãn cơ; Đau khớp → thay động tác bật nhảy, chống quỳ, gập gối chịu sức nặng (bản 2.7.0) bằng động tác cùng nhóm cơ không có kiểu tải đó.
   * Món ăn cân đối lại theo câu trả lời về ăn uống (cần AI): ăn nhiều hơn → ngày kế tiếp nhẹ hơn (khoảng 90% mục tiêu); ăn ít hơn hoặc bỏ bữa → giữ mục tiêu, không ăn bù. Không bao giờ hạ calo xuống dưới BMR. Chế độ giả lập giữ nguyên món và báo cho người dùng biết. *(chi tiết hoá ở bản 2.5.0)*
   * **⚠️ Dấu hiệu nguy hiểm** (chóng mặt, khó thở bất thường, đau ngực): không tự điều chỉnh như trên. App hiện khuyến cáo ngừng tập và hỏi ý kiến bác sĩ; ngày kế tiếp chỉ nghỉ hoặc đi bộ nhẹ.
 * **FR-5.3:** Feedback của ngày 3 (ngày cuối plan) tạo luôn plan 3 ngày mới có tính tới feedback đó (cuốn chiếu).
@@ -286,7 +286,7 @@ sequenceDiagram
         "duration_minutes": 20,
         "exercises": [
           { "exercise_id": "e1_1", "name": "Jumping Jacks (khởi động)", "sets": 2, "reps_or_duration": "30 giây", "muscle_group": "cardio", "tags": ["jumping"] },
-          { "exercise_id": "e1_2", "name": "Squat tay không", "sets": 3, "reps_or_duration": "12-15 lần", "muscle_group": "legs", "tags": [] },
+          { "exercise_id": "e1_2", "name": "Squat tay không", "sets": 3, "reps_or_duration": "12-15 lần", "muscle_group": "legs", "tags": ["knee_bend"] },
           { "exercise_id": "e1_3", "name": "Chống đẩy khuỵu gối", "sets": 3, "reps_or_duration": "10-12 lần", "muscle_group": "chest", "tags": ["kneeling", "wrist_load"] },
           { "exercise_id": "e1_4", "name": "Plank cẳng tay", "sets": 3, "reps_or_duration": "30 giây", "muscle_group": "core", "tags": [] }
         ]
@@ -335,7 +335,7 @@ sequenceDiagram
 | `ingredients[].unit` | `g`, `ml`, `piece` (hiển thị ×n), `tbsp` (muỗng canh), `tsp` (muỗng cà phê) |
 | `ingredients[].category`, `grocery_list[].category` | `protein` (Đạm), `produce` (Rau củ quả), `pantry` (Gạo, bún & gia vị) |
 | `exercises[].muscle_group` | `legs`, `chest`, `back`, `core`, `shoulders`, `arms`, `full_body`, `cardio` |
-| `exercises[].tags` | `jumping` (bật nhảy), `kneeling` (quỳ, chống gối), `wrist_load` (chống tay), `back_load` (tải lên lưng), `overhead` (đưa tay qua đầu) |
+| `exercises[].tags` | `jumping` (bật nhảy), `kneeling` (quỳ, chống gối), `knee_bend` (gập gối chịu sức nặng: squat, lunge, ngồi dựa tường, bước lên bục) *(bổ sung bản 2.7.0)*, `wrist_load` (chống tay), `back_load` (tải lên lưng), `overhead` (đưa tay qua đầu). Backend thêm tag mà tên động tác cho thấy chắc chắn có ("Squat" → `knee_bend`, "nhảy" → `jumping`, "khuỵu gối" → `kneeling`) dù Gemini hay plan cũ ghi thiếu |
 
 Server chịu trách nhiệm:
 

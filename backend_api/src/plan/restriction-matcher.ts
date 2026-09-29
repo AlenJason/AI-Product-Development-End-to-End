@@ -17,10 +17,17 @@ interface InjuryGroup {
   avoid_tags: ExerciseTag[];
 }
 
+// Tag suy từ tên động tác — Gemini hay plan cũ có thể ghi thiếu tag, nhưng "Squat" thì luôn gập gối (#34).
+interface NameTagRule {
+  tag: ExerciseTag;
+  keywords: string[];
+}
+
 interface KeywordData {
   allergies: AllergyGroup[];
   injuries: InjuryGroup[];
   none: string[];
+  exercise_name_tags: NameTagRule[];
 }
 
 export interface RestrictionMatch {
@@ -50,6 +57,24 @@ export function matchRestrictions(restrictions: RestrictionsDto): RestrictionMat
 export function findAvoidedIngredient(meal: MealContentDto, avoid: string[]): string | null {
   const texts = [meal.name, ...meal.ingredients.map((ingredient) => ingredient.name)].map(accentTokens);
   return avoid.find((keyword) => texts.some((tokens) => containsSequence(tokens, accentTokens(keyword)))) ?? null;
+}
+
+// Tag mà tên động tác cho thấy chắc chắn có ("Squat tay không" → knee_bend). So có dấu: "nhảy" không trùng "nhạy".
+export function impliedExerciseTags(name: string): ExerciseTag[] {
+  const tokens = accentTokens(name);
+  return KEYWORDS.exercise_name_tags
+    .filter((rule) => rule.keywords.some((keyword) => containsSequence(tokens, accentTokens(keyword))))
+    .map((rule) => rule.tag);
+}
+
+// Từ trong tên động tác khiến backend coi là mang một trong các [tags] — prompt Gemini liệt kê y nguyên (#34).
+export function exerciseNameKeywords(tags: ExerciseTag[]): string[] {
+  return unique(KEYWORDS.exercise_name_tags.filter((rule) => tags.includes(rule.tag)).flatMap((rule) => rule.keywords));
+}
+
+// Tag đã ghi cộng tag suy từ tên, không trùng, giữ thứ tự tag đã ghi.
+export function withImpliedTags(name: string, tags: ExerciseTag[]): ExerciseTag[] {
+  return unique([...tags, ...impliedExerciseTags(name)]);
 }
 
 export function hasAvoidedTag(exercise: Pick<ExerciseContentDto, 'tags'>, avoidTags: ExerciseTag[]): boolean {
@@ -114,7 +139,9 @@ function unique<T>(values: T[]): T[] {
 function loadKeywords(): KeywordData {
   const data = JSON.parse(readFileSync(KEYWORDS_PATH, 'utf-8')) as KeywordData;
   const tags = new Set<string>(Object.values(ExerciseTag));
-  const badTag = data.injuries.flatMap((group) => group.avoid_tags).find((tag) => !tags.has(tag));
+  const badTag = [...data.injuries.flatMap((group) => group.avoid_tags), ...data.exercise_name_tags.map((rule) => rule.tag)].find(
+    (tag) => !tags.has(tag),
+  );
   if (badTag) throw new Error(`restriction-keywords.json: tag "${badTag}" không có trong ExerciseTag`);
   return data;
 }

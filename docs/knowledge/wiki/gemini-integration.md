@@ -59,6 +59,17 @@ Cùng lệnh, cùng 3 hồ sơ, prompt có thêm luật mức động tác và m
 | Bật suy nghĩ: 6/6 plan đạt hợp đồng, macro sát 25/45/30 hơn (béo 30–31 %). Tắt: 2/3, béo 26–27 % | Suy nghĩ giúp đúng định dạng và cân macro, nhưng tốn gấp đôi thời gian; backend đã kiểm mọi kết quả và gọi lại 1 lần nên vẫn giữ `off` |
 | Không mức nào chọn động tác vượt mức cho phép — luật `exerciseLevelRule()` trong prompt có tác dụng | `capWorkoutLevel()` vẫn chạy cho mọi kết quả (#31) |
 
+## Đo prompt đau gối (2026-09-29, `GEMINI_THINKING=off`)
+
+Tag `knee_bend` mới (PLAN D8). `measure-gemini.mjs` nay in tên động tác vướng chấn thương (kể cả tag suy từ tên, #34) và có `MEASURE_ONLY` (lọc hồ sơ theo nhãn), `MEASURE_TASKS` (`tạo plan`, `đổi món`) để đo ít lần gọi.
+
+| Prompt | Kết quả với hồ sơ đau gối |
+|---|---|
+| Chỉ thêm `knee_bend (gập gối chịu sức nặng: squat, lunge…)` vào dòng tags | Vướng chấn thương ở ngày 2 — Gemini vẫn cho động tác gập gối; backend nhận ra nhờ suy tag từ tên nên loại plan |
+| Thêm dòng "Tuyệt đối không dùng động tác có các từ sau trong tên, kể cả biến thể nhẹ hay có ghế đỡ: squat, lunge, …" (`exerciseNameKeywords()` — đúng danh sách backend dùng để suy tag) | Đạt, 15 s, 0 động tác vướng (1 lần đo) |
+
+Cùng buổi: hồ sơ nam 2806 kcal trả JSON hỏng (9 s); hồ sơ 45 tuổi 503 "high demand" cả 3 lần thử; đổi món 48 s. Plan đạt thì 9–16 s — nhanh hơn hẳn ngày 27/09.
+
 ## Test không cần khoá
 
 `backend_api/test/fake-gemini-server.ts` dựng server HTTP cục bộ trả phản hồi đúng định dạng Gemini, đếm và lưu request, có chế độ trả JSON / văn bản / lỗi HTTP / không trả lời. SDK thật được trỏ vào đó qua `GEMINI_BASE_URL`:

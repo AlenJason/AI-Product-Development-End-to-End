@@ -88,6 +88,10 @@ Kết quả build và test tự động của từng commit: tab [Actions](https
 
 Đối chiếu theo phiên bản BRD (mục "Phiên bản" trong [BRD.md](BRD.md)), để giảng viên/trợ giảng theo dõi tiến độ trực tiếp trên repo mà không cần đọc từng commit.
 
+### BRD v2.7.0 — 2026-09-29
+- Không mất dữ liệu đang nhập: nhấn Back ở bước đầu Onboarding thì app lui xuống nền thay vì đóng; điện thoại tự tắt app ở nền thì mở lại còn nguyên bước và dữ liệu (cả phần sửa hồ sơ dở). Chỉ khi người dùng tự tắt hẳn app (vuốt khỏi đa nhiệm) mới xoá
+- Người đau gối không còn bị giao squat, lunge, ngồi dựa tường… (trước đây chỉ tránh bật nhảy và quỳ gối). Backend nhận ra động tác gập gối qua tên nên kể cả khi AI ghi thiếu thông tin vẫn loại được; thêm 2 bài chân an toàn cho gối. Kiểm thử: 390 unit và 74 e2e backend, 96 test Flutter; chạy thật trên máy ảo Android 16
+
 ### BRD v2.6.1 — 2026-09-29
 - Chốt nền tảng: Android, web, Windows, macOS; iOS tạm bỏ. CI build bản release của cả bốn mỗi lần push (bản Windows chỉ build được trên CI vì máy phát triển là Mac)
 - Bản Windows có tên "SmartFit AI" và icon riêng (trước đó là `my_ai_app` với icon Flutter)

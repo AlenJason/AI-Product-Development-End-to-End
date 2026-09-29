@@ -11,8 +11,8 @@ export const MAX_SETS = 6;
 export const MAX_EXERCISES = 8;
 const MIN_DURATION_MINUTES = 10;
 const TIRED_DURATION_FACTOR = 0.75;
-// Đau khớp → bỏ bật nhảy và chống quỳ (BRD FR-5.2).
-const JOINT_PAIN_TAGS = [ExerciseTag.JUMPING, ExerciseTag.KNEELING];
+// Đau khớp → bỏ bật nhảy, chống quỳ và gập gối chịu sức nặng (BRD FR-5.2, bản 2.7.0).
+const JOINT_PAIN_TAGS = [ExerciseTag.JUMPING, ExerciseTag.KNEELING, ExerciseTag.KNEE_BEND];
 
 export interface NormalizedFeedback {
   intensity: Intensity;

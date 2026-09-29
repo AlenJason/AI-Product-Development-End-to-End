@@ -164,9 +164,9 @@
             "exercise_id": "e1_1"
           },
           {
-            "name": "Squat tay không",
+            "name": "Cầu mông (Glute bridge)",
             "sets": 3,
-            "reps_or_duration": "12-15 lần",
+            "reps_or_duration": "15 lần",
             "muscle_group": "legs",
             "tags": [],
             "exercise_id": "e1_2"
@@ -329,9 +329,9 @@
             "exercise_id": "e2_1"
           },
           {
-            "name": "Lunge lùi",
+            "name": "Nhón gót (Calf raise)",
             "sets": 3,
-            "reps_or_duration": "10 lần mỗi chân",
+            "reps_or_duration": "15-20 lần",
             "muscle_group": "legs",
             "tags": [],
             "exercise_id": "e2_2"

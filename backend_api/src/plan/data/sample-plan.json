@@ -57,7 +57,7 @@
         "duration_minutes": 20,
         "exercises": [
           { "name": "Jumping Jacks (khởi động)", "sets": 2, "reps_or_duration": "30 giây", "muscle_group": "cardio", "tags": ["jumping"] },
-          { "name": "Squat tay không", "sets": 3, "reps_or_duration": "12-15 lần", "muscle_group": "legs", "tags": [] },
+          { "name": "Squat tay không", "sets": 3, "reps_or_duration": "12-15 lần", "muscle_group": "legs", "tags": ["knee_bend"] },
           { "name": "Chống đẩy khuỵu gối", "sets": 3, "reps_or_duration": "10-12 lần", "muscle_group": "chest", "tags": ["kneeling", "wrist_load"] },
           { "name": "Plank cẳng tay", "sets": 3, "reps_or_duration": "30 giây", "muscle_group": "core", "tags": [] }
         ]
@@ -118,7 +118,7 @@
         "duration_minutes": 20,
         "exercises": [
           { "name": "Đi bộ tại chỗ nâng cao gối (khởi động)", "sets": 2, "reps_or_duration": "45 giây", "muscle_group": "cardio", "tags": [] },
-          { "name": "Lunge lùi", "sets": 3, "reps_or_duration": "10 lần mỗi chân", "muscle_group": "legs", "tags": [] },
+          { "name": "Lunge lùi", "sets": 3, "reps_or_duration": "10 lần mỗi chân", "muscle_group": "legs", "tags": ["knee_bend"] },
           { "name": "Cầu mông (Glute bridge)", "sets": 3, "reps_or_duration": "15 lần", "muscle_group": "legs", "tags": [] },
           { "name": "Bird-dog", "sets": 3, "reps_or_duration": "10 lần mỗi bên", "muscle_group": "core", "tags": ["kneeling", "wrist_load"] }
         ]

@@ -85,6 +85,48 @@ class ProfileFormController extends ChangeNotifier {
     ),
   );
 
+  // Mọi thứ đang nhập dở (kể cả ô chưa hợp lệ) — lưu tạm qua state restoration của Flutter: hệ thống tắt app ở nền
+  // thì mở lại còn nguyên, người dùng force-quit thì mất (PLAN D8). Không ghi xuống shared_preferences.
+  Map<String, Object?> toSnapshot() => {
+    'age': age.text,
+    'height': height.text,
+    'weight': weight.text,
+    'gender': gender?.name,
+    'pregnant': pregnantOrBreastfeeding,
+    'activity': activityLevel?.name,
+    'goal': goal?.name,
+    for (final kind in RestrictionKind.values)
+      kind.name: {
+        'enabled': restrictions[kind]!.enabled,
+        'chosen': restrictions[kind]!.chosen.toList(),
+        'other': restrictions[kind]!.other,
+      },
+  };
+
+  void restoreSnapshot(Map<String, Object?> snapshot) {
+    age.text = snapshot['age'] as String? ?? '';
+    height.text = snapshot['height'] as String? ?? '';
+    weight.text = snapshot['weight'] as String? ?? '';
+    gender = Gender.values.asNameMap()[snapshot['gender']];
+    pregnantOrBreastfeeding = snapshot['pregnant'] == true;
+    activityLevel = ActivityLevel.values.asNameMap()[snapshot['activity']];
+    goal = Goal.values.asNameMap()[snapshot['goal']];
+    for (final kind in RestrictionKind.values) {
+      if (snapshot[kind.name] case {
+        'enabled': final bool enabled,
+        'chosen': final List<Object?> chosen,
+        'other': final String other,
+      }) {
+        restrictions[kind] = RestrictionSelection(
+          enabled: enabled,
+          chosen: chosen.whereType<String>().toSet(),
+          other: other,
+        );
+      }
+    }
+    notifyListeners();
+  }
+
   void update(void Function(ProfileFormController form) change) {
     change(this);
     notifyListeners();

@@ -80,6 +80,7 @@ enum MuscleGroup {
 enum ExerciseTag {
   jumping('jumping'),
   kneeling('kneeling'),
+  kneeBend('knee_bend'), // gập gối chịu sức nặng: squat, lunge… (bản 2.7.0)
   wristLoad('wrist_load'),
   backLoad('back_load'),
   overhead('overhead');

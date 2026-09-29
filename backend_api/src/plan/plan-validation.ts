@@ -1,8 +1,10 @@
 import { plainToInstance } from 'class-transformer';
 import { validateSync, type ValidationError } from 'class-validator';
 import type { DailyTargetDto } from './dto/meal-plan-response.dto.js';
-import { PlanContentDto } from './dto/plan-content.dto.js';
+import { type ExerciseContentDto, PlanContentDto } from './dto/plan-content.dto.js';
+import type { ExerciseTag } from './enums/exercise.enum.js';
 import { MealType } from './enums/meal-type.enum.js';
+import { withImpliedTags } from './restriction-matcher.js';
 import { normalizeKey } from './text.util.js';
 
 // Calo mỗi bữa tính theo tỉ lệ mục tiêu ngày, không dùng số cố định: trần cố định cũ
@@ -54,6 +56,7 @@ export function parsePlanStructure(raw: unknown): PlanContentResult {
     return { plan: null, errors: ['Kết quả không phải một object JSON'] };
   }
   const plan = plainToInstance(PlanContentDto, raw);
+  addImpliedTags(plan);
   const structural = validateSync(plan, { whitelist: true });
   return structural.length > 0 ? { plan: null, errors: flattenErrors(structural) } : { plan, errors: [] };
 }
@@ -65,8 +68,26 @@ export function parseContent<T extends object>(dto: new () => T, raw: unknown): 
     return { value: null, errors: ['Kết quả không phải một object JSON'] };
   }
   const value = plainToInstance(dto, raw);
+  addImpliedTags(value);
   const errors = validateSync(value, { whitelist: true });
   return errors.length > 0 ? { value: null, errors: flattenErrors(errors) } : { value, errors: [] };
+}
+
+// Thêm tag suy từ tên cho mọi động tác trong [node] (plan, ngày, một động tác) — kể cả khi Gemini bỏ hẳn trường
+// tags (class-transformer không gọi @Transform cho trường vắng mặt, nên làm tay sau plainToInstance) (#34).
+export function addImpliedTags(node: unknown): void {
+  if (Array.isArray(node)) {
+    node.forEach(addImpliedTags);
+    return;
+  }
+  if (typeof node !== 'object' || node === null) return;
+  // Nhận động tác theo hình dạng (tên + nhóm cơ + mảng tag): plan app gửi lên là DTO, plan tự lắp là object thường.
+  const exercise = node as Partial<Record<keyof ExerciseContentDto, unknown>>;
+  if (typeof exercise.name === 'string' && typeof exercise.muscle_group === 'string' && Array.isArray(exercise.tags)) {
+    exercise.tags = withImpliedTags(exercise.name, exercise.tags as ExerciseTag[]);
+    return;
+  }
+  Object.values(node).forEach(addImpliedTags);
 }
 
 export function parsePlanContent(raw: unknown, target: CalorieTarget): PlanContentResult {

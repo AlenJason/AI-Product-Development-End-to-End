@@ -109,6 +109,18 @@ Quên bước 1 → test backend đỏ ("… đã cũ — chạy npm run fixture
 - Trên web, `shared_preferences` là `localStorage` của trình duyệt: dữ liệu sức khoẻ và token nằm trong trình duyệt. BRD chấp nhận việc lưu trên máy người dùng (NFR-7, D4); backend vẫn không lưu `restrictions` (#12).
 - `PlanProvider.busy` = đang chờ server; gọi thêm khi đang bận bị bỏ qua, không ném lỗi. `PlanProvider` nhận đồng hồ (`now:`) để test đổi ngày.
 
+### Dữ liệu đang nhập dở (PLAN D8, #35)
+
+Không ghi xuống `shared_preferences` — chỉ lưu tạm bằng state restoration: `MaterialApp.restorationScopeId: 'smartfit'`; `OnboardingScreen` (bước + form), `ProfileScreen` (phần sửa hồ sơ dở), `MainShell` (tab đang mở) dùng `RestorationMixin`. Form được chụp thành JSON bằng `ProfileFormController.toSnapshot()` / `restoreSnapshot()` (cả ô chưa hợp lệ). Android: Back ở màn gốc gọi `MainActivity.popSystemNavigator()` → `moveTaskToBack(true)` (như nút Home) thay vì `finish()`.
+
+| Tình huống (đã thử trên Android 16, bản release) | Kết quả |
+|---|---|
+| Back ở bước 1 rồi mở lại | Còn nguyên (activity chưa bị huỷ) |
+| Home, hệ thống tắt app ở nền (`adb shell am kill`) rồi mở lại | Khôi phục đúng bước 2, mức vận động đã chọn, số đã nhập ở bước 1 |
+| Buộc dừng (`am force-stop`) hoặc vuốt khỏi đa nhiệm | Mở lạnh, Onboarding trống |
+
+State restoration chỉ có trên Android/iOS; web và máy tính mất phần đang nhập khi tải lại trang hay thoát app. Test: `widget_test.dart` dùng `tester.restartAndRestore()` và kiểm không có khoá nào được ghi.
+
 ## CORS (bản web)
 
 Bản web chạy ở origin khác backend nên cần CORS; app mobile không gửi `Origin` nên không cần. Backend đọc `CORS_ORIGINS` trong `resolveCorsOptions()` (#27): trống khi phát triển → `http://localhost` và `http://127.0.0.1` mọi cổng (`flutter run -d chrome` chạy cổng ngẫu nhiên); deploy bản web → đặt đúng địa chỉ bản web.
@@ -148,7 +160,7 @@ Nhắm tới Android, web, Windows, macOS; iOS tạm bỏ (vẫn build được 
 
 ## Test
 
-- `cd frontend_app && flutter test` — 94 test, không cần backend chạy:
+- `cd frontend_app && flutter test` — 96 test, không cần backend chạy:
   - `test/models/` — vòng tròn fixture (`contract_test.dart`), luật hồ sơ, chip hạn chế so với `restriction_labels.json`, lịch ngày;
   - `test/services/api_client_test.dart` — `MockClient` của `package:http/testing`;
   - `test/providers/` — `SharedPreferences.setMockInitialValues()`, đồng hồ giả;

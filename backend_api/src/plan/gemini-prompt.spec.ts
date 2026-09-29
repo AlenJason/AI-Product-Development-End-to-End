@@ -71,6 +71,10 @@ describe('prompts spell out what the backend will reject', () => {
     expect(prompt).toContain('- Tuyệt đối không dùng món hay nguyên liệu có các từ sau (kể cả trong tên món): tôm, tép, cua');
     expect(prompt).toContain('mọi loại cá, kể cả cá nước ngọt');
     expect(prompt).toContain('- Không dùng động tác có tags: jumping (bật nhảy), kneeling (quỳ, chống gối)');
+    expect(prompt).toContain('knee_bend (gập gối chịu sức nặng: squat, lunge, ngồi dựa tường, bước lên bục)');
+    // #34: backend loại theo tên, nên prompt nói thẳng các từ đó.
+    expect(prompt).toMatch(/- Tuyệt đối không dùng động tác có các từ sau trong tên, kể cả biến thể nhẹ hay có ghế đỡ: .*squat, lunge/);
+    expect(prompt).toMatch(/trong tên.*nhảy.*quỳ, khuỵu gối/);
   });
 
   it('adds nothing when no restriction is recognised', () => {

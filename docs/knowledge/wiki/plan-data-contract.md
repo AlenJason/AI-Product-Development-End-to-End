@@ -50,7 +50,7 @@ Tách hai lớp vì Gemini càng phải viết ít trường thì càng ít ch�
 
 ## Mã cố định (`enums/`)
 
-`meal-type.enum.ts` (breakfast, lunch, dinner) · `ingredient.enum.ts` (nhóm protein / produce / pantry; đơn vị g, ml, piece, tbsp, tsp) · `exercise.enum.ts` (nhóm cơ; tag jumping, kneeling, wrist_load, back_load, overhead) · `plan-source.enum.ts` (gemini, sample). Prompt Gemini đọc danh sách mã từ các enum này, nên thêm mã ở enum thì prompt tự cập nhật theo.
+`meal-type.enum.ts` (breakfast, lunch, dinner) · `ingredient.enum.ts` (nhóm protein / produce / pantry; đơn vị g, ml, piece, tbsp, tsp) · `exercise.enum.ts` (nhóm cơ; tag jumping, kneeling, knee_bend — từ v2.7.0, wrist_load, back_load, overhead; tag suy từ tên động tác luôn được thêm — #34) · `plan-source.enum.ts` (gemini, sample). Prompt Gemini đọc danh sách mã từ các enum này, nên thêm mã ở enum thì prompt tự cập nhật theo.
 
 ## Danh sách đi chợ
 

@@ -61,6 +61,8 @@ class SmartFitApp extends StatelessWidget {
         child: MaterialApp(
           title: 'SmartFit AI',
           debugShowCheckedModeBanner: false,
+          // Lưu tạm bước Onboarding, dữ liệu đang nhập, tab đang mở khi hệ thống tắt app ở nền (PLAN D8).
+          restorationScopeId: 'smartfit',
           theme: ThemeData(
             useMaterial3: true,
             scaffoldBackgroundColor: const Color(0xFFF8F9FA),
@@ -87,10 +89,10 @@ class MainShell extends StatefulWidget {
   State<MainShell> createState() => _MainShellState();
 }
 
-class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
+class _MainShellState extends State<MainShell> with WidgetsBindingObserver, RestorationMixin {
   // Chưa có plan → bắt đầu từ Onboarding; đã có plan đã lưu → vào thẳng màn chính, không cần mạng (NFR-2).
   late AppScreen _screen = context.read<PlanProvider>().hasPlan ? AppScreen.home : AppScreen.onboarding;
-  int _tab = 0; // 0: Kế hoạch, 1: Đi chợ, 2: Lịch sử, 3: Cá nhân
+  final _tab = RestorableInt(0); // 0: Kế hoạch, 1: Đi chợ, 2: Lịch sử, 3: Cá nhân — lưu tạm như form (PLAN D8)
   // Hồ sơ của lần tạo plan gần nhất — để thử lại hoặc sửa khi lỗi.
   Profile? _requested;
   ApiException? _error;
@@ -102,8 +104,15 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
   }
 
   @override
+  String get restorationId => 'shell';
+
+  @override
+  void restoreState(RestorationBucket? oldBucket, bool initialRestore) => registerForRestoration(_tab, 'tab');
+
+  @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _tab.dispose();
     super.dispose();
   }
 
@@ -125,7 +134,7 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
       if (mounted) {
         setState(() {
           _screen = AppScreen.home;
-          _tab = 0;
+          _tab.value = 0;
         });
       }
     } on ApiException catch (error) {
@@ -150,7 +159,7 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
   }
 
   Widget _home(PlanProvider plans) => Scaffold(
-    body: switch (_tab) {
+    body: switch (_tab.value) {
       // Khoá theo plan_id: plan mới thì Dashboard mở lại đúng ngày hôm nay.
       0 => DashboardScreen(key: ValueKey(plans.plan?.planId), onCreatePlan: () => _generate(plans.editableProfile!)),
       1 => const GroceryScreen(),
@@ -166,8 +175,8 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
         border: Border(top: BorderSide(color: AppColors.border, width: 0.8)),
       ),
       child: BottomNavigationBar(
-        currentIndex: _tab,
-        onTap: (index) => setState(() => _tab = index),
+        currentIndex: _tab.value,
+        onTap: (index) => setState(() => _tab.value = index),
         type: BottomNavigationBarType.fixed,
         backgroundColor: Colors.white,
         selectedItemColor: const Color(0xFF00875A),

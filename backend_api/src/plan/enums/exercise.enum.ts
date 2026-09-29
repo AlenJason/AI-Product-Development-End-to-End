@@ -13,6 +13,8 @@ export enum MuscleGroup {
 export enum ExerciseTag {
   JUMPING = 'jumping',
   KNEELING = 'kneeling',
+  // Gập gối chịu sức nặng cơ thể: squat, lunge, ngồi dựa tường, bước lên bục (bản 2.7.0, PLAN D8).
+  KNEE_BEND = 'knee_bend',
   WRIST_LOAD = 'wrist_load',
   BACK_LOAD = 'back_load',
   OVERHEAD = 'overhead',
