@@ -1,0 +1,53 @@
+{
+  "slug": "phase-8-auth-history",
+  "features": [
+    { "id": "F01", "name": "Lớp GoogleAuth (google_sign_in 7.x), cách đăng nhập theo /health, cờ màn chào, HistoryProvider", "scope": "UI" },
+    { "id": "F02", "name": "Màn chào, bảng đăng nhập, tab Lịch sử, xem lại plan cũ, tài khoản, hỏi lại khi khách thay plan, 401 → Đăng nhập lại", "scope": "UI" },
+    { "id": "F03", "name": "Loại dữ liệu khỏi sao lưu Android; integration test trên máy ảo Android và macOS", "scope": "UI" },
+    { "id": "F04", "name": "SETUP_CREDENTIALS mục 3, BRD v2.8.0, PLAN, wiki #37, CLAUDE.md, README", "scope": "Docs" }
+  ],
+  "dependencies": {
+    "F02": ["F01"],
+    "F03": ["F02"],
+    "F04": ["F03"]
+  },
+  "phase_gates": [
+    {
+      "after": "F01",
+      "checks": ["cd frontend_app && flutter analyze", "cd frontend_app && flutter test", "cd frontend_app && flutter build web"],
+      "expected": ["No issues found!", "+145: All tests passed!", "✓ Built build/web"]
+    },
+    {
+      "after": "F02",
+      "checks": [
+        "cd frontend_app && flutter analyze",
+        "cd frontend_app && flutter test",
+        "cd frontend_app && flutter build apk --debug",
+        "cd frontend_app && flutter build web",
+        "cd frontend_app && flutter build macos --debug"
+      ],
+      "expected": ["No issues found!", "+174: All tests passed!", "✓ Built", "✓ Built build/web", "✓ Built"]
+    },
+    {
+      "after": "F03",
+      "checks": [
+        "cd frontend_app && xmllint --noout android/app/src/main/res/xml/*.xml android/app/src/main/AndroidManifest.xml",
+        "cd frontend_app && flutter build apk --release",
+        "cd frontend_app && flutter test integration_test -d emulator-5554",
+        "cd frontend_app && flutter test integration_test -d macos"
+      ],
+      "expected": ["", "✓ Built", "+3: All tests passed!", "+3: All tests passed!"]
+    },
+    {
+      "after": "F04",
+      "checks": [
+        "grep -c \"^| 37 |\" docs/knowledge/wiki/critical-constraints.md",
+        "grep -c \"^- \\[x\\] \\*\\*8\\.[1-4]\\*\\*\" docs/PLAN.md",
+        "grep -c \"^\\*\\*Phiên bản:\\*\\* 2.8.0\" BRD.md",
+        "grep -c \"^## 3. Google Sign-In trong app Flutter\" docs/SETUP_CREDENTIALS.md"
+      ],
+      "expected": ["1", "4", "1", "1"]
+    }
+  ],
+  "executor": "direct (feature-build chưa hỗ trợ NestJS/Flutter)"
+}
