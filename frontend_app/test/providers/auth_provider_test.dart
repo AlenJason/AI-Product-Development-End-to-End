@@ -4,9 +4,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:my_ai_app/models/api/profile.dart';
 import 'package:my_ai_app/providers/auth_provider.dart';
 import 'package:my_ai_app/services/api_exception.dart';
+import 'package:my_ai_app/services/google_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../fake_backend.dart';
+import '../fake_google_auth.dart';
 import '../fixture_loader.dart';
 
 void main() {
@@ -16,11 +18,14 @@ void main() {
     AuthProvider.userKey: jsonEncode(login['user']),
   };
 
-  Future<(AuthProvider, FakeBackend, SharedPreferences)> create([Map<String, Object> values = const {}]) async {
+  Future<(AuthProvider, FakeBackend, SharedPreferences)> create([
+    Map<String, Object> values = const {},
+    FakeGoogleAuth? google,
+  ]) async {
     SharedPreferences.setMockInitialValues(values);
     final prefs = await SharedPreferences.getInstance();
     final backend = FakeBackend();
-    return (AuthProvider(api: backend.api, prefs: prefs), backend, prefs);
+    return (AuthProvider(api: backend.api, prefs: prefs, google: google ?? FakeGoogleAuth()), backend, prefs);
   }
 
   test('đăng nhập → token gắn vào mọi request sau, lưu lại cho lần mở app sau', () async {
@@ -71,6 +76,13 @@ void main() {
     expect(prefs.getKeys(), isEmpty);
   });
 
+  test('xoá tài khoản lỗi → vẫn đăng nhập (tài khoản còn trên server)', () async {
+    final (auth, backend, _) = await create(saved);
+    backend.failWith = 500;
+    await expectLater(auth.deleteAccount(), throwsA(isA<ServerException>()));
+    expect(auth.isSignedIn, isTrue);
+  });
+
   test('bản lưu hỏng hoặc thiếu một nửa → coi như chưa đăng nhập, xoá sạch', () async {
     final (broken, _, brokenPrefs) = await create({...saved, AuthProvider.userKey: '[]'});
     expect(broken.isSignedIn, isFalse);
@@ -80,5 +92,76 @@ void main() {
     expect(half.isSignedIn, isFalse);
     expect(halfBackend.api.accessToken, isNull);
     expect(halfPrefs.getKeys(), isEmpty);
+  });
+
+  // Giai đoạn 8, quyết định Q1: cách đăng nhập theo /health của backend, không theo cờ lúc build.
+  test('cách đăng nhập theo auth_mode của backend; lỗi mạng → ném, gọi lại được', () async {
+    final (auth, backend, _) = await create();
+    expect(await auth.loginMode(), LoginMode.demo);
+    expect(backend.paths, ['/health']);
+
+    backend.responses['/health'] = {...loadFixture('health'), 'auth_mode': 'google'};
+    expect(await auth.loginMode(), LoginMode.google);
+
+    backend.responses['/health'] = {...loadFixture('health'), 'auth_mode': 'ldap'};
+    await expectLater(auth.loginMode(), throwsA(isA<ServerException>()));
+
+    backend.failWith = 503;
+    await expectLater(auth.loginMode(), throwsA(isA<ServerException>()));
+  });
+
+  test('đăng nhập demo: gửi mock:<email> chữ thường, bỏ khoảng trắng; kiểm email như backend', () async {
+    final (auth, backend, _) = await create();
+    await auth.signInDemo('  Lan@Example.COM ');
+    final body = jsonDecode(utf8.decode(backend.requests.single.bodyBytes)) as Map<String, dynamic>;
+    expect(body, {'id_token': 'mock:lan@example.com'});
+
+    expect(AuthProvider.validDemoEmail(' lan@example.com '), isTrue);
+    for (final bad in ['', 'lan', 'lan@', 'lan@example', '@example.com', 'la n@example.com', 'a@b@c.com']) {
+      expect(AuthProvider.validDemoEmail(bad), isFalse, reason: bad);
+    }
+    expect(AuthProvider.validDemoEmail('${'a' * 65}@example.com'), isFalse, reason: 'backend nhận tối đa 64 ký tự');
+  });
+
+  test('Google: token của Google → backend; người dùng huỷ → không gọi backend; lỗi Google → ném nguyên', () async {
+    final google = FakeGoogleAuth();
+    final (auth, backend, _) = await create(const {}, google);
+
+    expect(await auth.signInWithGoogle(), isTrue);
+    final body = jsonDecode(utf8.decode(backend.requests.single.bodyBytes)) as Map<String, dynamic>;
+    expect(body, {'id_token': 'google-id-token'});
+    await auth.signOut();
+
+    google.token = null;
+    expect(await auth.signInWithGoogle(), isFalse);
+    expect(backend.requests, hasLength(1));
+    expect(auth.isSignedIn, isFalse);
+
+    google.error = const GoogleAuthException('lỗi');
+    await expectLater(auth.signInWithGoogle(), throwsA(isA<GoogleAuthException>()));
+    expect(backend.requests, hasLength(1));
+  });
+
+  test('đăng xuất → thoát cả phiên Google', () async {
+    final google = FakeGoogleAuth();
+    final (auth, _, _) = await create(saved, google);
+    await auth.signOut();
+    expect(google.signOutCalls, 1);
+  });
+
+  test('màn chào chỉ hiện lần đầu: bấm "Dùng ngay" hoặc đăng nhập → không hiện lại', () async {
+    final (fresh, _, prefs) = await create();
+    expect(fresh.showWelcome, isTrue);
+    await fresh.skipWelcome();
+    expect(fresh.showWelcome, isFalse);
+    expect(prefs.getBool(AuthProvider.welcomeKey), isTrue);
+
+    final (signedIn, _, _) = await create();
+    await signedIn.signIn('mock:lan@example.com');
+    await signedIn.signOut();
+    expect(signedIn.showWelcome, isFalse, reason: 'đã qua màn chào bằng cách đăng nhập');
+
+    final (restored, _, _) = await create(saved);
+    expect(restored.showWelcome, isFalse);
   });
 }

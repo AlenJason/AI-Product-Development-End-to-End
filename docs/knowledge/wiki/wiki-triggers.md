@@ -1,6 +1,6 @@
 ---
 type: meta
-last_updated: 2026-09-27
+last_updated: 2026-10-01
 ---
 
 # Wiki Triggers
@@ -21,6 +21,7 @@ Auth và database của backend nằm ở `backend_api/src/auth/`, `src/database
 | `frontend_app/lib/screens/**`, `frontend_app/lib/widgets/**`, `frontend_app/lib/theme/**`, `frontend_app/lib/main.dart` | `flutter-ui.md` |
 | `backend_api/src/plan/profile-safety.ts`, `backend_api/src/plan/dto/profile-safety.validator.ts`, `backend_api/src/plan/exercise-level.ts` | `plan-data-contract.md`, `swap-and-feedback.md`, `critical-constraints.md` (#30, #31) |
 | `frontend_app/lib/models/**`, `frontend_app/lib/services/**`, `frontend_app/lib/providers/**`, `frontend_app/lib/config/**`, `frontend_app/test/**` | `flutter-ui.md`, `critical-constraints.md` (#26, #28) |
+| `frontend_app/lib/services/google_auth.dart`, `frontend_app/lib/services/google_button_*.dart`, `frontend_app/lib/providers/auth_provider.dart`, `frontend_app/lib/providers/history_provider.dart`, `frontend_app/lib/widgets/login_panel.dart`, `frontend_app/lib/screens/welcome_screen.dart`, `frontend_app/lib/screens/history_screen.dart`, `frontend_app/lib/screens/plan_detail_screen.dart`, `frontend_app/android/app/src/main/res/xml/**`, `frontend_app/macos/Runner/Info.plist`, `docs/SETUP_CREDENTIALS.md` | `auth-and-history.md`, `flutter-ui.md`, `critical-constraints.md` (#37) |
 | `backend_api/src/cors-options.ts`, `backend_api/test/cors.e2e-spec.ts`, `backend_api/test/contract-fixtures.e2e-spec.ts` | `flutter-ui.md`, `critical-constraints.md` (#26, #27) |
 | `frontend_app/pubspec.yaml`, `frontend_app/android/**/AndroidManifest.xml`, `frontend_app/ios/Runner/Info.plist`, `frontend_app/macos/Runner/*.entitlements`, `.github/workflows/frontend.yml`, `frontend_app/android/app/src/main/res/**`, `frontend_app/web/**`, `frontend_app/tool/**`, `frontend_app/assets/icon/**`, `frontend_app/windows/**`, `frontend_app/macos/Runner/Configs/**`, `frontend_app/android/app/src/main/kotlin/**` | `flutter-ui.md`, `critical-constraints.md` (#29, #35) |
 | `BRD.md` | `product-spec.md` *(chưa có — đọc thẳng BRD.md)* |
@@ -40,7 +41,8 @@ Trigger bổ sung (bất kỳ thay đổi nào sau đây → bắt buộc cập 
 | gemini / prompt / structured output / JSON schema / ảo giác (hallucination) | `gemini-integration.md` |
 | endpoint / controller / swagger / health / validation / DTO | `plan-data-contract.md`, `auth-and-history.md`, `swap-and-feedback.md` |
 | đổi món / đổi bài / swap / feedback / dị ứng / chấn thương / từ khoá / kho món / kho động tác / dấu hiệu nguy hiểm / khẩu phần | `swap-and-feedback.md`, `flutter-ui.md` và `critical-constraints.md` (#36) khi là phần app |
-| đăng nhập / auth / JWT / token / Google Sign-In / tài khoản / lịch sử / history / SQLite / TypeORM / migration / database / guard | `auth-and-history.md` |
+| đăng nhập / auth / JWT / token / Google Sign-In / tài khoản / lịch sử / history / SQLite / TypeORM / migration / database / guard | `auth-and-history.md`; phần app: `flutter-ui.md`, `critical-constraints.md` (#37) |
+| màn chào / khách / đăng nhập demo / Client ID / SHA-1 / keychain / sao lưu Android / backup | `auth-and-history.md`, `flutter-ui.md`, `critical-constraints.md` (#37) |
 | screen / widget / onboarding / dashboard / giao diện đi chợ / Flutter | `flutter-ui.md` |
 | CORS / API_BASE_URL / dart-define / ApiClient / provider / shared_preferences / fixture hợp đồng / quyền mạng | `flutter-ui.md`, `critical-constraints.md` |
 | thiếu cân / BMI / mang thai / cho con bú / tuổi tối thiểu / độ khó động tác / mức động tác | `plan-data-contract.md`, `critical-constraints.md` |

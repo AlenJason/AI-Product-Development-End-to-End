@@ -1,10 +1,13 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <!-- Gọi backend_api (bản release cũng cần; manifest debug/profile đã có sẵn cho công cụ Flutter). -->
     <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- Không sao lưu / chép sang máy khác dữ liệu đã lưu (hồ sơ sức khoẻ, token) — res/xml/*_rules.xml. -->
     <application
         android:label="SmartFit AI"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/ic_launcher"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/backup_rules">
         <activity
             android:name=".MainActivity"
             android:exported="true"

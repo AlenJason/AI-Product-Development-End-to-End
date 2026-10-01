@@ -73,6 +73,24 @@ void main() {
     expect(harness.plans.plan!.toJson(), loadFixture('generate_plan'));
   });
 
+  // Giai đoạn 8: phiên hết hạn giữa chừng → không âm thầm thành khách, nói rõ và cho đăng nhập lại.
+  testWidgets('401 khi đổi món → "Phiên đăng nhập đã hết hạn" + "Đăng nhập lại"; món cũ giữ nguyên', (tester) async {
+    final harness = await Harness.create(tester, saved: {...savedPlan(), ...signedIn()});
+    final signIns = <String>[];
+    await tester.pumpWidget(
+      harness.screen(DashboardScreen(onCreatePlan: () {}, onSignIn: () => signIns.add('đăng nhập'))),
+    );
+    harness.backend.failWith = 401;
+    await tester.tap(find.text('Đổi món').first);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.'), findsOneWidget);
+    expect(harness.auth.isSignedIn, isFalse);
+    expect(harness.plans.plan!.toJson(), loadFixture('generate_plan'));
+    await tester.tap(find.text('Đăng nhập lại'));
+    expect(signIns, ['đăng nhập']);
+  });
+
   testWidgets('hồ sơ đã sửa ở tab Cá nhân → dải nhắc tạo kế hoạch mới', (tester) async {
     final (harness, created) = await pumpDashboard(tester);
     await harness.plans.saveDraft(Profile.fromJson({...loadFixture('profile'), 'goal': 'bulk'}));

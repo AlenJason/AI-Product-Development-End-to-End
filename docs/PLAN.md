@@ -32,7 +32,7 @@ Cả hai dịch vụ bên ngoài đều có chế độ giả lập, nên toàn 
 - [x] BRD v2.6.0 (MVP, tính năng nâng cao, tài khoản & lịch sử, hợp đồng API đầy đủ)
 - [x] Backend: `GET /health`, `POST /api/v1/generate-plan` (tính BMR/TDEE, gọi Gemini, kiểm tra khoảng calo, fallback), đổi món, đổi bài tập, feedback, đăng nhập Google (giả lập mặc định), lịch sử kế hoạch (SQLite), validate DTO, Swagger UI, CORS cho bản web
 - [x] `ai_workspace/`: script thử prompt Gemini
-- [x] Frontend: Onboarding 3 bước, màn chờ, kế hoạch 3 ngày (đổi món, đổi bài), đi chợ, hồ sơ — đọc/ghi qua provider, không còn dữ liệu viết cứng (giai đoạn 6); feedback cuối ngày (giai đoạn 7). Chưa có: đăng nhập và lịch sử (giai đoạn 8)
+- [x] Frontend: Onboarding 3 bước, màn chờ, kế hoạch 3 ngày (đổi món, đổi bài), đi chợ, hồ sơ — đọc/ghi qua provider, không còn dữ liệu viết cứng (giai đoạn 6); feedback cuối ngày (giai đoạn 7); màn chào, đăng nhập (demo / Google), tab Lịch sử, đăng xuất, xoá tài khoản (giai đoạn 8). Đăng nhập Google thật đã thử trên bản web với Client ID thật (2026-10-01); Android, macOS chưa
 - [x] Wiki nội bộ `docs/knowledge/`, `CLAUDE.md`
 
 ---
@@ -210,19 +210,22 @@ Chi tiết: brainstorm `docs/superpowers/brainstorms/phase-7-feedback.md` (quy�
 
 ## Giai đoạn 8 — Frontend: Tài khoản & Lịch sử (FR-6, FR-7) · M
 
-- [ ] **8.1** Màn đăng nhập, chọn chế độ bằng `--dart-define=AUTH_MODE`: giả lập → nút "Đăng nhập demo"; thật → package `google_sign_in`. Có nút bỏ qua đăng nhập (đăng nhập là tuỳ chọn theo FR-7)
-- [ ] **8.2** Gắn JWT vào request; nhận 401 → yêu cầu đăng nhập lại
-- [ ] **8.3** Đổi tab "Thống kê" thành "Lịch sử": danh sách plan cũ, bấm vào xem chi tiết
-- [ ] **8.4** `SETUP_CREDENTIALS.md` — phần **Google Sign-In (Flutter)**: Client ID, thẻ meta cho bản web, SHA-1 cho Android, cấu hình macOS; cách đăng nhập trên Windows (D7)
+- [x] **8.1** Màn chào lần đầu + bảng đăng nhập. Chọn cách đăng nhập theo `/health` của backend (quyết định Q1 — thay cho `--dart-define=AUTH_MODE` ghi trước đây): giả lập → "Đăng nhập demo"; thật → `google_sign_in` 7.x (Android, macOS, web; Windows dùng như khách — Q3). Có nút bỏ qua đăng nhập (đăng nhập là tuỳ chọn theo FR-7)
+- [x] **8.2** Gắn JWT vào request; nhận 401 → "Phiên đăng nhập đã hết hạn" + "Đăng nhập lại" ở màn chờ, SnackBar đổi món/bài, bảng feedback, tab Lịch sử
+- [x] **8.3** Đổi tab "Thống kê" thành "Lịch sử": danh sách plan cũ, bấm vào xem chi tiết (chỉ xem)
+- [x] **8.4** `SETUP_CREDENTIALS.md` mục 3 — **Google Sign-In trong app**: Web Client ID qua `--dart-define`, nguồn được phép cho bản web, SHA-1 cho Android, cấu hình macOS; Windows (D7)
+
+Chi tiết: brainstorm `docs/superpowers/brainstorms/phase-8-auth-history.md` (quyết định Q1–Q4 ở mục 8, Q5–Q7 ở mục 9), plan `docs/superpowers/plans/phase-8-auth-history/`. Làm thêm ngoài 8.1–8.4: đăng xuất, xoá tài khoản (FR-6.4), hỏi lại khi khách thay kế hoạch (Q5), dải nhắc khách (Q6), loại dữ liệu của app khỏi sao lưu Android (Q7) — BRD v2.8.0. Đăng nhập Google thật đã thử trên bản web với Client ID thật (2026-10-01): đăng nhập, tạo plan, lịch sử, đổi món cập nhật lịch sử, xoá tài khoản; Android, macOS còn chờ (9.4).
 
 ## Giai đoạn 9 — Deploy, nghiệm thu, nộp bài · M
 
 - [ ] **9.1** Chọn nơi deploy: (a) giữ SQLite, dùng host có ổ lưu trữ bền (Railway volume, Fly.io volume, VPS), hoặc (b) chuyển sang Postgres. **Không** dùng Render bản free với SQLite
 - [ ] **9.2** Deploy backend, cấu hình biến môi trường trên host: `NODE_ENV=production`, `AUTH_MODE=google`, `GOOGLE_CLIENT_ID`, `JWT_SECRET`, `DATABASE_PATH` trỏ vào ổ lưu trữ bền, `GEMINI_API_KEY`, `CORS_ORIGINS` (địa chỉ bản web, nếu deploy bản web)
 - [ ] **9.3** Build app để demo: bản web, APK Android, Windows, macOS (D7), với `--dart-define=API_BASE_URL=https://<địa chỉ backend>` — có thể thêm vào job `build` của CI
-- [ ] **9.4** Chạy checklist kiểm thử toàn luồng ở cả hai chế độ (giả lập / khoá thật)
+- [ ] **9.4** Chạy checklist kiểm thử toàn luồng ở cả hai chế độ (giả lập / khoá thật) — gồm đăng nhập Google thật trên Android, macOS (bản web đã thử 2026-10-01; [SETUP_CREDENTIALS.md](SETUP_CREDENTIALS.md) mục 3)
 - [ ] **9.5** Cập nhật README (cách chạy, ảnh chụp màn hình), Changelog, BRD mục 9, wiki
 - [ ] **9.6** Slide báo cáo và video demo
+- [ ] **9.7** Làm trước 9.2: giới hạn tần suất theo IP cho `generate-plan`, đổi món/bài, feedback. Các endpoint này không cần đăng nhập (BRD) và mỗi lần có thể gọi Gemini — ai biết địa chỉ backend cũng tiêu hết 20 lượt/ngày, mọi người nhận thực đơn mẫu (P15 giai đoạn 8)
 
 ---
 

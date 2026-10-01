@@ -13,12 +13,14 @@ import '../widgets/macro_ring.dart';
 // Kế hoạch 3 ngày (BRD FR-2): mở đúng ngày hôm nay (D6-B1), đủ 3 bữa, tổng calo + macro mỗi ngày (FR-2.3),
 // buổi tập, `warnings` (NFR-9). Đổi món / đổi bài gọi API (FR-4.1, FR-4.2 — chuyển lên giai đoạn 6).
 class DashboardScreen extends StatefulWidget {
-  const DashboardScreen({super.key, required this.onCreatePlan, this.onFeedback});
+  const DashboardScreen({super.key, required this.onCreatePlan, this.onFeedback, this.onSignIn});
 
   // Tạo plan mới từ hồ sơ hiện tại (bản nháp nếu có) — plan hết hạn, hồ sơ đã đổi, hoặc server báo 409.
   final VoidCallback onCreatePlan;
   // Mở bảng feedback cuối ngày cho ngày được chọn (giai đoạn 7). null → không có thẻ feedback.
   final ValueChanged<int>? onFeedback;
+  // Mở bảng đăng nhập khi server trả 401 (phiên hết hạn — giai đoạn 8).
+  final VoidCallback? onSignIn;
 
   @override
   State<DashboardScreen> createState() => _DashboardScreenState();
@@ -72,6 +74,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
           action: SnackBarAction(label: 'Tạo mới', onPressed: widget.onCreatePlan),
         ),
       );
+    } on UnauthorizedException catch (error) {
+      // AuthProvider đã đăng xuất; đổi lại được như khách, nhưng plan đã lưu trong lịch sử không được cập nhật.
+      final onSignIn = widget.onSignIn;
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(error.message),
+          behavior: SnackBarBehavior.floating,
+          action: onSignIn == null ? null : SnackBarAction(label: 'Đăng nhập lại', onPressed: onSignIn),
+        ),
+      );
     } on ApiException catch (error) {
       messenger.showSnackBar(SnackBar(content: Text(error.message), behavior: SnackBarBehavior.floating));
     } finally {
@@ -111,13 +123,38 @@ class _DashboardScreenState extends State<DashboardScreen> {
             )
           else if (today < 1)
             _Banner(icon: Icons.schedule, text: 'Kế hoạch bắt đầu từ ${vietnameseDate(schedule.startDate)}.'),
-          if (plan.warnings.isNotEmpty) _Warnings(warnings: plan.warnings),
+          if (plan.warnings.isNotEmpty) PlanWarnings(warnings: plan.warnings),
           const SizedBox(height: 12),
           _daySelector(schedule, dayNumber, today),
           const SizedBox(height: 12),
           _NutritionSummary(day: day, target: plan.dailyTarget),
-          for (final meal in day.meals) _mealCard(plans, meal),
-          _workoutCard(plans, day.workout),
+          for (final meal in day.meals)
+            _MealCard(
+              meal: meal,
+              action: _SwapButton(
+                label: 'Đổi món',
+                pending: _pendingId == meal.mealId,
+                onPressed: plans.busy
+                    ? null
+                    : () => _swap(meal.mealId, () => plans.swapMeal(meal.mealId), () {
+                        final swapped = _findMeal(plans.plan, meal.mealId);
+                        return 'Đã đổi ${mealTypeLabels[meal.mealType]!.toLowerCase()} sang: ${swapped?.name ?? ''}';
+                      }),
+              ),
+            ),
+          _WorkoutCard(
+            workout: day.workout,
+            actionFor: (exercise) => _SwapButton(
+              label: 'Đổi bài',
+              pending: _pendingId == exercise.exerciseId,
+              onPressed: plans.busy
+                  ? null
+                  : () => _swap(exercise.exerciseId, () => plans.swapExercise(exercise.exerciseId), () {
+                      final swapped = _findExercise(plans.plan, exercise.exerciseId);
+                      return 'Đã đổi bài sang: ${swapped?.name ?? ''}';
+                    }),
+            ),
+          ),
           ?_feedbackCard(plans, dayNumber, today),
         ],
       ),
@@ -168,130 +205,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     ],
     selected: {dayNumber},
     onSelectionChanged: (value) => setState(() => _selectedDay = value.first),
-  );
-
-  Widget _mealCard(PlanProvider plans, Meal meal) => _Card(
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: Text(
-                mealTypeLabels[meal.mealType]!.toUpperCase(),
-                style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.muted,
-                  letterSpacing: 0.5,
-                ),
-              ),
-            ),
-            _SwapButton(
-              label: 'Đổi món',
-              pending: _pendingId == meal.mealId,
-              onPressed: plans.busy
-                  ? null
-                  : () => _swap(meal.mealId, () => plans.swapMeal(meal.mealId), () {
-                      final swapped = _findMeal(plans.plan, meal.mealId);
-                      return 'Đã đổi ${mealTypeLabels[meal.mealType]!.toLowerCase()} sang: ${swapped?.name ?? ''}';
-                    }),
-            ),
-          ],
-        ),
-        const SizedBox(height: 6),
-        Text(
-          meal.name,
-          style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: AppColors.ink),
-        ),
-        const SizedBox(height: 2),
-        Text(meal.portion, style: const TextStyle(fontSize: 12, color: AppColors.muted)),
-        const SizedBox(height: 8),
-        Wrap(
-          spacing: 6,
-          runSpacing: 6,
-          children: [
-            _Pill('${formatNumber(meal.calories)} kcal', AppColors.accent, AppColors.accentSoft),
-            _Pill('Đạm ${formatNumber(meal.proteinG)}g', AppColors.primary, AppColors.primarySoft),
-            _Pill('Tinh bột ${formatNumber(meal.carbsG)}g', AppColors.muted, AppColors.panel),
-            _Pill('Béo ${formatNumber(meal.fatG)}g', AppColors.muted, AppColors.panel),
-          ],
-        ),
-        const SizedBox(height: 10),
-        Wrap(
-          spacing: 6,
-          runSpacing: 6,
-          children: [
-            for (final ingredient in meal.ingredients)
-              _Pill(
-                '${ingredient.name} ${ingredientAmount(ingredient)}',
-                AppColors.heading,
-                Colors.white,
-                bordered: true,
-              ),
-          ],
-        ),
-      ],
-    ),
-  );
-
-  Widget _workoutCard(PlanProvider plans, Workout workout) => _Card(
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'BÀI TẬP TẠI NHÀ',
-          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.muted, letterSpacing: 0.5),
-        ),
-        const SizedBox(height: 6),
-        Text(
-          workout.title,
-          style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: AppColors.ink),
-        ),
-        const SizedBox(height: 6),
-        Wrap(
-          spacing: 6,
-          children: [
-            _Pill('${workout.durationMinutes} phút', AppColors.primary, AppColors.primarySoft),
-            const _Pill('Không dụng cụ', AppColors.muted, AppColors.panel),
-          ],
-        ),
-        const Divider(height: 20),
-        for (final exercise in workout.exercises)
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 6),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        exercise.name,
-                        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.ink),
-                      ),
-                      Text(
-                        '${exercise.sets} hiệp × ${exercise.repsOrDuration} · ${muscleGroupLabels[exercise.muscleGroup]}',
-                        style: const TextStyle(fontSize: 12, color: AppColors.muted),
-                      ),
-                    ],
-                  ),
-                ),
-                _SwapButton(
-                  label: 'Đổi bài',
-                  pending: _pendingId == exercise.exerciseId,
-                  onPressed: plans.busy
-                      ? null
-                      : () => _swap(exercise.exerciseId, () => plans.swapExercise(exercise.exerciseId), () {
-                          final swapped = _findExercise(plans.plan, exercise.exerciseId);
-                          return 'Đã đổi bài sang: ${swapped?.name ?? ''}';
-                        }),
-                ),
-              ],
-            ),
-          ),
-      ],
-    ),
   );
 
   // Thẻ feedback cuối ngày: đã gửi → báo đã gửi (khoá — BRD 6.4); được đánh giá (quyết định Q2) → nút mở bảng.
@@ -352,6 +265,149 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   static Exercise? _findExercise(MealPlan? plan, String id) =>
       plan?.days.expand((day) => day.workout.exercises).where((exercise) => exercise.exerciseId == id).firstOrNull;
+}
+
+// Một ngày của plan chỉ để xem — plan cũ trong lịch sử (giai đoạn 8): tổng trong ngày, 3 bữa, buổi tập, không có nút
+// đổi món/bài.
+class PlanDayView extends StatelessWidget {
+  const PlanDayView({super.key, required this.day, required this.target});
+
+  final PlanDay day;
+  final DailyTarget target;
+
+  @override
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      _NutritionSummary(day: day, target: target),
+      for (final meal in day.meals) _MealCard(meal: meal),
+      _WorkoutCard(workout: day.workout),
+    ],
+  );
+}
+
+class _MealCard extends StatelessWidget {
+  const _MealCard({required this.meal, this.action});
+
+  final Meal meal;
+  // Nút "Đổi món" trên Dashboard; null khi chỉ xem.
+  final Widget? action;
+
+  @override
+  Widget build(BuildContext context) => _Card(
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                mealTypeLabels[meal.mealType]!.toUpperCase(),
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.muted,
+                  letterSpacing: 0.5,
+                ),
+              ),
+            ),
+            ?action,
+          ],
+        ),
+        const SizedBox(height: 6),
+        Text(
+          meal.name,
+          style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: AppColors.ink),
+        ),
+        const SizedBox(height: 2),
+        Text(meal.portion, style: const TextStyle(fontSize: 12, color: AppColors.muted)),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 6,
+          runSpacing: 6,
+          children: [
+            _Pill('${formatNumber(meal.calories)} kcal', AppColors.accent, AppColors.accentSoft),
+            _Pill('Đạm ${formatNumber(meal.proteinG)}g', AppColors.primary, AppColors.primarySoft),
+            _Pill('Tinh bột ${formatNumber(meal.carbsG)}g', AppColors.muted, AppColors.panel),
+            _Pill('Béo ${formatNumber(meal.fatG)}g', AppColors.muted, AppColors.panel),
+          ],
+        ),
+        const SizedBox(height: 10),
+        Wrap(
+          spacing: 6,
+          runSpacing: 6,
+          children: [
+            for (final ingredient in meal.ingredients)
+              _Pill(
+                '${ingredient.name} ${ingredientAmount(ingredient)}',
+                AppColors.heading,
+                Colors.white,
+                bordered: true,
+              ),
+          ],
+        ),
+      ],
+    ),
+  );
+}
+
+class _WorkoutCard extends StatelessWidget {
+  const _WorkoutCard({required this.workout, this.actionFor});
+
+  final Workout workout;
+  // Nút "Đổi bài" của từng động tác trên Dashboard; null khi chỉ xem.
+  final Widget? Function(Exercise exercise)? actionFor;
+
+  @override
+  Widget build(BuildContext context) => _Card(
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'BÀI TẬP TẠI NHÀ',
+          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.muted, letterSpacing: 0.5),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          workout.title,
+          style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: AppColors.ink),
+        ),
+        const SizedBox(height: 6),
+        Wrap(
+          spacing: 6,
+          children: [
+            _Pill('${workout.durationMinutes} phút', AppColors.primary, AppColors.primarySoft),
+            const _Pill('Không dụng cụ', AppColors.muted, AppColors.panel),
+          ],
+        ),
+        const Divider(height: 20),
+        for (final exercise in workout.exercises)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 6),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        exercise.name,
+                        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.ink),
+                      ),
+                      Text(
+                        '${exercise.sets} hiệp × ${exercise.repsOrDuration} · ${muscleGroupLabels[exercise.muscleGroup]}',
+                        style: const TextStyle(fontSize: 12, color: AppColors.muted),
+                      ),
+                    ],
+                  ),
+                ),
+                ?actionFor?.call(exercise),
+              ],
+            ),
+          ),
+      ],
+    ),
+  );
 }
 
 class _NutritionSummary extends StatelessWidget {
@@ -419,8 +475,8 @@ class _NutritionSummary extends StatelessWidget {
   }
 }
 
-class _Warnings extends StatelessWidget {
-  const _Warnings({required this.warnings});
+class PlanWarnings extends StatelessWidget {
+  const PlanWarnings({super.key, required this.warnings});
 
   final List<String> warnings;
 

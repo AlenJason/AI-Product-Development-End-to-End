@@ -5,17 +5,22 @@ import 'package:provider/provider.dart';
 
 import '../models/api/codes.dart';
 import '../models/api/profile.dart';
+import '../providers/auth_provider.dart';
 import '../providers/plan_provider.dart';
+import '../services/api_exception.dart';
 import '../theme/app_colors.dart';
 import 'dashboard_screen.dart' show formatNumber;
+import '../widgets/login_panel.dart';
 import '../widgets/profile_form.dart';
 
 // Tab "Cá nhân" (BRD FR-1.6): xem và sửa hồ sơ bất cứ lúc nào. Sửa xong lưu thành bản nháp — plan đang có vẫn dùng
-// hồ sơ cũ (đổi món/feedback không bị 409) — và gợi ý tạo lại plan.
+// hồ sơ cũ (đổi món/feedback không bị 409) — và gợi ý tạo lại plan. Mục "Tài khoản" (FR-6, giai đoạn 8): đăng xuất,
+// xoá tài khoản; chưa đăng nhập → dải nhắc (quyết định Q6).
 class ProfileScreen extends StatefulWidget {
-  const ProfileScreen({super.key, required this.onCreatePlan});
+  const ProfileScreen({super.key, required this.onCreatePlan, required this.onSignIn});
 
   final ValueChanged<Profile> onCreatePlan;
+  final VoidCallback onSignIn;
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
@@ -26,6 +31,8 @@ class _ProfileScreenState extends State<ProfileScreen> with RestorationMixin {
   ProfileFormController? _form;
   // Phần đang sửa dở, lưu tạm như Onboarding (PLAN D8); null = không sửa.
   final _typed = RestorableStringN(null);
+  // Đang chờ server xoá tài khoản.
+  bool _deleting = false;
 
   bool get _editing => _form != null;
 
@@ -73,9 +80,56 @@ class _ProfileScreenState extends State<ProfileScreen> with RestorationMixin {
     if (mounted) _stopEditing();
   }
 
+  Future<void> _signOut() async {
+    final messenger = ScaffoldMessenger.of(context);
+    await context.read<AuthProvider>().signOut();
+    messenger.showSnackBar(
+      const SnackBar(
+        content: Text('Đã đăng xuất. Kế hoạch trên máy này vẫn giữ.'),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  // FR-6.4: hỏi lại, nói rõ mất gì và giữ gì.
+  Future<void> _deleteAccount() async {
+    final auth = context.read<AuthProvider>();
+    final messenger = ScaffoldMessenger.of(context);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Xoá tài khoản?'),
+        content: const Text(
+          'Tài khoản và toàn bộ lịch sử kế hoạch trên máy chủ sẽ bị xoá vĩnh viễn. '
+          'Kế hoạch đang dùng trên máy này vẫn giữ, bạn dùng tiếp như khách.',
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Huỷ')),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(foregroundColor: AppColors.danger),
+            child: const Text('Xoá vĩnh viễn'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    setState(() => _deleting = true);
+    String message;
+    try {
+      await auth.deleteAccount();
+      message = 'Đã xoá tài khoản và lịch sử kế hoạch.';
+    } on ApiException catch (error) {
+      message = error.message;
+    }
+    if (mounted) setState(() => _deleting = false);
+    messenger.showSnackBar(SnackBar(content: Text(message), behavior: SnackBarBehavior.floating));
+  }
+
   @override
   Widget build(BuildContext context) {
     final plans = context.watch<PlanProvider>();
+    final auth = context.watch<AuthProvider>();
     final profile = plans.editableProfile;
     if (profile == null) return const SizedBox.shrink();
 
@@ -92,6 +146,7 @@ class _ProfileScreenState extends State<ProfileScreen> with RestorationMixin {
             'Chỉ lưu trên máy này, không gửi lưu ở máy chủ.',
             style: TextStyle(fontSize: 12, color: AppColors.muted),
           ),
+          if (!auth.isSignedIn && !_editing) GuestBanner(onSignIn: widget.onSignIn),
           if (plans.hasPendingProfile && !_editing)
             Container(
               margin: const EdgeInsets.only(top: 12),
@@ -117,6 +172,7 @@ class _ProfileScreenState extends State<ProfileScreen> with RestorationMixin {
               ),
             ),
           if (_form case final form?) ..._editor(form) else ..._summary(plans, profile),
+          if (auth.user case final user? when !_editing) _account(user.name, user.email),
         ],
       ),
     );
@@ -158,6 +214,50 @@ class _ProfileScreenState extends State<ProfileScreen> with RestorationMixin {
       ),
     ];
   }
+
+  Widget _account(String name, String email) => Container(
+    margin: const EdgeInsets.only(top: 20),
+    padding: const EdgeInsets.all(16),
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(18),
+      border: Border.all(color: AppColors.border),
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'TÀI KHOẢN',
+          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.muted, letterSpacing: 0.5),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          name,
+          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.ink),
+        ),
+        Text(email, style: const TextStyle(fontSize: 13, color: AppColors.muted)),
+        const SizedBox(height: 12),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            OutlinedButton.icon(
+              onPressed: _deleting ? null : _signOut,
+              icon: const Icon(Icons.logout, size: 18),
+              label: const Text('Đăng xuất'),
+            ),
+            TextButton(
+              onPressed: _deleting ? null : _deleteAccount,
+              style: TextButton.styleFrom(foregroundColor: AppColors.danger),
+              child: _deleting
+                  ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                  : const Text('Xoá tài khoản'),
+            ),
+          ],
+        ),
+      ],
+    ),
+  );
 
   List<Widget> _editor(ProfileFormController form) => [
     BodySection(form: form),

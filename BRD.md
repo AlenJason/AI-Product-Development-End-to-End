@@ -3,8 +3,8 @@
 **Tên sản phẩm:** Trợ lý AI Gợi ý & Điều chỉnh Thực đơn, Lịch tập Thông minh  
 **Môn học:** AI Product Development End-to-End (Đồ án Kỹ sư / Cử nhân Năm 4)  
 **Đơn vị thực hiện:** Trường Đại học Công nghệ Thông tin và Truyền thông Việt - Hàn (VKU)  
-**Phiên bản:** 2.7.1 (Dành cho Sinh viên thực hành: Flutter & NestJS)  
-**Ngày cập nhật:** 30/09/2026  
+**Phiên bản:** 2.8.0 (Dành cho Sinh viên thực hành: Flutter & NestJS)  
+**Ngày cập nhật:** 01/10/2026  
 **Trạng thái:** Đã phê duyệt (Approved)  
 
 ---
@@ -96,7 +96,7 @@ sequenceDiagram
   * Thư viện mạng: Gói `http` cơ bản (dễ học hơn `dio` cho người mới).
   * State Management: `setState` hoặc `ChangeNotifier` / `Provider` (dễ hiểu, không cần học Bloc quá phức tạp lúc đầu).
   * Lưu trữ cục bộ: `shared_preferences` để lưu lại kế hoạch JSON và `access_token`, mở app lại không bị mất dữ liệu và giảm số lần gọi AI.
-  * Đăng nhập: `google_sign_in` — lấy ID Token từ Google, gửi lên backend đổi lấy JWT riêng của app (FR-6).
+  * Đăng nhập: `google_sign_in` — lấy ID Token từ Google, gửi lên backend đổi lấy JWT riêng của app (FR-6). Bản 7.x chạy trên Android, macOS, web; không có bản Windows. *(bổ sung bản 2.8.0)*
 * **Backend (NestJS - TypeScript):**
   * Kiến trúc module/controller/service rõ ràng (giống Angular), cùng ngôn ngữ TypeScript với phần nhiều tooling frontend, dễ định nghĩa DTO/validate dữ liệu bằng `class-validator` + `class-transformer`.
   * Dùng `@nestjs/swagger` để tự sinh tài liệu kiểm thử **Swagger UI** tại `http://localhost:3000/docs` giúp sinh viên test API ngay trên trình duyệt trước khi viết code Flutter.
@@ -166,13 +166,15 @@ sequenceDiagram
 
 #### FR-6: Đăng nhập bằng Google (Google Sign-In)
 * **FR-6.1:** Màn hình chào mở app có nút "Đăng nhập với Google"; dùng package `google_sign_in` phía Flutter.
+* **FR-6.1 — trên app** *(bổ sung bản 2.8.0)*: Màn chào chỉ hiện ở lần đầu mở app, có thêm nút "Dùng ngay, không cần đăng nhập" (FR-7: đăng nhập là tuỳ chọn); đăng nhập sau được ở tab Cá nhân và tab Lịch sử. App hỏi backend cách đăng nhập (`GET /health` → `auth_mode`), không chọn lúc build: backend giả lập → ô email "Đăng nhập demo" (gửi `mock:<email>`, mọi nền tảng); backend dùng Google → nút "Đăng nhập với Google" (Android, macOS; bản web dùng nút do Google vẽ). Windows chưa đăng nhập Google được (`google_sign_in` không có bản Windows): app ghi rõ, người dùng dùng như khách. Tab Cá nhân có tên, email và "Đăng xuất"; đăng xuất không xoá kế hoạch trên máy.
 * **FR-6.2:** Backend nhận ID Token từ Flutter, verify với Google, tự tạo tài khoản mới nếu `google_sub` chưa tồn tại (không cần màn hình đăng ký riêng).
 * **FR-6.3:** Backend phát hành JWT riêng của app sau khi xác thực thành công; Flutter lưu JWT này (không lưu ID Token Google) để gọi các API cần đăng nhập ở các lần sau.
-* **FR-6.4** *(bổ sung bản 2.4.0)*: Người dùng tự xoá được tài khoản của mình: backend xoá tài khoản cùng toàn bộ lịch sử kế hoạch (`DELETE /api/v1/me`). Đây là quyền yêu cầu xoá dữ liệu cá nhân theo Nghị định 13/2023/NĐ-CP.
+* **FR-6.4** *(bổ sung bản 2.4.0)*: Người dùng tự xoá được tài khoản của mình: backend xoá tài khoản cùng toàn bộ lịch sử kế hoạch (`DELETE /api/v1/me`). Đây là quyền yêu cầu xoá dữ liệu cá nhân theo Nghị định 13/2023/NĐ-CP. Trên app: nút "Xoá tài khoản" ở tab Cá nhân, hỏi lại trước khi xoá và nói rõ lịch sử trên máy chủ mất hẳn, kế hoạch trên máy vẫn giữ. *(bổ sung bản 2.8.0)*
+* **FR-6.5 — dùng như khách, phiên hết hạn** *(bổ sung bản 2.8.0)*: Chưa đăng nhập thì tab Cá nhân và tab Lịch sử có dải nhắc "kế hoạch chỉ lưu trên máy này". Khách tạo kế hoạch mới khi đang có kế hoạch → app hỏi lại, vì kế hoạch cũ mất hẳn. Server trả 401 (token hết hạn, tài khoản đã xoá) → app báo "Phiên đăng nhập đã hết hạn" kèm nút "Đăng nhập lại", không âm thầm chuyển thành khách; tạo kế hoạch bị 401 thì đăng nhập lại xong app tạo tiếp để kế hoạch vào lịch sử.
 
 #### FR-7: Lịch sử kế hoạch (Plan History)
 * **FR-7.1:** Mỗi lần `/api/v1/generate-plan` thành công **và** request có kèm JWT hợp lệ, Backend lưu lại plan đó vào bảng lịch sử, gắn với `user_id`. Khi đã đăng nhập, đổi món, đổi bài tập và feedback cũng cập nhật plan đã lưu; plan mới tạo từ feedback ngày 3 được lưu thành một mục mới. *(bổ sung bản 2.5.0)*
-* **FR-7.2:** Màn hình "Lịch sử" trong Flutter (thay cho placeholder "Thống kê" hiện tại) hiển thị danh sách các plan đã tạo trước đó (ngày tạo, calo mục tiêu), bấm vào xem lại chi tiết từng plan.
+* **FR-7.2:** Màn hình "Lịch sử" trong Flutter (thay cho placeholder "Thống kê" hiện tại) hiển thị danh sách các plan đã tạo trước đó (ngày tạo, calo mục tiêu), bấm vào xem lại chi tiết từng plan. *(chi tiết hoá ở bản 2.8.0)*: ngày giờ tạo theo giờ trên máy; nhãn "Đang dùng" cho kế hoạch hiện tại; chi tiết chỉ để xem — lịch sử không lưu hồ sơ (NFR-7) nên kế hoạch cũ không đổi món, đổi bài hay gửi đánh giá được. Kế hoạch tạo lúc chưa đăng nhập không vào lịch sử, kể cả khi đăng nhập sau đó; tab Lịch sử ghi chú điều này.
 * **FR-7.3:** Đăng nhập cùng tài khoản Google trên thiết bị khác vẫn thấy đầy đủ lịch sử — vì dữ liệu gắn với `user_id` trong DB, không gắn với thiết bị.
 * **Lưu ý:** Nếu gọi `/api/v1/generate-plan` mà không đăng nhập (không có JWT), API vẫn hoạt động bình thường như bản 2.1.0 (không lưu lịch sử) — đăng nhập là tuỳ chọn, không bắt buộc để dùng tính năng cốt lõi.
 
@@ -443,6 +445,7 @@ Giá trị cho feedback:
 7. **Quyền riêng tư dữ liệu sức khoẻ (bổ sung bản 2.3.0):**
    * Dị ứng, chấn thương, tình trạng sức khoẻ và việc mang thai / cho con bú là dữ liệu cá nhân nhạy cảm (Nghị định 13/2023/NĐ-CP). Chúng chỉ lưu trên máy người dùng, gửi kèm từng request rồi bỏ đi: backend không ghi vào database, không ghi log nội dung request hay nội dung Gemini trả về.
    * Plan lưu trong lịch sử (FR-7) không chứa các trường này.
+   * Android không đưa dữ liệu đã lưu của app lên bản sao lưu Google Drive và không chép sang máy mới khi chuyển máy: hồ sơ có dữ liệu sức khoẻ và token đăng nhập chỉ nằm trên máy đã nhập. *(bổ sung bản 2.8.0)*
 8. **Chống prompt injection (bổ sung bản 2.3.0):** Văn bản tự do của người dùng được đặt trong một khối dữ liệu có thẻ phân cách, bỏ ký tự `<` `>` và xuống dòng, giới hạn 300 ký tự mỗi ô; prompt dặn Gemini coi khối này là dữ liệu, không phải chỉ dẫn. Đầu ra vẫn phải qua bộ kiểm tra ở NFR-4, nên dù bị chèn lệnh cũng không làm hỏng app.
 9. **Khuyến cáo y tế (bổ sung bản 2.3.0):** Onboarding ghi rõ gợi ý chỉ mang tính tham khảo, không thay thế tư vấn y tế. Khi người dùng có khai tình trạng sức khoẻ, hoặc khi calo mục tiêu phải nâng lên bằng BMR, response có câu giải thích trong `warnings` để app hiển thị.
 10. **An toàn khi lập kế hoạch (bổ sung bản 2.6.0):** Không phục vụ người dưới 18 tuổi; không lập kế hoạch thâm hụt calo cho người thiếu cân (BMI < 18,5) hoặc đang mang thai / cho con bú (FR-1.3); độ khó bài tập giới hạn theo tuổi, mức vận động và thai kỳ (FR-2.2). Backend kiểm ở mọi endpoint nhận hồ sơ, kể cả đổi món, đổi bài, feedback; app khoá lựa chọn theo đúng các ngưỡng đó. Người mang thai / cho con bú nhận thêm khuyến cáo hỏi ý kiến bác sĩ trong `warnings`.

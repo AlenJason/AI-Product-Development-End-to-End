@@ -10,8 +10,13 @@ import '../fixture_loader.dart';
 
 // Bảng feedback cuối ngày (PLAN giai đoạn 7, quyết định Q1–Q4) — mở từ thẻ trên Dashboard, trong cả app.
 void main() {
-  Future<Harness> openSheet(WidgetTester tester, {int day = 1, DateTime? now}) async {
-    final harness = await Harness.create(tester, saved: savedPlan(), now: now);
+  Future<Harness> openSheet(
+    WidgetTester tester, {
+    int day = 1,
+    DateTime? now,
+    Map<String, Object> account = const {},
+  }) async {
+    final harness = await Harness.create(tester, saved: {...savedPlan(), ...account}, now: now);
     await tester.pumpWidget(harness.app());
     await scrollTo(tester, find.text('Đánh giá ngày $day'));
     await tester.tap(find.text('Đánh giá ngày $day'));
@@ -133,10 +138,45 @@ void main() {
     harness.backend.responses['/api/v1/generate-plan'] = fresh;
     await tap(tester, 'Tạo kế hoạch mới');
     await tester.pumpAndSettle();
+    // Khách: plan cũ sẽ mất hẳn → hỏi lại (quyết định Q5 giai đoạn 8).
+    expect(find.text('Thay kế hoạch hiện tại?'), findsOneWidget);
+    await tester.tap(find.text('Thay kế hoạch'));
+    await tester.pumpAndSettle();
     expect(find.text('Đánh giá cuối ngày 1'), findsNothing);
     expect(harness.backend.paths.last, '/api/v1/generate-plan');
     expect(harness.plans.plan!.planId, fresh['plan_id']);
     expect(find.text('Hôm nay là Ngày 1'), findsOneWidget);
+  });
+
+  // Giai đoạn 8: token hết hạn giữa chừng → đăng nhập lại ngay trên bảng, câu trả lời vẫn còn để gửi lại.
+  testWidgets('401 → "Đăng nhập lại" mở bảng đăng nhập chồng lên; đăng nhập xong gửi lại được, lựa chọn còn nguyên', (
+    tester,
+  ) async {
+    final harness = await openSheet(tester, account: signedIn());
+    for (final label in ['Rất mệt', 'Căng mỏi cơ', 'Đúng thực đơn']) {
+      await tap(tester, label);
+    }
+    harness.backend.failWith = 401;
+    await tap(tester, 'Gửi và điều chỉnh ngày 2');
+    await tester.pumpAndSettle();
+    expect(find.text('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.'), findsOneWidget);
+    expect(harness.auth.isSignedIn, isFalse);
+
+    harness.backend.failWith = null;
+    await tap(tester, 'Đăng nhập lại');
+    await tester.pumpAndSettle();
+    await tester.enterText(find.widgetWithText(TextField, 'Email'), 'sv@vku.edu.vn');
+    await tester.pump();
+    await tester.tap(find.text('Đăng nhập demo'));
+    await tester.pumpAndSettle();
+    expect(harness.auth.isSignedIn, isTrue);
+    expect(find.text('Đăng nhập demo'), findsNothing, reason: 'bảng đăng nhập tự đóng');
+    expect(selected(tester, 'Rất mệt'), isTrue);
+
+    await tap(tester, 'Gửi và điều chỉnh ngày 2');
+    await tester.pumpAndSettle();
+    expect(find.text('Đã lưu đánh giá ngày 1'), findsOneWidget);
+    expect(harness.backend.requests.last.headers['Authorization'], startsWith('Bearer '));
   });
 
   testWidgets('ngày 3 → chờ có câu "tới 40 giây"; báo plan mới bắt đầu ngày mai; Dashboard hiện plan mới', (

@@ -8,7 +8,7 @@ import 'package:my_ai_app/services/api_client.dart';
 import 'fixture_loader.dart';
 
 // Backend giả cho test provider/widget: trả fixture hợp đồng theo đường dẫn, ghi lại request đã nhận.
-// `failWith` đặt mã lỗi (và fixture error_<mã>) cho mọi request tiếp theo; `hold` giữ response tới khi complete;
+// `failWith` đặt mã lỗi (và fixture error_<mã>; 5xx: body chung như NestJS) cho mọi request tiếp theo; `hold` giữ response tới khi complete;
 // `responses` thay JSON trả về cho một đường dẫn (ví dụ plan mới sau feedback ngày 3).
 class FakeBackend {
   final requests = <http.Request>[];
@@ -32,7 +32,10 @@ class FakeBackend {
       requests.add(request);
       await hold?.future;
       final status = failWith;
-      if (status != null) return _json(loadFixture('error_$status'), status);
+      if (status != null) {
+        final body = status >= 500 ? {'statusCode': status, 'message': 'Internal server error'} : loadFixture('error_$status');
+        return _json(body, status);
+      }
       if (request.method == 'DELETE') return http.Response('', 204);
       final custom = responses[request.url.path];
       if (custom != null) return _json(custom, 200);

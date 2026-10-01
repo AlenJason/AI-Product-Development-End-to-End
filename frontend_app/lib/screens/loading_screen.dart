@@ -8,13 +8,22 @@ import '../theme/app_colors.dart';
 // Chờ backend tạo plan (NFR-1): chế độ giả lập trả ngay, có Gemini thường 8–15 s, tối đa khoảng 40 s. Câu chờ
 // không bịa số liệu. [error] khác null → báo lỗi và cho thử lại (NFR-2).
 class LoadingScreen extends StatefulWidget {
-  const LoadingScreen({super.key, this.error, required this.onRetry, required this.onEditProfile, this.onBack});
+  const LoadingScreen({
+    super.key,
+    this.error,
+    required this.onRetry,
+    required this.onEditProfile,
+    this.onBack,
+    this.onSignIn,
+  });
 
   final ApiException? error;
   final VoidCallback onRetry;
   final VoidCallback onEditProfile;
   // Có plan cũ thì cho quay về plan đó thay vì kẹt ở màn lỗi.
   final VoidCallback? onBack;
+  // Mở bảng đăng nhập khi lỗi là 401 (phiên hết hạn — giai đoạn 8).
+  final VoidCallback? onSignIn;
 
   @override
   State<LoadingScreen> createState() => _LoadingScreenState();
@@ -37,6 +46,10 @@ class _LoadingScreenState extends State<LoadingScreen> {
     _timer?.cancel();
     super.dispose();
   }
+
+  // 401 → nút chính là "Đăng nhập lại" (đăng nhập xong MainShell tạo tiếp); "Thử lại" lúc này là tạo như khách,
+  // plan không vào lịch sử.
+  VoidCallback? get _signIn => widget.error is UnauthorizedException ? widget.onSignIn : null;
 
   @override
   Widget build(BuildContext context) {
@@ -95,17 +108,21 @@ class _LoadingScreenState extends State<LoadingScreen> {
       SizedBox(
         width: double.infinity,
         child: ElevatedButton(
-          onPressed: widget.onRetry,
+          onPressed: _signIn ?? widget.onRetry,
           style: ElevatedButton.styleFrom(
             backgroundColor: AppColors.primaryBright,
             foregroundColor: Colors.white,
             padding: const EdgeInsets.symmetric(vertical: 14),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
           ),
-          child: const Text('Thử lại', style: TextStyle(fontWeight: FontWeight.w700)),
+          child: Text(
+            _signIn == null ? 'Thử lại' : 'Đăng nhập lại',
+            style: const TextStyle(fontWeight: FontWeight.w700),
+          ),
         ),
       ),
       const SizedBox(height: 8),
+      if (_signIn != null) TextButton(onPressed: widget.onRetry, child: const Text('Tạo không cần đăng nhập')),
       TextButton(onPressed: widget.onEditProfile, child: const Text('Sửa hồ sơ')),
       if (widget.onBack != null) TextButton(onPressed: widget.onBack, child: const Text('Về kế hoạch đang có')),
     ],

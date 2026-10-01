@@ -1,11 +1,11 @@
 ---
-last_updated: 2026-09-24
+last_updated: 2026-10-01
 tags: [auth, jwt, google-sign-in, sqlite, typeorm, lich-su]
 ---
 
 # Tài khoản & lịch sử kế hoạch
 
-Backend có đăng nhập Google (FR-6) và lịch sử kế hoạch xem được trên mọi thiết bị (FR-7), xây ở giai đoạn 3. Bài này ghi cách các phần nối với nhau, những hành vi thư viện đã kiểm chứng ngày 2026-09-24, và cách test mà không gọi Google hay đụng file DB thật. Ràng buộc liên quan: [[critical-constraints]] #10–#12, #17–#22. Hợp đồng plan: [[plan-data-contract]]. Hướng dẫn gắn Client ID thật: `docs/SETUP_CREDENTIALS.md` mục 2.
+Backend có đăng nhập Google (FR-6) và lịch sử kế hoạch xem được trên mọi thiết bị (FR-7), xây ở giai đoạn 3. Bài này ghi cách các phần nối với nhau, những hành vi thư viện đã kiểm chứng ngày 2026-09-24, và cách test mà không gọi Google hay đụng file DB thật. Ràng buộc liên quan: [[critical-constraints]] #10–#12, #17–#22. Hợp đồng plan: [[plan-data-contract]]. Hướng dẫn gắn Client ID thật: `docs/SETUP_CREDENTIALS.md` mục 2 (backend), mục 3 (app). Phía app (giai đoạn 8): mục "Phía app" bên dưới và [[flutter-ui]].
 
 ## Thành phần
 
@@ -59,7 +59,33 @@ Cấu hình sai → backend không khởi động và in lý do (xem bảng lỗ
 - E2E: `createTestApp()` (`backend_api/test/test-app.ts`) ghim `DATABASE_PATH=:memory:`, `AUTH_MODE=mock`, các biến JWT/Google, `GEMINI_*` trước khi nạp `AppModule`, và trả lại khi đóng. `loginMock()` đăng nhập bằng `mock:<email>`.
 - Smoke: `npm run test:smoke` chạy `dist/main.js` và gọi 5 request (#20).
 
+## Phía app (giai đoạn 8, BRD v2.8.0)
+
+- **Cách đăng nhập theo backend:** `AuthProvider.loginMode()` đọc `auth_mode` của `/health` mỗi lần mở bảng đăng nhập — một bản build dùng được cho cả backend giả lập lẫn thật (#37). Demo gửi `mock:<email>` chữ thường (backend coi `sub` phân biệt hoa thường); app kiểm email bằng đúng mẫu `MOCK_TOKEN_PATTERN` của backend.
+- **Google:** `GoogleAuth` (`lib/services/google_auth.dart`) → ID token → `AuthProvider.signIn()` → `POST /api/v1/auth/google`. App không giữ token Google, không xin thêm quyền. Đăng xuất gọi cả `GoogleAuth.signOut()`.
+- **401:** request có token bị 401 → `ApiClient.onUnauthorized` → đăng xuất; màn hình nói rõ và có "Đăng nhập lại". `HistoryProvider` giữ lỗi 401 để tab Lịch sử nói vì sao bị đăng xuất.
+- **Plan tạo lúc chưa đăng nhập:** `HistoryService.update()` chỉ sửa bản ghi `{ id, user_id }` đã có — đổi món/feedback sau khi đăng nhập không đưa plan đó vào lịch sử (P6). Không đổi backend (quyết định Q4); tab Lịch sử ghi chú.
+- **Xoá tài khoản:** tab Cá nhân, hỏi lại; server xoá user + lịch sử (`ON DELETE CASCADE`), app đăng xuất, plan trên máy giữ.
+
+### `google_sign_in` 7.2.0 (đọc mã nguồn, thử build ngày 2026-09-30 → 2026-10-01)
+
+| Hành vi | Hệ quả trong code |
+|---|---|
+| Có bản Android (`google_sign_in_android` 7.2.17), iOS + macOS (`google_sign_in_ios` 6.3.6), web (`google_sign_in_web` 1.1.3); **không có Windows, Linux** — `GoogleSignInPlatform.instance` ở đó ném `UnimplementedError` | `PluginGoogleAuth.support` = `unsupported` trên Windows, không bao giờ gọi SDK |
+| API 7.x: `GoogleSignIn.instance.initialize()` gọi **một lần** trước mọi hàm khác; `authenticate()` (không có trên web — `supportsAuthenticate()` = false); token ở `account.authentication.idToken` | `_init()` nhớ Future khởi tạo, lỗi thì lần sau thử lại |
+| Web: phải dùng nút của Google Identity Services — `renderButton()` trong `package:google_sign_in_web/web_only.dart`, file dùng `dart:js_interop` | Import có điều kiện; `google_sign_in_web` là dependency trực tiếp; token tới qua `authenticationEvents` |
+| Người dùng đóng hộp chọn → `GoogleSignInException` mã `canceled` (hoặc `interrupted`) | Trả `null`, không báo lỗi |
+| macOS thiếu keychain sharing → lỗi `keychainError`, ánh xạ thành `providerConfigurationError` (README ghi là `PlatformException`) | Cả hai thành "chưa được cấu hình đúng" |
+| `description` của lỗi có thể chứa email/Client ID | Không đưa ra giao diện hay log |
+| Thêm gói vào app: `flutter build macos` chạy không cần CocoaPods (GoogleSignIn kéo qua Swift Package Manager); APK, web build được | — |
+| Entitlement `keychain-access-groups` (`$(AppIdentifierPrefix)…`) bắt buộc ký bằng Team | Không commit; SETUP mục 3.4 |
+
+### Đã thử với Google thật (2026-10-01)
+
+Bản web trên Chrome (macOS), backend `AUTH_MODE=google` với Web Client ID thật, app ở trạng thái *Testing*: nút "Đăng nhập bằng Google" hiện ở màn chào → hộp chọn tài khoản → màn đồng ý chỉ xin tên, ảnh hồ sơ, email → app vào Onboarding; backend tạo tài khoản với `google_sub` của Google (không phải `mock:`), tên và email lấy từ Google; tạo kế hoạch → tab Lịch sử có kế hoạch đó, nhãn "Đang dùng", xem lại được; đổi món → kế hoạch lưu trên server đổi theo; "Xoá tài khoản" → server không còn tài khoản và lịch sử, app về khách. Lúc thử: backend chạy với `DATABASE_PATH` riêng trong thư mục tạm, xoá ngay sau đó — email thật không vào `database.sqlite` của repo.
+
 ## Việc để sau
 
-- **CORS** chưa bật: Flutter web chạy ở cổng khác sẽ bị trình duyệt chặn, nhất là khi có header `Authorization` — PLAN 5.7.
+- Kiểm đăng nhập Google thật trên Android, macOS (PLAN 9.4).
+- Giới hạn tần suất các endpoint gọi Gemini mà không cần đăng nhập (PLAN 9.7).
 - **Chuyển sang Postgres** (nếu host không có ổ bền, #11): đổi `type` trong `dataSourceOptions()`. Entity dùng kiểu chung, nhưng migration hiện có biểu thức SQLite (`datetime('now')`), nên cần viết một migration khởi tạo mới cho Postgres.

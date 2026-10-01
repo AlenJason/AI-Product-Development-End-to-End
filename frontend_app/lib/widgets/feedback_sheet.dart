@@ -7,6 +7,7 @@ import '../models/feedback_summary.dart';
 import '../providers/plan_provider.dart';
 import '../services/api_exception.dart';
 import '../theme/app_colors.dart';
+import 'login_panel.dart';
 
 // Feedback cuối ngày (BRD FR-5, PLAN giai đoạn 7): 3 câu hỏi theo D2, gửi, rồi báo đúng điều đã đổi.
 // Route khôi phục được (#35): hàm top-level, tham số chỉ là số ngày. Trả `true` khi người dùng chọn tạo kế hoạch
@@ -237,6 +238,15 @@ class _FeedbackSheetState extends State<FeedbackSheet> with RestorationMixin {
           Align(
             alignment: Alignment.centerLeft,
             child: TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Tạo kế hoạch mới')),
+          ),
+        // 401 (giai đoạn 8): bảng đăng nhập mở chồng lên, câu trả lời đang chọn vẫn giữ để gửi lại.
+        if (error is UnauthorizedException)
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton(
+              onPressed: () => Navigator.of(context).restorablePush(loginSheetRoute),
+              child: const Text('Đăng nhập lại'),
+            ),
           ),
       ],
       if (_sending && day == 3) ...[

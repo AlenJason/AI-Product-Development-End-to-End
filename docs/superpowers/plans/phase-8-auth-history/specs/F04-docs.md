@@ -56,7 +56,7 @@ Không có.
  | Gemini API | Đã có | [Mục 1](#1-gemini-api-key) |
  | Google Sign-In — backend | Đã có | [Mục 2](#2-google-sign-in) |
 -| Google Sign-In — Flutter | Chưa làm ([PLAN.md](PLAN.md) bước 8.4) | [Mục 2](#2-google-sign-in) |
-+| Google Sign-In — Flutter | Đã có (giai đoạn 8), chưa kiểm với Client ID thật | [Mục 3](#3-google-sign-in-trong-app-flutter) |
++| Google Sign-In — Flutter | Đã có (giai đoạn 8); bản web đã thử với Client ID thật (2026-10-01), Android và macOS chưa | [Mục 3](#3-google-sign-in-trong-app-flutter) |
  
  ---
  
@@ -78,7 +78,7 @@ Không có.
  
  ### 2.5. Lỗi thường gặp
  
-@@ -188,3 +188,109 @@
+@@ -188,3 +188,115 @@
  - `JWT_SECRET` bảo vệ giống khoá Gemini (mục 1.8): chỉ nằm trong `.env`, không commit; khi deploy thì khai báo trên trang cấu hình của host.
  - Không commit file DB (`*.sqlite`) — nó chứa email và tên người dùng thật.
  - JWT chỉ chứa id người dùng. Log của backend không ghi token hay email khi từ chối đăng nhập.
@@ -87,7 +87,7 @@ Không có.
 +
 +## 3. Google Sign-In trong app Flutter
 +
-+Code đã có (giai đoạn 8) nhưng mới kiểm bằng bản giả — chưa chạy với Client ID thật. Ai tạo Client ID lần đầu, làm theo mục này rồi ghi kết quả vào [PLAN.md](PLAN.md) bước 9.4.
++Code đã có (giai đoạn 8). Bản web đã thử với Client ID thật ngày 2026-10-01 (mục 3.6); Android và macOS mới kiểm bằng bản giả — ai thử lần đầu, ghi kết quả vào [PLAN.md](PLAN.md) bước 9.4.
 +
 +### 3.1. App chọn cách đăng nhập thế nào
 +
@@ -108,12 +108,15 @@ Không có.
 +
 +### 3.2. Web
 +
-+1. Ở Web Client ID (mục 2.2), mục **Authorized JavaScript origins** phải có đúng địa chỉ trang, gồm cả cổng: `http://localhost:5000` khi phát triển, `https://<địa chỉ bản web>` khi deploy.
-+2. Chạy ở cổng cố định:
++1. Ở Web Client ID (mục 2.2), mục **Authorized JavaScript origins** phải có đúng địa chỉ trang, gồm cả cổng: `http://localhost:5050` khi phát triển, `https://<địa chỉ bản web>` khi deploy.
++2. Chạy ở cổng cố định rồi mở `http://localhost:5050` bằng Chrome thường (đã đăng nhập Google):
 +
 +   ```bash
-+   flutter run -d chrome --web-port 5000 --dart-define=GOOGLE_WEB_CLIENT_ID=<Web Client ID>
++   flutter run -d web-server --web-port 5050 --dart-define=GOOGLE_WEB_CLIENT_ID=<Web Client ID>
 +   ```
++
++   - Không dùng cổng 5000 trên macOS: AirPlay Receiver nghe sẵn cổng này, `localhost:5000` trả trang 403 của AirTunes (gặp 2026-10-01). Muốn dùng 5000 thì tắt **System Settings → General → AirDrop & Handoff → AirPlay Receiver**.
++   - `flutter run -d chrome` mở một Chrome riêng ở chế độ điều khiển tự động, chưa đăng nhập; Google có thể chặn đăng nhập trong trình duyệt đó.
 +
 +3. Web không dùng được nút tự vẽ: Google bắt buộc nút của Google Identity Services, app hiện nút đó trong bảng đăng nhập (`renderButton()` của `google_sign_in_web`).
 +4. Bản web deploy cần thêm `CORS_ORIGINS` ở backend (mục 2.3).
@@ -176,11 +179,14 @@ Không có.
 +3. Đăng nhập → tab Cá nhân hiện tên, email; tạo kế hoạch → tab Lịch sử có kế hoạch đó, nhãn "Đang dùng".
 +4. Đăng nhập cùng tài khoản trên nền tảng khác → thấy cùng lịch sử (FR-7.3).
 +
++Đã thử 2026-10-01 — bản web trên Chrome (macOS), backend `AUTH_MODE=google` với Web Client ID thật, app ở trạng thái *Testing*: nút "Đăng nhập bằng Google" hiện ở màn chào → hộp chọn tài khoản → màn đồng ý chỉ xin tên, ảnh hồ sơ, email → app vào Onboarding; backend tạo tài khoản với `google_sub` của Google (không phải `mock:`), tên và email lấy từ Google; tạo kế hoạch → tab Lịch sử có kế hoạch đó, nhãn "Đang dùng", xem lại được; đổi món → kế hoạch lưu trên server đổi theo; "Xoá tài khoản" → server không còn tài khoản và lịch sử, app về khách.
++
 +### 3.7. Lỗi thường gặp
 +
 +| App báo | Nguyên nhân thường gặp | Cách xử lý |
 +|---|---|---|
 +| "Bản app này chưa được cấu hình đăng nhập Google" | Build thiếu `--dart-define=GOOGLE_WEB_CLIENT_ID` | Build lại với giá trị đó (mục 3.1) |
++| Web trên macOS: `localhost:5000` ra trang 403 (máy chủ "AirTunes"), không phải app | AirPlay Receiver chiếm cổng 5000 | Dùng cổng khác (mục 3.2) và thêm origin của cổng đó |
 +| Android: "Đăng nhập Google chưa được cấu hình đúng…" | Package name hoặc SHA-1 của Android client không khớp bản đang chạy; Web Client ID sai | Kiểm lại mục 3.3 — mỗi máy dev một SHA-1 |
 +| Android: không hiện hộp chọn tài khoản | Máy ảo không có Google Play, chưa có tài khoản Google | Mục 3.3 bước 4 |
 +| Web: nút Google không hiện, hoặc cửa sổ Google báo `origin_mismatch` | Địa chỉ trang (cả cổng) chưa có trong Authorized JavaScript origins | Mục 3.2 |
@@ -251,7 +257,7 @@ Không có.
  - [x] Backend: `GET /health`, `POST /api/v1/generate-plan` (tính BMR/TDEE, gọi Gemini, kiểm tra khoảng calo, fallback), đổi món, đổi bài tập, feedback, đăng nhập Google (giả lập mặc định), lịch sử kế hoạch (SQLite), validate DTO, Swagger UI, CORS cho bản web
  - [x] `ai_workspace/`: script thử prompt Gemini
 -- [x] Frontend: Onboarding 3 bước, màn chờ, kế hoạch 3 ngày (đổi món, đổi bài), đi chợ, hồ sơ — đọc/ghi qua provider, không còn dữ liệu viết cứng (giai đoạn 6); feedback cuối ngày (giai đoạn 7). Chưa có: đăng nhập và lịch sử (giai đoạn 8)
-+- [x] Frontend: Onboarding 3 bước, màn chờ, kế hoạch 3 ngày (đổi món, đổi bài), đi chợ, hồ sơ — đọc/ghi qua provider, không còn dữ liệu viết cứng (giai đoạn 6); feedback cuối ngày (giai đoạn 7); màn chào, đăng nhập (demo / Google), tab Lịch sử, đăng xuất, xoá tài khoản (giai đoạn 8). Đăng nhập Google thật mới kiểm bằng bản giả — chưa có Client ID thật
++- [x] Frontend: Onboarding 3 bước, màn chờ, kế hoạch 3 ngày (đổi món, đổi bài), đi chợ, hồ sơ — đọc/ghi qua provider, không còn dữ liệu viết cứng (giai đoạn 6); feedback cuối ngày (giai đoạn 7); màn chào, đăng nhập (demo / Google), tab Lịch sử, đăng xuất, xoá tài khoản (giai đoạn 8). Đăng nhập Google thật đã thử trên bản web với Client ID thật (2026-10-01); Android, macOS chưa
  - [x] Wiki nội bộ `docs/knowledge/`, `CLAUDE.md`
  
  ---
@@ -268,7 +274,7 @@ Không có.
 +- [x] **8.3** Đổi tab "Thống kê" thành "Lịch sử": danh sách plan cũ, bấm vào xem chi tiết (chỉ xem)
 +- [x] **8.4** `SETUP_CREDENTIALS.md` mục 3 — **Google Sign-In trong app**: Web Client ID qua `--dart-define`, nguồn được phép cho bản web, SHA-1 cho Android, cấu hình macOS; Windows (D7)
  
-+Chi tiết: brainstorm `docs/superpowers/brainstorms/phase-8-auth-history.md` (quyết định Q1–Q4 ở mục 8, Q5–Q7 ở mục 9), plan `docs/superpowers/plans/phase-8-auth-history/`. Làm thêm ngoài 8.1–8.4: đăng xuất, xoá tài khoản (FR-6.4), hỏi lại khi khách thay kế hoạch (Q5), dải nhắc khách (Q6), loại dữ liệu của app khỏi sao lưu Android (Q7) — BRD v2.8.0. Đăng nhập Google thật mới kiểm bằng bản giả; kiểm tay khi nhóm có Client ID (9.4).
++Chi tiết: brainstorm `docs/superpowers/brainstorms/phase-8-auth-history.md` (quyết định Q1–Q4 ở mục 8, Q5–Q7 ở mục 9), plan `docs/superpowers/plans/phase-8-auth-history/`. Làm thêm ngoài 8.1–8.4: đăng xuất, xoá tài khoản (FR-6.4), hỏi lại khi khách thay kế hoạch (Q5), dải nhắc khách (Q6), loại dữ liệu của app khỏi sao lưu Android (Q7) — BRD v2.8.0. Đăng nhập Google thật đã thử trên bản web với Client ID thật (2026-10-01): đăng nhập, tạo plan, lịch sử, đổi món cập nhật lịch sử, xoá tài khoản; Android, macOS còn chờ (9.4).
 +
  ## Giai đoạn 9 — Deploy, nghiệm thu, nộp bài · M
  
@@ -276,7 +282,7 @@ Không có.
  - [ ] **9.2** Deploy backend, cấu hình biến môi trường trên host: `NODE_ENV=production`, `AUTH_MODE=google`, `GOOGLE_CLIENT_ID`, `JWT_SECRET`, `DATABASE_PATH` trỏ vào ổ lưu trữ bền, `GEMINI_API_KEY`, `CORS_ORIGINS` (địa chỉ bản web, nếu deploy bản web)
  - [ ] **9.3** Build app để demo: bản web, APK Android, Windows, macOS (D7), với `--dart-define=API_BASE_URL=https://<địa chỉ backend>` — có thể thêm vào job `build` của CI
 -- [ ] **9.4** Chạy checklist kiểm thử toàn luồng ở cả hai chế độ (giả lập / khoá thật)
-+- [ ] **9.4** Chạy checklist kiểm thử toàn luồng ở cả hai chế độ (giả lập / khoá thật) — gồm đăng nhập Google thật trên Android, web, macOS ([SETUP_CREDENTIALS.md](SETUP_CREDENTIALS.md) mục 3)
++- [ ] **9.4** Chạy checklist kiểm thử toàn luồng ở cả hai chế độ (giả lập / khoá thật) — gồm đăng nhập Google thật trên Android, macOS (bản web đã thử 2026-10-01; [SETUP_CREDENTIALS.md](SETUP_CREDENTIALS.md) mục 3)
  - [ ] **9.5** Cập nhật README (cách chạy, ảnh chụp màn hình), Changelog, BRD mục 9, wiki
  - [ ] **9.6** Slide báo cáo và video demo
 +- [ ] **9.7** Làm trước 9.2: giới hạn tần suất theo IP cho `generate-plan`, đổi món/bài, feedback. Các endpoint này không cần đăng nhập (BRD) và mỗi lần có thể gọi Gemini — ai biết địa chỉ backend cũng tiêu hết 20 lượt/ngày, mọi người nhận thực đơn mẫu (P15 giai đoạn 8)
@@ -322,7 +328,7 @@ Không có.
  
  ## Thành phần
  
-@@ -59,7 +59,29 @@
+@@ -59,7 +59,33 @@
  - E2E: `createTestApp()` (`backend_api/test/test-app.ts`) ghim `DATABASE_PATH=:memory:`, `AUTH_MODE=mock`, các biến JWT/Google, `GEMINI_*` trước khi nạp `AppModule`, và trả lại khi đóng. `loginMock()` đăng nhập bằng `mock:<email>`.
  - Smoke: `npm run test:smoke` chạy `dist/main.js` và gọi 5 request (#20).
  
@@ -347,10 +353,14 @@ Không có.
 +| Thêm gói vào app: `flutter build macos` chạy không cần CocoaPods (GoogleSignIn kéo qua Swift Package Manager); APK, web build được | — |
 +| Entitlement `keychain-access-groups` (`$(AppIdentifierPrefix)…`) bắt buộc ký bằng Team | Không commit; SETUP mục 3.4 |
 +
++### Đã thử với Google thật (2026-10-01)
++
++Bản web trên Chrome (macOS), backend `AUTH_MODE=google` với Web Client ID thật, app ở trạng thái *Testing*: nút "Đăng nhập bằng Google" hiện ở màn chào → hộp chọn tài khoản → màn đồng ý chỉ xin tên, ảnh hồ sơ, email → app vào Onboarding; backend tạo tài khoản với `google_sub` của Google (không phải `mock:`), tên và email lấy từ Google; tạo kế hoạch → tab Lịch sử có kế hoạch đó, nhãn "Đang dùng", xem lại được; đổi món → kế hoạch lưu trên server đổi theo; "Xoá tài khoản" → server không còn tài khoản và lịch sử, app về khách. Lúc thử: backend chạy với `DATABASE_PATH` riêng trong thư mục tạm, xoá ngay sau đó — email thật không vào `database.sqlite` của repo.
++
  ## Việc để sau
  
 -- **CORS** chưa bật: Flutter web chạy ở cổng khác sẽ bị trình duyệt chặn, nhất là khi có header `Authorization` — PLAN 5.7.
-+- Kiểm đăng nhập Google thật khi nhóm có Client ID (PLAN 9.4).
++- Kiểm đăng nhập Google thật trên Android, macOS (PLAN 9.4).
 +- Giới hạn tần suất các endpoint gọi Gemini mà không cần đăng nhập (PLAN 9.7).
  - **Chuyển sang Postgres** (nếu host không có ổ bền, #11): đổi `type` trong `dataSourceOptions()`. Entity dùng kiểu chung, nhưng migration hiện có biểu thức SQLite (`datetime('now')`), nên cần viết một migration khởi tạo mới cho Postgres.
 ```
@@ -446,7 +456,7 @@ Không có.
  
  | Tình huống (đã thử trên Android 16, bản release) | Kết quả |
  |---|---|
-@@ -163,14 +170,14 @@
+@@ -163,14 +170,15 @@
  
  ## Test
  
@@ -464,15 +474,16 @@ Không có.
 +  - `test/app_harness.dart` — dựng app/màn hình cỡ điện thoại (411×914 dp) với backend giả, `FakeGoogleAuth` (`test/fake_google_auth.dart`), dữ liệu đã lưu, đồng hồ giả; mặc định đã qua màn chào (`firstLaunch: true` để thấy màn chào); `signedIn()` — dữ liệu đã lưu của một phiên đăng nhập; `fillOnboarding()`, `scrollTo()` (danh sách chỉ dựng phần đang hiện — cuộn rồi `ensureVisible` trước khi bấm);
 +  - `test/fake_backend.dart` — backend giả trả fixture theo đường dẫn, `responses` thay JSON cho một đường dẫn, `failWith` (5xx: body chung), ghi lại request.
 +- `integration_test/backend_smoke_test.dart` — chạy **tay** trên máy ảo/điện thoại khi backend đang chạy ở chế độ giả lập: `flutter test integration_test -d emulator-5554` (điện thoại thật thêm `--dart-define=API_BASE_URL=http://<IP LAN>:3000`). Gọi backend thật qua mạng của thiết bị, dùng `shared_preferences` thật, xoá dữ liệu đã lưu của app trên thiết bị đó; có một test thao tác giao diện (màn chào → đăng nhập demo → Onboarding → plan thật → Dashboard → đổi món → feedback ngày 1 → tab Lịch sử có plan "Đang dùng" → xem chi tiết → xoá tài khoản ở tab Cá nhân). 3/3 trên Android 16 và macOS ngày 2026-10-01. Tự dừng nếu `/health` báo `gemini: configured` (không tốn hạn mức Gemini — #17) hoặc không phải `auth_mode: mock`. `flutter test` (và CI) chỉ chạy thư mục `test/`. Máy ảo mở lại từ snapshot đôi khi làm test treo ở màn khởi động (bản debug chờ `flutter` kết nối mãi) — tắt máy ảo rồi khởi động nguội: `emulator -avd <tên> -no-snapshot-load`.
++- Flutter web chỉ vẽ khi tab đang hiện: cửa sổ Chrome bị che hoặc thu nhỏ → `document.visibilityState = "hidden"`, trình duyệt ngừng `requestAnimationFrame`, chuyển trang và hộp thoại đứng giữa chừng dù thao tác vẫn chạy (gặp khi thử bằng công cụ điều khiển Chrome, 2026-10-01). Đưa cửa sổ lên trước, hoặc kiểm kết quả ở backend/DB.
  - Chưa có máy ảo: Android Studio → Device Manager → tạo thiết bị (ví dụ Pixel 8, API 36).
  - `Container` có màu nền bọc `ListTile`/`SwitchListTile`/`ExpansionTile` → Flutter báo lỗi ở bản debug (hiệu ứng bấm bị che) — dùng `Material` có `shape` thay cho `Container`.
  - CI: `.github/workflows/frontend.yml` chạy `flutter analyze` + `flutter test` với Flutter 3.47.5 khi `frontend_app/**` đổi, rồi build 4 nền tảng (mục "Nền tảng").
-@@ -178,5 +185,5 @@
+@@ -178,5 +186,5 @@
  
  ## Việc của giai đoạn sau
  
 -- **8:** Google Sign-In → `AuthProvider.signIn(idToken)`; tab Lịch sử.
-+- **9.4:** đăng nhập Google thật (Android, web, macOS) khi nhóm có Client ID — mới kiểm bằng bản giả (`docs/SETUP_CREDENTIALS.md` mục 3).
++- **9.4:** đăng nhập Google thật trên Android, macOS — mới kiểm bằng bản giả; bản web đã thử với Client ID thật 2026-10-01 (`docs/SETUP_CREDENTIALS.md` mục 3).
  - Thực đơn mẫu lệch macro so với mục tiêu (ví dụ tinh bột ~120%, chất béo ~70%) vì chỉ được nhân khẩu phần theo calo; backend không kiểm tỉ lệ macro — Dashboard hiện đúng phần trăm thật. Ghi ở mục "Để sau" của PLAN.
 ```
 
@@ -554,11 +565,12 @@ Không có.
 ```diff
 --- a/docs/knowledge/wiki/log.md
 +++ b/docs/knowledge/wiki/log.md
-@@ -25,3 +25,4 @@
+@@ -25,3 +25,5 @@
  2026-09-29 — Kiểm lại Android (release APK) và macOS: [[flutter-ui]] ghi kết quả, tìm kiếm đi chợ không dấu (`search_text.dart`), cửa sổ macOS 600×760 và chuyện macOS tự khôi phục cỡ cửa sổ
  2026-09-29 — PLAN D8 (BRD v2.7.0): thêm ràng buộc #34 (tag suy từ tên động tác, `knee_bend`, đau gối tránh gập gối) và #35 (dữ liệu đang nhập chỉ lưu tạm bằng state restoration, Back ở màn gốc Android đưa app xuống nền); [[flutter-ui]] thêm mục "Dữ liệu đang nhập dở"; [[gemini-integration]] thêm lần đo prompt đau gối; [[plan-data-contract]], [[swap-and-feedback]] thêm tag `knee_bend`
  2026-09-30 — Giai đoạn 7 (PLAN.md, BRD v2.7.1): thêm ràng buộc #36 (feedback cuối ngày: ngày được gửi, khoá `smartfit.feedback.v1` chỉ số ngày, cảnh báo an toàn chỉ đóng bằng "Tôi đã hiểu", báo điều đã đổi); [[flutter-ui]] thêm bảng feedback, khoá lưu mới, route khôi phục ở `MainShell`; [[swap-and-feedback]] ghi phần app
 +2026-10-01 — Giai đoạn 8 (PLAN.md, BRD v2.8.0): thêm ràng buộc #37 (cách đăng nhập theo `/health`, Google qua lớp `GoogleAuth`, 401 → "Đăng nhập lại", khách thay kế hoạch phải hỏi, Android loại `sharedpref` khỏi sao lưu, không commit cấu hình Google của macOS); [[auth-and-history]] thêm mục "Phía app" và hành vi `google_sign_in` 7.2.0, bỏ ghi chú CORS đã cũ; [[flutter-ui]] thêm màn chào, bảng đăng nhập, tab Lịch sử, xem lại plan cũ, tài khoản, khoá `smartfit.welcome_done.v1`, sao lưu Android, 174 test; [[reference-materials]] thêm `google_sign_in`; wiki-triggers có đường dẫn và từ khoá mới
++2026-10-01 — Thử Google Sign-In thật trên bản web (Client ID thật, backend `AUTH_MODE=google`): [[auth-and-history]] thêm mục "Đã thử với Google thật"; [[flutter-ui]] ghi chuyện Flutter web không vẽ khi cửa sổ Chrome bị che; SETUP mục 3.2 đổi gợi ý cổng 5000 → 5050 (AirPlay Receiver của macOS chiếm cổng 5000)
 ```
 
 ### Task 4 — `CLAUDE.md`, README
@@ -571,7 +583,7 @@ Không có.
  This is a monorepo with three components:
  
 -- **`frontend_app/`** — Flutter app, wired to `backend_api` since phase 6: 3-step onboarding, loading, the 3-day plan (meal/exercise swap via the API), grocery checklist and profile tab all read and write through the providers; no hardcoded data left. Screen navigation is driven by a local enum (`AppScreen` in `lib/main.dart`), not a router package. The end-of-day feedback sheet is built (phase 7); login/history (phase 8) are not built yet.
-+- **`frontend_app/`** — Flutter app, wired to `backend_api` since phase 6: 3-step onboarding, loading, the 3-day plan (meal/exercise swap via the API), grocery checklist and profile tab all read and write through the providers; no hardcoded data left. Screen navigation is driven by a local enum (`AppScreen` in `lib/main.dart`), not a router package. The end-of-day feedback sheet is built (phase 7), and so are the first-launch welcome screen, login (a "demo" email login when the backend runs `AUTH_MODE=mock`, `google_sign_in` 7.x otherwise — chosen from `/health`, not at build time), the history tab, sign-out and account deletion (phase 8). Real Google sign-in is written but has not been tried with a real Client ID yet ([docs/SETUP_CREDENTIALS.md](docs/SETUP_CREDENTIALS.md) §3).
++- **`frontend_app/`** — Flutter app, wired to `backend_api` since phase 6: 3-step onboarding, loading, the 3-day plan (meal/exercise swap via the API), grocery checklist and profile tab all read and write through the providers; no hardcoded data left. Screen navigation is driven by a local enum (`AppScreen` in `lib/main.dart`), not a router package. The end-of-day feedback sheet is built (phase 7), and so are the first-launch welcome screen, login (a "demo" email login when the backend runs `AUTH_MODE=mock`, `google_sign_in` 7.x otherwise — chosen from `/health`, not at build time), the history tab, sign-out and account deletion (phase 8). Real Google sign-in was tried on the web build with a real Client ID (2026-10-01); Android and macOS have only been tested against fakes ([docs/SETUP_CREDENTIALS.md](docs/SETUP_CREDENTIALS.md) §3).
  - **`backend_api/`** — NestJS (TypeScript) service, scaffolded and working: `GET /health` and `POST /api/v1/generate-plan` (see Backend architecture below). Request/response DTOs validated with `class-validator`; Gemini call is wired but falls back to the bundled 3-day `sample-plan.json` when `GEMINI_API_KEY` is unset, Gemini times out, or its output fails contract validation (BRD NFR-2, NFR-4) — the response's `source` field (`gemini` / `sample`) says which one was used. Accounts (Google Sign-In, mock mode by default), `DELETE /api/v1/me`, and plan history on SQLite/TypeORM are built (BRD FR-6, FR-7; PLAN.md phase 3). Meal/exercise swap and end-of-day feedback (BRD §6.4) are built too (PLAN.md phase 4): stateless endpoints that take `{ profile, plan, … }` and return the whole new plan.
  - **`ai_workspace/`** — standalone Node/TypeScript project (own `package.json`, unrelated to `backend_api/`'s dependencies) for iterating on the Gemini prompt via `npm run experiment` before copying the finalized prompt into `backend_api/src/plan/gemini.service.ts`.
  
@@ -633,7 +645,7 @@ Không có.
 +- Giai đoạn 8 — tài khoản & lịch sử: lần đầu mở app có màn chào — đăng nhập hoặc "Dùng ngay, không cần đăng nhập". App tự hỏi backend cách đăng nhập: chế độ giả lập → "Đăng nhập demo" bằng email; chế độ thật → nút Google (Android, macOS, web; Windows dùng như khách)
 +- Tab Lịch sử: các kế hoạch đã tạo khi đăng nhập (ngày giờ, calo mục tiêu, nhãn "Đang dùng"), bấm vào xem lại 3 ngày (chỉ xem). Tab Cá nhân: tên, email, đăng xuất, xoá tài khoản (hỏi lại; xoá cả lịch sử trên máy chủ)
 +- Phiên đăng nhập hết hạn → app báo rõ và có nút "Đăng nhập lại" thay vì âm thầm thành khách. Dùng không đăng nhập → dải nhắc "kế hoạch chỉ lưu trên máy này"; tạo kế hoạch mới thì app hỏi lại vì kế hoạch cũ sẽ mất
-+- Android không còn đưa dữ liệu của app (hồ sơ sức khoẻ, token) lên bản sao lưu Google Drive hay chép sang máy mới. Hướng dẫn Google Sign-In cho app: `docs/SETUP_CREDENTIALS.md` mục 3. Kiểm thử: 174 test Flutter; chạy thật trên máy ảo Android 16 và macOS (đăng nhập demo → kế hoạch → lịch sử → xoá tài khoản). Đăng nhập Google thật chưa kiểm vì nhóm chưa có Client ID
++- Android không còn đưa dữ liệu của app (hồ sơ sức khoẻ, token) lên bản sao lưu Google Drive hay chép sang máy mới. Hướng dẫn Google Sign-In cho app: `docs/SETUP_CREDENTIALS.md` mục 3. Kiểm thử: 174 test Flutter; chạy thật trên máy ảo Android 16 và macOS (đăng nhập demo → kế hoạch → lịch sử → xoá tài khoản). Đăng nhập Google thật đã thử trên bản web (Chrome); Android và macOS chưa thử với Client ID thật
 +
  ### BRD v2.7.1 — 2026-09-30
  - Giai đoạn 7 — đánh giá cuối ngày: cuối mỗi ngày có thẻ "Đánh giá cuối ngày" mở bảng 3 câu hỏi (cường độ, tình trạng cơ thể, ăn uống). Gửi xong app báo đúng điều đã đổi ở ngày kế tiếp (ví dụ bớt hiệp, thêm giãn cơ, buổi tập ngắn lại; thực đơn cân đối lại hay giữ nguyên); ngày 3 tạo kế hoạch mới bắt đầu từ ngày mai

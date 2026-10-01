@@ -48,6 +48,8 @@ export DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer   # nếu xcode-
 flutter test integration_test -d macos
 ```
 
+Đăng nhập: backend giả lập (mặc định) → app hiện "Đăng nhập demo", nhập email bất kỳ là có lịch sử riêng. Đăng nhập Google thật cần Client ID và build với `--dart-define=GOOGLE_WEB_CLIENT_ID=<Web Client ID>` — từng nền tảng ở [docs/SETUP_CREDENTIALS.md](docs/SETUP_CREDENTIALS.md) mục 3 (Windows chưa đăng nhập Google được, dùng như khách).
+
 Nền tảng nhắm tới: Android, web, Windows, macOS (iOS tạm bỏ — PLAN D7). Mỗi lần push, CI build bản release của cả bốn; tải về ở tab Actions → lần chạy "Frontend CI" → mục Artifacts (`smartfit-apk`, `smartfit-web`, `smartfit-windows`, `smartfit-macos`). Các bản này gọi backend ở `localhost:3000`.
 
 App gọi backend ở `http://localhost:3000` (máy ảo Android: `http://10.0.2.2:3000`). Chạy trên điện thoại thật thì chỉ địa chỉ máy đang chạy backend, hai máy cùng Wi-Fi:
@@ -87,6 +89,12 @@ Kết quả build và test tự động của từng commit: tab [Actions](https
 ## Nhật ký thay đổi (Changelog)
 
 Đối chiếu theo phiên bản BRD (mục "Phiên bản" trong [BRD.md](BRD.md)), để giảng viên/trợ giảng theo dõi tiến độ trực tiếp trên repo mà không cần đọc từng commit.
+
+### BRD v2.8.0 — 2026-10-01
+- Giai đoạn 8 — tài khoản & lịch sử: lần đầu mở app có màn chào — đăng nhập hoặc "Dùng ngay, không cần đăng nhập". App tự hỏi backend cách đăng nhập: chế độ giả lập → "Đăng nhập demo" bằng email; chế độ thật → nút Google (Android, macOS, web; Windows dùng như khách)
+- Tab Lịch sử: các kế hoạch đã tạo khi đăng nhập (ngày giờ, calo mục tiêu, nhãn "Đang dùng"), bấm vào xem lại 3 ngày (chỉ xem). Tab Cá nhân: tên, email, đăng xuất, xoá tài khoản (hỏi lại; xoá cả lịch sử trên máy chủ)
+- Phiên đăng nhập hết hạn → app báo rõ và có nút "Đăng nhập lại" thay vì âm thầm thành khách. Dùng không đăng nhập → dải nhắc "kế hoạch chỉ lưu trên máy này"; tạo kế hoạch mới thì app hỏi lại vì kế hoạch cũ sẽ mất
+- Android không còn đưa dữ liệu của app (hồ sơ sức khoẻ, token) lên bản sao lưu Google Drive hay chép sang máy mới. Hướng dẫn Google Sign-In cho app: `docs/SETUP_CREDENTIALS.md` mục 3. Kiểm thử: 174 test Flutter; chạy thật trên máy ảo Android 16 và macOS (đăng nhập demo → kế hoạch → lịch sử → xoá tài khoản). Đăng nhập Google thật đã thử trên bản web (Chrome); Android và macOS chưa thử với Client ID thật
 
 ### BRD v2.7.1 — 2026-09-30
 - Giai đoạn 7 — đánh giá cuối ngày: cuối mỗi ngày có thẻ "Đánh giá cuối ngày" mở bảng 3 câu hỏi (cường độ, tình trạng cơ thể, ăn uống). Gửi xong app báo đúng điều đã đổi ở ngày kế tiếp (ví dụ bớt hiệp, thêm giãn cơ, buổi tập ngắn lại; thực đơn cân đối lại hay giữ nguyên); ngày 3 tạo kế hoạch mới bắt đầu từ ngày mai

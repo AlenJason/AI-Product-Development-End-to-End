@@ -6,43 +6,57 @@ import 'package:my_ai_app/main.dart';
 import 'package:my_ai_app/models/plan_schedule.dart';
 import 'package:my_ai_app/providers/auth_provider.dart';
 import 'package:my_ai_app/providers/grocery_provider.dart';
+import 'package:my_ai_app/providers/history_provider.dart';
 import 'package:my_ai_app/providers/plan_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'fake_backend.dart';
+import 'fake_google_auth.dart';
 import 'fixture_loader.dart';
 
-// Dựng app hoặc một màn hình với backend giả (fixture hợp đồng), dữ liệu đã lưu và đồng hồ giả, trên màn hình cỡ
-// điện thoại (411×914 dp — Pixel 8). Không gọi mạng thật.
+// Dựng app hoặc một màn hình với backend giả (fixture hợp đồng), Google giả, dữ liệu đã lưu và đồng hồ giả, trên màn
+// hình cỡ điện thoại (411×914 dp — Pixel 8). Không gọi mạng thật. Mặc định đã qua màn chào (`firstLaunch: true` để
+// thấy màn chào như lần đầu cài app).
 class Harness {
-  Harness._(this.backend, this.prefs, this.auth, this.plans, this.grocery);
+  Harness._(this.backend, this.google, this.prefs, this.auth, this.plans, this.grocery, this.history);
 
   final FakeBackend backend;
+  final FakeGoogleAuth google;
   final SharedPreferences prefs;
   final AuthProvider auth;
   final PlanProvider plans;
   final GroceryProvider grocery;
+  final HistoryProvider history;
 
-  static Future<Harness> create(WidgetTester tester, {Map<String, Object> saved = const {}, DateTime? now}) async {
+  static Future<Harness> create(
+    WidgetTester tester, {
+    Map<String, Object> saved = const {},
+    DateTime? now,
+    bool firstLaunch = false,
+  }) async {
     tester.view.physicalSize = const Size(1080, 2400);
     tester.view.devicePixelRatio = 2.625;
     addTearDown(tester.view.reset);
-    SharedPreferences.setMockInitialValues(saved);
+    SharedPreferences.setMockInitialValues({if (!firstLaunch) AuthProvider.welcomeKey: true, ...saved});
     final prefs = await SharedPreferences.getInstance();
     final backend = FakeBackend();
+    final google = FakeGoogleAuth();
     final clock = now ?? planStart;
     final plans = PlanProvider(api: backend.api, prefs: prefs, now: () => clock);
+    final auth = AuthProvider(api: backend.api, prefs: prefs, google: google);
     return Harness._(
       backend,
+      google,
       prefs,
-      AuthProvider(api: backend.api, prefs: prefs),
+      auth,
       plans,
       GroceryProvider(prefs: prefs, plans: plans),
+      HistoryProvider(api: backend.api, auth: auth),
     );
   }
 
-  Widget app() => SmartFitApp(auth: auth, plans: plans, grocery: grocery);
+  Widget app() => SmartFitApp(auth: auth, plans: plans, grocery: grocery, history: history);
 
   // Một màn hình đứng riêng, có Scaffold để hiện SnackBar.
   Widget screen(Widget child) => MultiProvider(
@@ -50,9 +64,16 @@ class Harness {
       ChangeNotifierProvider.value(value: auth),
       ChangeNotifierProvider.value(value: plans),
       ChangeNotifierProvider.value(value: grocery),
+      ChangeNotifierProvider.value(value: history),
     ],
     child: MaterialApp(home: Scaffold(body: child)),
   );
+}
+
+// Đã đăng nhập bằng tài khoản của fixture auth_login.
+Map<String, Object> signedIn() {
+  final login = loadFixture('auth_login');
+  return {AuthProvider.tokenKey: login['access_token'] as String, AuthProvider.userKey: jsonEncode(login['user'])};
 }
 
 // Plan fixture bắt đầu ngày 26/9/2026.

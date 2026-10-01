@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Android 12+ (targetSdk ≥ 31): không đưa dữ liệu của app lên bản sao lưu Google Drive, cũng không chép sang máy mới
+     khi chuyển máy (allowBackup="false" không chặn được chép giữa hai máy). shared_preferences lưu trong sharedpref:
+     hồ sơ có dữ liệu sức khoẻ (NFR-7), JWT đăng nhập, plan. Giai đoạn 8, quyết định Q7. -->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="sharedpref" path="." />
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="sharedpref" path="." />
+    </device-transfer>
+</data-extraction-rules>

@@ -1,6 +1,6 @@
 # Mục lục Knowledge Base
 
-_Cập nhật lần cuối: 2026-09-27_
+_Cập nhật lần cuối: 2026-10-01_
 
 ## Danh sách chủ đề
 
@@ -11,9 +11,9 @@ _Cập nhật lần cuối: 2026-09-27_
 | [[reference-materials]]     | Tài liệu/công nghệ tham khảo bên ngoài liên quan tới dự án             |
 | [[plan-data-contract]]      | Hợp đồng dữ liệu plan: luồng generate-plan, hai lớp DTO, mã cố định, danh sách đi chợ |
 | [[gemini-integration]]      | Hành vi thật của SDK Gemini (hết giờ, lỗi, không tự gọi lại), cách test không cần khoá |
-| [[auth-and-history]]        | Đăng nhập Google/giả lập, JWT, guard, SQLite + migration, lịch sử kế hoạch; hành vi thư viện đã kiểm chứng |
+| [[auth-and-history]]        | Đăng nhập Google/giả lập, JWT, guard, SQLite + migration, lịch sử kế hoạch; phía app (cách đăng nhập theo /health, 401, google_sign_in 7.x); hành vi thư viện đã kiểm chứng |
 | [[swap-and-feedback]]       | Đổi món, đổi bài tập, feedback cuối ngày; bộ khớp từ khoá dị ứng/chấn thương; kho món và động tác soạn sẵn |
-| [[flutter-ui]]              | App Flutter: Onboarding 3 bước, kế hoạch 3 ngày, đi chợ, hồ sơ; ApiClient, provider, lưu trên máy, fixture hợp đồng, CORS, quyền mạng, icon |
+| [[flutter-ui]]              | App Flutter: màn chào, đăng nhập, Onboarding 3 bước, kế hoạch 3 ngày, đi chợ, lịch sử, hồ sơ & tài khoản; ApiClient, provider, lưu trên máy, sao lưu Android, fixture hợp đồng, CORS, quyền mạng, icon |
 | [[log]]                     | Nhật ký thay đổi wiki theo thời gian                                   |
 
 ## Tra cứu nhanh

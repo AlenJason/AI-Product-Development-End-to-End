@@ -1,5 +1,5 @@
 ---
-last_updated: 2026-09-22
+last_updated: 2026-10-01
 tags: [gemini, nestjs, flutter, dinh-duong, tham-khao]
 ---
 
@@ -53,6 +53,7 @@ Ba package BRD.md đề xuất (mục 4) đều còn được duy trì tích c�
 - [`http`](https://pub.dev/packages/http) — gọi REST API, package chính thức của dart.dev.
 - [`provider`](https://pub.dev/packages/provider) — state management dựa trên `InheritedWidget`.
 - [`shared_preferences`](https://pub.dev/packages/shared_preferences) — lưu trữ cục bộ key-value, bản mới nhất (2.5.5) yêu cầu Flutter 3.35+/Dart 3.9+. `frontend_app/pubspec.yaml` đang khai báo `sdk: ^3.13.1` (tức Dart ≥ 3.13.1), đã thoả yêu cầu này, không cần nâng. Máy dev hiện chạy Flutter 3.47.5 / Dart 3.13.4.
+- [`google_sign_in`](https://pub.dev/packages/google_sign_in) 7.2.0 (kiểm 2026-09-30) — đăng nhập Google, API 7.x (`GoogleSignIn.instance.initialize()`, `authenticate()`, `authenticationEvents`); Android, iOS, macOS, web, không có Windows/Linux. Bản web bắt buộc nút của Google Identity Services ([`google_sign_in_web`](https://pub.dev/packages/google_sign_in_web) `web_only.renderButton()`). Hành vi đã kiểm và cách dùng trong app: [[auth-and-history]] mục "Phía app".
 
 ## 4. Dinh dưỡng — dữ liệu tham chiếu cho NFR-4
 

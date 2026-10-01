@@ -8,10 +8,12 @@ import 'package:my_ai_app/models/api/codes.dart';
 import 'package:my_ai_app/models/api/profile.dart';
 import 'package:my_ai_app/providers/auth_provider.dart';
 import 'package:my_ai_app/providers/grocery_provider.dart';
+import 'package:my_ai_app/providers/history_provider.dart';
 import 'package:my_ai_app/providers/plan_provider.dart';
 import 'package:my_ai_app/screens/dashboard_screen.dart';
 import 'package:my_ai_app/services/api_client.dart';
 import 'package:my_ai_app/services/api_exception.dart';
+import 'package:my_ai_app/services/google_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../test/app_harness.dart' show fillOnboarding, scrollTo;
@@ -51,7 +53,7 @@ void main() {
     expect(health.gemini, 'fallback', reason: 'Tắt GEMINI_API_KEY trong backend_api/.env rồi khởi động lại backend');
     expect(health.authMode, 'mock', reason: 'Test đăng nhập bằng mock:<email> — cần AUTH_MODE=mock');
 
-    final auth = AuthProvider(api: api, prefs: prefs);
+    final auth = AuthProvider(api: api, prefs: prefs, google: PluginGoogleAuth());
     final plans = PlanProvider(api: api, prefs: prefs);
     await auth.signIn('mock:android-smoke@example.com');
     expect(auth.isSignedIn, isTrue);
@@ -84,7 +86,9 @@ void main() {
     // Lưu thật trên thiết bị: đọc lại từ shared_preferences ra đúng plan đang có.
     final reloaded = PlanProvider(api: api, prefs: prefs);
     expect(reloaded.plan!.toJson(), plans.plan!.toJson());
-    expect(AuthProvider(api: ApiClient(baseUrl: resolveApiBaseUrl()), prefs: prefs).isSignedIn, isTrue);
+    expect(
+        AuthProvider(api: ApiClient(baseUrl: resolveApiBaseUrl()), prefs: prefs, google: PluginGoogleAuth()).isSignedIn,
+        isTrue);
 
     // Lỗi của server qua mạng thật → đúng loại lỗi, câu tiếng Việt của server.
     await expectLater(
@@ -94,7 +98,12 @@ void main() {
     );
 
     // Có plan đã lưu → app mở thẳng Dashboard.
-    await tester.pumpWidget(SmartFitApp(auth: auth, plans: plans, grocery: GroceryProvider(prefs: prefs, plans: plans)));
+    await tester.pumpWidget(SmartFitApp(
+      auth: auth,
+      plans: plans,
+      grocery: GroceryProvider(prefs: prefs, plans: plans),
+      history: HistoryProvider(api: api, auth: auth),
+    ));
     await tester.pump(const Duration(seconds: 1));
     expect(find.byType(DashboardScreen), findsOneWidget);
     await tester.pumpWidget(const SizedBox());
@@ -111,18 +120,29 @@ void main() {
     await expectLater(closedPort.health(), throwsA(isA<NetworkException>()));
   });
 
-  // Thao tác giao diện thật trên thiết bị (giai đoạn 6, 7): Onboarding → backend thật tạo plan → Dashboard → đổi món
-  // → feedback cuối ngày 1 (bảng trượt, báo điều đã đổi, khoá ngày).
-  testWidgets('giao diện trên thiết bị: Onboarding → plan thật → Dashboard → đổi món → feedback ngày 1', (tester) async {
+  // Thao tác giao diện thật trên thiết bị (giai đoạn 6–8): màn chào → đăng nhập demo → Onboarding → backend thật tạo
+  // plan → Dashboard → đổi món → feedback cuối ngày 1 → tab Lịch sử có plan đang dùng → xem lại → xoá tài khoản.
+  testWidgets('giao diện trên thiết bị: đăng nhập demo → plan thật → đổi món → feedback → lịch sử → xoá tài khoản',
+      (tester) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.clear();
     final api = ApiClient(baseUrl: resolveApiBaseUrl());
+    final auth = AuthProvider(api: api, prefs: prefs, google: PluginGoogleAuth());
     final plans = PlanProvider(api: api, prefs: prefs);
     await tester.pumpWidget(SmartFitApp(
-      auth: AuthProvider(api: api, prefs: prefs),
+      auth: auth,
       plans: plans,
       grocery: GroceryProvider(prefs: prefs, plans: plans),
+      history: HistoryProvider(api: api, auth: auth),
     ));
+    // Màn chào hỏi /health: backend giả lập → ô email "Đăng nhập demo".
+    await pumpUntil(tester, find.text('Đăng nhập demo'));
+    await tester.enterText(find.widgetWithText(TextField, 'Email'), 'ui-smoke@example.com');
+    await tester.pump();
+    await tester.tap(find.text('Đăng nhập demo'));
+    await pumpUntil(tester, find.text('Tiếp tục'));
+    expect(auth.user!.email, 'ui-smoke@example.com');
+
     await fillOnboarding(tester);
     await tester.tap(find.text('Tạo kế hoạch 3 ngày'));
     await pumpUntil(tester, find.text('Hôm nay là Ngày 1'));
@@ -148,6 +168,28 @@ void main() {
     await tester.pumpAndSettle();
     await scrollTo(tester, find.text('Đã gửi đánh giá ngày 1'));
     expect(plans.feedbackDays, {1});
+
+    // Lịch sử (FR-7.2): plan vừa tạo nằm trên server, đánh dấu "Đang dùng"; xem lại được bản đã đổi món.
+    await tester.tap(find.text('Lịch sử'));
+    await pumpUntil(tester, find.text('Đang dùng'));
+    expect(find.byType(ListTile), findsOneWidget);
+    await tester.tap(find.byType(ListTile));
+    await pumpUntil(tester, find.text('BỮA SÁNG'));
+    expect(find.text(plans.plan!.days.first.meals.first.name), findsOneWidget);
+    expect(find.text('Đổi món'), findsNothing);
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+
+    // Xoá tài khoản (FR-6.4) qua giao diện: server xoá tài khoản + lịch sử, plan trên máy giữ.
+    await tester.tap(find.text('Cá nhân'));
+    await tester.pumpAndSettle();
+    await scrollTo(tester, find.text('Xoá tài khoản'));
+    await tester.tap(find.text('Xoá tài khoản'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Xoá vĩnh viễn'));
+    await pumpUntil(tester, find.text('Đã xoá tài khoản và lịch sử kế hoạch.'));
+    expect(auth.isSignedIn, isFalse);
+    expect(plans.hasPlan, isTrue);
     await tester.pumpWidget(const SizedBox());
     await prefs.clear();
   });

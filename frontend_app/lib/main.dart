@@ -7,17 +7,22 @@ import 'config/api_config.dart';
 import 'models/api/profile.dart';
 import 'providers/auth_provider.dart';
 import 'providers/grocery_provider.dart';
+import 'providers/history_provider.dart';
 import 'providers/plan_provider.dart';
 import 'screens/dashboard_screen.dart';
 import 'screens/grocery_screen.dart';
+import 'screens/history_screen.dart';
 import 'screens/loading_screen.dart';
 import 'screens/onboarding_screen.dart';
 import 'screens/profile_screen.dart';
+import 'screens/welcome_screen.dart';
 import 'services/api_client.dart';
 import 'services/api_exception.dart';
+import 'services/google_auth.dart';
 import 'theme/app_colors.dart';
 import 'widgets/app_frame.dart';
 import 'widgets/feedback_sheet.dart';
+import 'widgets/login_panel.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -26,22 +31,25 @@ Future<void> main() async {
   // Đọc hết dữ liệu đã lưu một lần trước khi vẽ màn đầu — MainShell biết ngay có plan hay chưa, không cần màn chờ.
   final prefs = await SharedPreferences.getInstance();
   final api = ApiClient(baseUrl: resolveApiBaseUrl());
+  final auth = AuthProvider(api: api, prefs: prefs, google: PluginGoogleAuth());
   final plans = PlanProvider(api: api, prefs: prefs);
   runApp(
     SmartFitApp(
-      auth: AuthProvider(api: api, prefs: prefs),
+      auth: auth,
       plans: plans,
       grocery: GroceryProvider(prefs: prefs, plans: plans),
+      history: HistoryProvider(api: api, auth: auth),
     ),
   );
 }
 
 class SmartFitApp extends StatelessWidget {
-  const SmartFitApp({super.key, required this.auth, required this.plans, required this.grocery});
+  const SmartFitApp({super.key, required this.auth, required this.plans, required this.grocery, required this.history});
 
   final AuthProvider auth;
   final PlanProvider plans;
   final GroceryProvider grocery;
+  final HistoryProvider history;
 
   @override
   Widget build(BuildContext context) {
@@ -50,6 +58,7 @@ class SmartFitApp extends StatelessWidget {
         ChangeNotifierProvider.value(value: auth),
         ChangeNotifierProvider.value(value: plans),
         ChangeNotifierProvider.value(value: grocery),
+        ChangeNotifierProvider.value(value: history),
       ],
       child: AnnotatedRegion<SystemUiOverlayStyle>(
         value: const SystemUiOverlayStyle(
@@ -113,7 +122,19 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver, Rest
     onPresent: (navigator, arguments) => navigator.restorablePush(feedbackSheetRoute, arguments: arguments),
     onComplete: (createPlan) {
       final profile = context.read<PlanProvider>().editableProfile;
-      if (createPlan == true && profile != null) _generate(profile);
+      if (createPlan == true && profile != null) _createPlan(profile);
+    },
+  );
+
+  // Bảng đăng nhập (giai đoạn 8) từ tab Cá nhân, Lịch sử, lỗi 401. Tạo plan bị 401 (phiên hết hạn) → đăng nhập
+  // xong thì tạo tiếp, để plan vào lịch sử.
+  late final _loginRoute = RestorableRouteFuture<bool?>(
+    onPresent: (navigator, arguments) => navigator.restorablePush(loginSheetRoute),
+    onComplete: (signedIn) {
+      final requested = _requested;
+      if (signedIn == true && _screen == AppScreen.loading && _error is UnauthorizedException && requested != null) {
+        _generate(requested);
+      }
     },
   );
 
@@ -121,6 +142,7 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver, Rest
   void restoreState(RestorationBucket? oldBucket, bool initialRestore) {
     registerForRestoration(_tab, 'tab');
     registerForRestoration(_feedbackRoute, 'feedback_sheet');
+    registerForRestoration(_loginRoute, 'login_sheet');
   }
 
   @override
@@ -128,6 +150,7 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver, Rest
     WidgetsBinding.instance.removeObserver(this);
     _tab.dispose();
     _feedbackRoute.dispose();
+    _loginRoute.dispose();
     super.dispose();
   }
 
@@ -157,10 +180,35 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver, Rest
     }
   }
 
+  // Tạo plan mới thay plan đang có. Khách không có lịch sử nên plan cũ mất hẳn → hỏi trước (quyết định Q5 giai đoạn 8).
+  Future<void> _createPlan(Profile profile) async {
+    if (!context.read<AuthProvider>().isSignedIn && context.read<PlanProvider>().hasPlan) {
+      final replace = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Thay kế hoạch hiện tại?'),
+          content: const Text(
+            'Bạn đang dùng không đăng nhập nên kế hoạch hiện tại sẽ bị thay và không xem lại được. '
+            'Đăng nhập để kế hoạch mới được lưu vào lịch sử.',
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Huỷ')),
+            TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Thay kế hoạch')),
+          ],
+        ),
+      );
+      if (replace != true || !mounted) return;
+    }
+    await _generate(profile);
+  }
+
   @override
   Widget build(BuildContext context) {
     final plans = context.watch<PlanProvider>();
+    final auth = context.watch<AuthProvider>();
     final screen = _screen == AppScreen.home && !plans.hasPlan ? AppScreen.onboarding : _screen;
+    // Màn chào chỉ trước Onboarding của lần đầu (FR-6.1); đăng nhập hoặc "Dùng ngay" → Onboarding.
+    if (screen == AppScreen.onboarding && auth.showWelcome) return WelcomeScreen(onSkip: auth.skipWelcome);
     return switch (screen) {
       AppScreen.onboarding => OnboardingScreen(initial: _requested ?? plans.editableProfile, onSubmit: _generate),
       AppScreen.loading => LoadingScreen(
@@ -168,6 +216,7 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver, Rest
         onRetry: () => _generate(_requested!),
         onEditProfile: () => setState(() => _screen = AppScreen.onboarding),
         onBack: plans.hasPlan ? () => setState(() => _screen = AppScreen.home) : null,
+        onSignIn: _loginRoute.present,
       ),
       AppScreen.home => _home(plans),
     };
@@ -178,16 +227,13 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver, Rest
       // Khoá theo plan_id: plan mới thì Dashboard mở lại đúng ngày hôm nay.
       0 => DashboardScreen(
         key: ValueKey(plans.plan?.planId),
-        onCreatePlan: () => _generate(plans.editableProfile!),
+        onCreatePlan: () => _createPlan(plans.editableProfile!),
         onFeedback: (day) => _feedbackRoute.present(day),
+        onSignIn: _loginRoute.present,
       ),
       1 => const GroceryScreen(),
-      2 => _placeholder(
-        icon: Icons.history_rounded,
-        title: 'Lịch sử kế hoạch',
-        subtitle: 'Đăng nhập để xem lại các kế hoạch đã tạo — tính năng sắp có.',
-      ),
-      _ => ProfileScreen(onCreatePlan: _generate),
+      2 => HistoryScreen(onSignIn: _loginRoute.present),
+      _ => ProfileScreen(onCreatePlan: _createPlan, onSignIn: _loginRoute.present),
     },
     bottomNavigationBar: Container(
       decoration: const BoxDecoration(
@@ -220,36 +266,6 @@ class _MainShellState extends State<MainShell> with WidgetsBindingObserver, Rest
           ),
           BottomNavigationBarItem(icon: Icon(Icons.person_outline), activeIcon: Icon(Icons.person), label: 'Cá nhân'),
         ],
-      ),
-    ),
-  );
-
-  Widget _placeholder({required IconData icon, required String title, required String subtitle}) => SafeArea(
-    child: Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 24),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(color: const Color(0xFFF1F5F9), borderRadius: BorderRadius.circular(20)),
-              child: Icon(icon, size: 36, color: AppColors.muted),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              title,
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.ink),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              subtitle,
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 12, color: AppColors.muted),
-            ),
-          ],
-        ),
       ),
     ),
   );

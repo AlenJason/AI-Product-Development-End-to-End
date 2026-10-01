@@ -47,7 +47,9 @@ Code của F01–F04 được viết và chạy trên bản sao repo trong thư 
 
 **Kiểm tay trên thiết bị (ngoài cổng tự động):** bản release trên máy ảo Android 16 — màn chào, đăng nhập demo, Onboarding, tab Lịch sử ("Đang dùng", giờ máy), chi tiết, thẻ Tài khoản, đăng xuất → dải nhắc, bảng đăng nhập; sao lưu bằng `bmgr` + LocalTransport: bản HEAD có `sp/FlutterSharedPreferences.xml`, bản mới không (F03, P21–P22).
 
-**Chưa kiểm được:** đăng nhập Google thật trên Android, web, macOS — nhóm chưa có Client ID (quyết định Q2; PLAN 9.4). Bản Windows chỉ build trên CI.
+**Đăng nhập Google thật (2026-10-01, sau khi plan được commit lần đầu):** bản web của bản nháp, build với Web Client ID thật của nhóm, chạy trên Chrome (macOS), backend `AUTH_MODE=google` với DB tạm — nút Google ở màn chào → chọn tài khoản → màn đồng ý (tên, ảnh, email) → Onboarding; backend tạo tài khoản với `google_sub` của Google; tạo kế hoạch → Lịch sử "Đang dùng" → xem lại; đổi món → bản lưu trên server đổi theo; xoá tài khoản → server còn 0 tài khoản, 0 plan. Tài liệu F04 ghi kết quả này (`edit_docs8b.py`).
+
+**Chưa kiểm được:** đăng nhập Google thật trên Android, macOS (PLAN 9.4). Bản Windows chỉ build trên CI.
 
 ## Phát hiện khi lập plan (ngoài brainstorm)
 
@@ -62,6 +64,8 @@ Code của F01–F04 được viết và chạy trên bản sao repo trong thư 
 | P22 | Bản HEAD sao lưu `FlutterSharedPreferences.xml` (token); bản mới thì không | Giữ luật (F03, #37) |
 | P23 | Keychain sharing macOS làm `flutter build macos` không ký thất bại | Không commit; SETUP 3.4 (F03, F04) |
 | P24 | `flutter pub get` sửa `macos/Flutter/GeneratedPluginRegistrant.swift`; build macOS sinh hai `Package.resolved` không bị ignore | Commit cả ba (F01) |
+| P25 | Thử Google thật: AirPlay Receiver của macOS nghe cổng 5000 (cả IPv4, IPv6) — `localhost:5000` ra trang 403 của AirTunes | SETUP 3.2 gợi ý cổng 5050, `-d web-server` + Chrome thường (F04) |
+| P26 | Thử bằng công cụ điều khiển Chrome: cửa sổ bị che → `visibilityState = hidden`, Flutter web dừng vẽ giữa chuyển trang/hộp thoại (thao tác vẫn chạy) | Ghi vào [[flutter-ui]]; kiểm kết quả ở backend/DB (F04) |
 
 ## Ràng buộc từ wiki
 
