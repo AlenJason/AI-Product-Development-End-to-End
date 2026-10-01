@@ -18,11 +18,12 @@
 frontend_app/    Ứng dụng Flutter: Onboarding, kế hoạch 3 ngày (đổi món, đổi bài), đi chợ, hồ sơ — nối backend
 backend_api/     API NestJS — generate-plan (Gemini hoặc thực đơn mẫu), đổi món, đổi bài tập, feedback, đăng nhập Google, lịch sử (SQLite)
 ai_workspace/    Script Node/TS thử nghiệm prompt & schema Gemini, độc lập với backend
-docs/            Kế hoạch triển khai, hướng dẫn gắn khoá, wiki nội bộ
 BRD.md           Tài liệu đặc tả yêu cầu (nguồn spec chính thức)
 ```
 
-Dự án chạy được ngay khi chưa có khoá nào (chế độ giả lập: thực đơn mẫu thay cho Gemini, đăng nhập bằng `mock:<email>` thay cho Google). Muốn dùng Gemini hay Google Sign-In thật: xem [docs/SETUP_CREDENTIALS.md](docs/SETUP_CREDENTIALS.md).
+Kế hoạch triển khai (`docs/PLAN.md`), hướng dẫn gắn khoá (`docs/SETUP_CREDENTIALS.md`), wiki nội bộ và `CLAUDE.md` chỉ nằm trên máy của nhóm, không đưa lên GitHub.
+
+Dự án chạy được ngay khi chưa có khoá nào (chế độ giả lập: thực đơn mẫu thay cho Gemini, đăng nhập bằng `mock:<email>` thay cho Google). Muốn dùng Gemini hay Google Sign-In thật: xem `docs/SETUP_CREDENTIALS.md`.
 
 ## Bắt đầu
 
@@ -48,7 +49,7 @@ export DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer   # nếu xcode-
 flutter test integration_test -d macos
 ```
 
-Đăng nhập: backend giả lập (mặc định) → app hiện "Đăng nhập demo", nhập email bất kỳ là có lịch sử riêng. Đăng nhập Google thật cần Client ID và build với `--dart-define=GOOGLE_WEB_CLIENT_ID=<Web Client ID>` — từng nền tảng ở [docs/SETUP_CREDENTIALS.md](docs/SETUP_CREDENTIALS.md) mục 3 (Windows chưa đăng nhập Google được, dùng như khách).
+Đăng nhập: backend giả lập (mặc định) → app hiện "Đăng nhập demo", nhập email bất kỳ là có lịch sử riêng. Đăng nhập Google thật cần Client ID và build với `--dart-define=GOOGLE_WEB_CLIENT_ID=<Web Client ID>` — từng nền tảng ở `docs/SETUP_CREDENTIALS.md` mục 3 (Windows chưa đăng nhập Google được, dùng như khách).
 
 Nền tảng nhắm tới: Android, web, Windows, macOS (iOS tạm bỏ — PLAN D7). Mỗi lần push, CI build bản release của cả bốn; tải về ở tab Actions → lần chạy "Frontend CI" → mục Artifacts (`smartfit-apk`, `smartfit-web`, `smartfit-windows`, `smartfit-macos`). Các bản này gọi backend ở `localhost:3000`.
 
@@ -82,7 +83,7 @@ npm run experiment
 
 ## Trạng thái dự án
 
-Tiến độ từng bước (có checkbox) theo dõi tại **[docs/PLAN.md](docs/PLAN.md)**. Tiêu chí nghiệm thu gốc ở [BRD.md mục 9](BRD.md#9-tiêu-chí-nghiệm-thu-môn-học-rubric-checklist).
+Tiến độ từng bước (có checkbox) theo dõi tại **`docs/PLAN.md`**. Tiêu chí nghiệm thu gốc ở [BRD.md mục 9](BRD.md#9-tiêu-chí-nghiệm-thu-môn-học-rubric-checklist).
 
 Kết quả build và test tự động của từng commit: tab [Actions](https://github.com/AlenJason/AI-Product-Development-End-to-End/actions) trên GitHub.
 
@@ -132,7 +133,7 @@ Kết quả build và test tự động của từng commit: tab [Actions](https
 - Chế độ giả lập nhận ra dị ứng, chấn thương phổ biến (gõ có dấu hay không dấu) để lọc thực đơn mẫu; kết quả Gemini có nguyên liệu người dùng dị ứng bị loại. Kiểm thử: thêm 114 unit test và 22 e2e; smoke test gọi thêm 3 endpoint mới trên bản build
 
 ### BRD v2.4.0 — 2026-09-24
-- Giai đoạn 3 — tài khoản & lịch sử: đăng nhập Google (`POST /api/v1/auth/google`), JWT hết hạn sau 7 ngày, lịch sử 50 kế hoạch mới nhất xem lại được trên mọi thiết bị (`GET /api/v1/plans/history`, `/:id`), dữ liệu lưu bằng SQLite + TypeORM với migration. Mặc định chạy chế độ đăng nhập giả lập (`mock:<email>`), không cần tài khoản Google Cloud; cách gắn Client ID thật ở [docs/SETUP_CREDENTIALS.md](docs/SETUP_CREDENTIALS.md) mục 2
+- Giai đoạn 3 — tài khoản & lịch sử: đăng nhập Google (`POST /api/v1/auth/google`), JWT hết hạn sau 7 ngày, lịch sử 50 kế hoạch mới nhất xem lại được trên mọi thiết bị (`GET /api/v1/plans/history`, `/:id`), dữ liệu lưu bằng SQLite + TypeORM với migration. Mặc định chạy chế độ đăng nhập giả lập (`mock:<email>`), không cần tài khoản Google Cloud; cách gắn Client ID thật ở `docs/SETUP_CREDENTIALS.md` mục 2
 - Tạo kế hoạch khi đã đăng nhập thì tự lưu vào lịch sử; lưu lỗi vẫn trả kế hoạch kèm cảnh báo. Kế hoạch trong lịch sử không chứa dị ứng, chấn thương hay tình trạng sức khoẻ (có test kiểm thẳng trong DB). Xem kế hoạch của tài khoản khác → 404
 - Thêm `DELETE /api/v1/me` (FR-6.4): xoá tài khoản cùng toàn bộ lịch sử. Backend không khởi động nếu deploy (`NODE_ENV=production`) mà vẫn để đăng nhập giả lập, trừ khi bật cờ `ALLOW_MOCK_AUTH=true` có chủ đích
 - Kiểm thử: thêm 65 unit test và 24 e2e (không test nào gọi Google hay ghi file DB thật); thêm smoke test chạy bản build như server thật trong CI, bắt được một lỗi khởi động mà toàn bộ unit test và e2e không thấy
@@ -146,8 +147,8 @@ Kết quả build và test tự động của từng commit: tab [Actions](https
 
 ### BRD v2.2.0 — 2026-09-22 → 2026-09-24
 - Chốt thêm tài khoản người dùng (đăng nhập Google) và lịch sử kế hoạch xem được trên nhiều thiết bị (FR-6, FR-7); backend sẽ dùng SQLite + TypeORM. Đã có trong BRD, chưa có code
-- Lập kế hoạch triển khai toàn dự án [docs/PLAN.md](docs/PLAN.md) (giai đoạn 0–9); chốt 4 điểm lệch giữa giao diện Flutter và backend (mức điều chỉnh calo, feedback cuối ngày, dữ liệu đi chợ, thông tin sức khoẻ do người dùng tự nhập)
-- Giai đoạn 0: `/health` báo backend đang dùng Gemini thật hay dữ liệu mẫu; `POST /api/v1/generate-plan` trả HTTP 200 đúng như BRD; thêm hướng dẫn gắn khoá [docs/SETUP_CREDENTIALS.md](docs/SETUP_CREDENTIALS.md)
+- Lập kế hoạch triển khai toàn dự án `docs/PLAN.md` (giai đoạn 0–9); chốt 4 điểm lệch giữa giao diện Flutter và backend (mức điều chỉnh calo, feedback cuối ngày, dữ liệu đi chợ, thông tin sức khoẻ do người dùng tự nhập)
+- Giai đoạn 0: `/health` báo backend đang dùng Gemini thật hay dữ liệu mẫu; `POST /api/v1/generate-plan` trả HTTP 200 đúng như BRD; thêm hướng dẫn gắn khoá `docs/SETUP_CREDENTIALS.md`
 - Sửa BRD mục 7.6: host dùng SQLite phải có ổ lưu trữ bền (Render bản free xoá file DB khi service ngủ/restart)
 
 ### BRD v2.1.0 — 2026-09-22
