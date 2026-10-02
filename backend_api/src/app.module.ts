@@ -6,9 +6,17 @@ import { AuthModule } from './auth/auth.module.js';
 import { DatabaseModule } from './database/database.module.js';
 import { HistoryModule } from './history/history.module.js';
 import { PlanModule } from './plan/plan.module.js';
+import { RateLimitModule } from './rate-limit/rate-limit.module.js';
 
 @Module({
-  imports: [ConfigModule.forRoot({ isGlobal: true }), DatabaseModule, AuthModule, HistoryModule, PlanModule],
+  imports: [
+    ConfigModule.forRoot({ isGlobal: true }),
+    DatabaseModule,
+    RateLimitModule,
+    AuthModule,
+    HistoryModule,
+    PlanModule,
+  ],
   controllers: [AppController],
   providers: [AppService],
 })

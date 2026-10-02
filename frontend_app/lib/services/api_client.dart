@@ -131,6 +131,8 @@ class ApiClient {
         return message is String ? PlanOutdatedException(message) : const PlanOutdatedException();
       case 422:
         return message is String ? NoReplacementException(message) : const NoReplacementException();
+      case 429:
+        return message is String ? TooManyRequestsException(message) : const TooManyRequestsException();
       default:
         return ServerException(status);
     }

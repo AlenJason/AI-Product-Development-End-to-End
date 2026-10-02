@@ -45,6 +45,42 @@ jobs:
       - run: npm run test:e2e
       - run: npm run test:smoke
 
+  # Production chạy Postgres (Neon — PLAN giai đoạn 9, quyết định Q5); máy dev và job trên chạy SQLite.
+  # Ở đây: migration khớp entity trên Postgres thật, `db:migrate`, và toàn bộ e2e trên Postgres.
+  postgres:
+    name: backend_api (Postgres 17)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: smartfit_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      # DB dùng riêng cho test, mật khẩu chỉ tồn tại trong container này — không phải bí mật.
+      TEST_DATABASE_URL: postgres://postgres:postgres@localhost:5432/smartfit_test
+    defaults:
+      run:
+        working-directory: backend_api
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: backend_api/package-lock.json
+      - run: npm ci
+      - run: npm run build
+      - run: npm run db:migrate
+        env:
+          DATABASE_URL: ${{ env.TEST_DATABASE_URL }}
+      - run: npm run test:postgres
+
   ai_workspace:
     name: ai_workspace (type-check)
     runs-on: ubuntu-latest

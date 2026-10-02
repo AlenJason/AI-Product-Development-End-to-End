@@ -23,6 +23,9 @@
     "test:e2e": "vitest run --config ./vitest.config.e2e.ts",
     "fixtures:update": "UPDATE_FIXTURES=1 vitest run --config ./vitest.config.e2e.ts test/contract-fixtures.e2e-spec.ts",
     "test:smoke": "node scripts/smoke-test.mjs",
+    "test:postgres": "node -e \"if (!process.env.TEST_DATABASE_URL) { console.error('Cần TEST_DATABASE_URL (Postgres dùng riêng cho test)'); process.exit(1) }\" && vitest run --no-file-parallelism src/database/migrations.spec.ts src/rate-limit/rate-limit-store.spec.ts && vitest run --config ./vitest.config.e2e.ts --no-file-parallelism",
+    "db:migrate": "node --env-file-if-exists=.env scripts/migrate.mjs",
+    "vercel-build": "nest build && node scripts/migrate.mjs",
     "measure:gemini": "node --env-file=.env scripts/measure-gemini.mjs"
   },
   "dependencies": {
@@ -38,6 +41,7 @@
     "class-transformer": "^0.5.1",
     "class-validator": "^0.15.1",
     "google-auth-library": "^11.1.0",
+    "pg": "^8.23.1",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
     "typeorm": "^1.1.1"
@@ -49,6 +53,7 @@
     "@nestjs/testing": "^12.0.1",
     "@types/express": "^5.0.0",
     "@types/node": "^24.0.0",
+    "@types/pg": "^8.23.1",
     "@types/supertest": "^7.0.0",
     "@vitest/coverage-v8": "^4.1.2",
     "oxlint": "^1.58.0",

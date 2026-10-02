@@ -45,6 +45,12 @@ class NoReplacementException extends ApiException {
   const NoReplacementException([super.message = 'Chưa tìm được lựa chọn thay thế phù hợp.']);
 }
 
+// 429: quá số lần tạo plan / đổi món, đổi bài, feedback cho phép (BRD 6.5, giai đoạn 9) — câu của server nói phải
+// chờ bao lâu.
+class TooManyRequestsException extends ApiException {
+  const TooManyRequestsException([super.message = 'Bạn thao tác quá nhanh. Vui lòng thử lại sau ít phút.']);
+}
+
 // 5xx, mã lạ, hoặc body không đúng hợp đồng.
 class ServerException extends ApiException {
   const ServerException([this.statusCode]) : super('Máy chủ đang gặp sự cố. Vui lòng thử lại sau.');

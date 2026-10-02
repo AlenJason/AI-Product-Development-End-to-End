@@ -3,8 +3,8 @@
 **Tên sản phẩm:** Trợ lý AI Gợi ý & Điều chỉnh Thực đơn, Lịch tập Thông minh  
 **Môn học:** AI Product Development End-to-End (Đồ án Kỹ sư / Cử nhân Năm 4)  
 **Đơn vị thực hiện:** Trường Đại học Công nghệ Thông tin và Truyền thông Việt - Hàn (VKU)  
-**Phiên bản:** 2.8.0 (Dành cho Sinh viên thực hành: Flutter & NestJS)  
-**Ngày cập nhật:** 01/10/2026  
+**Phiên bản:** 2.9.0 (Dành cho Sinh viên thực hành: Flutter & NestJS)  
+**Ngày cập nhật:** 02/10/2026  
 **Trạng thái:** Đã phê duyệt (Approved)  
 
 ---
@@ -105,8 +105,14 @@ sequenceDiagram
   * Sử dụng model `gemini-3.5-flash` (mặc định từ bản 2.5.1, đổi qua `GEMINI_MODEL`): đo ngày 24/09/2026 bằng khoá gói miễn phí, `gemini-3.8-flash` liên tục báo quá tải và chưa trả được kế hoạch nào, còn `gemini-3.5-flash` tạo kế hoạch đạt hợp đồng trong 8–15 giây khi tắt chế độ suy nghĩ. Gói miễn phí giới hạn **20 lần gọi mỗi ngày cho mỗi model**. Gọi qua SDK Node.js chính thức `@google/genai` (SDK cũ `@google/generative-ai` đã bị khai tử), tham số cấu hình JSON mode là `config: { responseMimeType: "application/json" }`; mức suy nghĩ đặt qua `thinkingConfig` (`GEMINI_THINKING`, mặc định tắt).
 * **Cơ sở dữ liệu & Xác thực (mới ở bản 2.2.0):**
   * **SQLite + TypeORM** (`@nestjs/typeorm`, driver `better-sqlite3` bản 12 — TypeORM 1.x không còn driver `sqlite3`): file DB dạng `database.sqlite` ngay trong `backend_api/` (đổi bằng `DATABASE_PATH`), không cần cài đặt server DB riêng — đúng tinh thần "môi trường chạy đơn giản" (NFR mục 7). Bảng được tạo bằng migration chạy tự động khi khởi động, không dùng `synchronize`. File DB phải được thêm vào `.gitignore` vì có thể chứa dữ liệu người dùng thật khi demo.
+  * **Postgres cho bản chạy thật** *(bổ sung bản 2.9.0)*: có `DATABASE_URL` thì backend dùng Postgres (driver `pg`, bản deploy dùng Neon), không có thì vẫn là SQLite như trên — máy dev và test không cần cài gì thêm. Mỗi loại DB một bộ migration; CI kiểm cả hai khớp entity và chạy e2e trên Postgres thật. Trên Vercel, migration chạy ở bước build (`npm run vercel-build`), lúc chạy không tự chạy migration (`DATABASE_RUN_MIGRATIONS=false`) để nhiều instance khởi động cùng lúc không chạy chồng lên nhau.
   * **Xác thực:** `google-auth-library` để verify ID Token từ Google phía backend; `@nestjs/jwt` để backend tự phát hành JWT riêng (không dùng thẳng token Google cho mọi request) — tách biệt vòng đời session của app khỏi Google.
   * Không tự lưu mật khẩu người dùng — toàn bộ xác thực danh tính giao cho Google, backend chỉ lưu `google_sub`/`email`/`name` để định danh.
+* **Triển khai (bổ sung bản 2.9.0):**
+  * Backend: **Vercel** (gói Hobby miễn phí) — cả app NestJS chạy thành một Vercel Function ở vùng Singapore (`sin1`), mỗi request tối đa 300 giây, đủ cho 40 giây chờ Gemini. Tự deploy khi push lên nhánh `Thien-Source` có đổi `backend_api/`. Khoá và chuỗi kết nối (`GEMINI_API_KEY`, `JWT_SECRET`, `DATABASE_URL`) đặt trong biến môi trường của Vercel, không nằm trong repo.
+  * Cơ sở dữ liệu: **Neon** Postgres gói miễn phí (0,5 GB), dùng chuỗi kết nối qua bộ gộp kết nối (`-pooler`) hợp với serverless.
+  * Bản web: **GitHub Pages**, CI build và deploy khi push lên `Thien-Source`, địa chỉ backend và Web Client ID lấy từ Variables của repo. Kèm trang chính sách quyền riêng tư (`privacy.html`) — cần để mở đăng nhập Google cho mọi tài khoản.
+  * Bản Android: APK build trên máy dev (khoá ký của máy đó đã đăng ký với Google để đăng nhập được). Bản Windows, macOS dùng như khách khi trỏ vào backend thật (Windows không có `google_sign_in`; macOS cần nhóm ký Apple để bật keychain).
 
 ---
 
@@ -408,6 +414,26 @@ Giá trị cho feedback:
 * `body_states` tối đa 5 giá trị; trùng thì bỏ trùng.
 * Endpoint không lưu trạng thái, nên gửi feedback hai lần cho cùng một ngày sẽ điều chỉnh hai lần — app khoá nút sau khi gửi.
 
+### 6.5. Giới hạn tần suất (bổ sung bản 2.9.0)
+
+Các endpoint có thể gọi Gemini mà không cần đăng nhập bị giới hạn số lần gọi, để một người không dùng hết 20 lượt Gemini mỗi ngày của mọi người (NFR-2):
+
+| Hạn mức | Endpoint | Mặc định | Biến môi trường |
+|---|---|---|---|
+| Tạo kế hoạch | `POST /api/v1/generate-plan` | 5 lần / 10 phút | `RATE_LIMIT_PLAN` |
+| Điều chỉnh | `POST /api/v1/meals/swap`, `/exercises/swap`, `/feedback` — dùng chung | 30 lần / 10 phút | `RATE_LIMIT_ADJUST` |
+
+* Đã đăng nhập (token hợp lệ) → đếm theo tài khoản, nên cả lớp dùng chung một Wi-Fi vẫn mỗi người đủ lượt; chưa đăng nhập → đếm theo địa chỉ IP (IPv6 tính cả mạng /64). Token sai → 401 trước khi đếm, không tốn lượt.
+* Vượt hạn mức → **429**, header `Retry-After` là số giây phải chờ, body cùng dạng các lỗi khác với câu tiếng Việt app hiện thẳng cho người dùng:
+
+```json
+{ "statusCode": 429, "error": "Too Many Requests", "message": "Bạn thao tác quá nhanh. Vui lòng thử lại sau 10 phút." }
+```
+
+* Mọi response của các endpoint này có thêm `X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset` (giây tới lúc đếm lại).
+* Cửa sổ đếm cố định: lần gọi đầu mở cửa sổ, hết cửa sổ thì đếm lại từ đầu. Bộ đếm lưu trong DB (các instance serverless không chung bộ nhớ), chỉ lưu mã băm SHA-256 của tài khoản hoặc IP. `/health`, đăng nhập, lịch sử, xoá tài khoản không bị giới hạn.
+* Sau proxy (Vercel), IP thật lấy từ `X-Forwarded-For` khi `TRUST_PROXY_HOPS=1`; chạy trên máy để `0` (mặc định) để người gọi không tự ghi header này mà đổi được IP.
+
 ---
 
 ## 7. YÊU CẦU PHI CHỨC NĂNG THỰC TẾ (STUDENT-FRIENDLY NFRS)
@@ -418,10 +444,12 @@ Giá trị cho feedback:
 2. **Xử lý sự cố đơn giản (Graceful Fallback):**
    * Nếu người dùng mất mạng hoặc Gemini API gặp sự cố giới hạn (Rate limit), Backend sẽ trả về mã lỗi dễ hiểu thay vì làm crash ứng dụng Flutter.
    * Gói miễn phí của Gemini chỉ cho 20 lần gọi mỗi ngày cho mỗi model (đo 24/09/2026); hết hạn mức hoặc model quá tải thì backend dùng dữ liệu soạn sẵn, app vẫn chạy bình thường. *(bổ sung bản 2.5.1)*
+   * Bản chạy thật giới hạn số lần gọi của mỗi người (mục 6.5) để một người không dùng hết hạn mức của mọi người. *(bổ sung bản 2.9.0)*
    * Có sẵn thực đơn mẫu 3 ngày (`backend_api/src/plan/data/sample-plan.json`) để demo trơn tru ngay cả khi chưa có khoá Gemini hoặc mạng trường yếu. Response luôn có trường `source` (`gemini` / `sample`) để app biết đang hiển thị dữ liệu nào.
 3. **Môi trường chạy đơn giản (Local Environment):**
    * Backend chạy trực tiếp trên máy cá nhân bằng lệnh `npm run start:dev` (Node.js 18+ LTS), Nest CLI dùng để scaffold module/controller/service (`nest generate ...`).
    * Flutter chạy mượt mà trên Chrome (Flutter Web) hoặc máy ảo Android / điện thoại thật qua cáp USB.
+   * Bản chạy thật cho người dùng thử và người chấm: backend trên Vercel + Neon, bản web trên GitHub Pages, APK Android (mục 4, "Triển khai"). Chạy trên máy vẫn như trên, không cần tài khoản dịch vụ nào. *(bổ sung bản 2.9.0)*
    * Nền tảng nhắm tới: Android, web, Windows, macOS. iOS tạm chưa nhắm tới — không kiểm thử, không cấu hình riêng. Trên cửa sổ rộng (web, máy tính), giao diện giữ bề rộng như điện thoại, nằm giữa màn hình. *(bổ sung bản 2.6.1)*
 4. **Độ tin cậy dữ liệu dinh dưỡng (Nutrition Data Sanity Check):**
    * Gemini có thể "bịa" calo/macro không nhất quán. Mọi kết quả Gemini (thực đơn, món thay thế, ngày cân đối lại), thực đơn mẫu và plan client gửi lại phải qua cùng một bộ kiểm tra trước khi trả cho Flutter:
@@ -442,9 +470,11 @@ Giá trị cho feedback:
    * `database.sqlite` là file trên **máy chạy `backend_api/`**, không phải lưu trên điện thoại. Mọi thiết bị (điện thoại A, điện thoại B...) gọi API tới **cùng một backend** nên đều đọc/ghi chung một file này — đây là lý do lịch sử kế hoạch (FR-7) xem được xuyên thiết bị khi đăng nhập cùng tài khoản Google, khác hẳn với `shared_preferences` (luôn lưu cục bộ trên từng máy).
    * Trong lúc code/test, backend chạy tạm trên localhost (`npm run start:dev`) là đủ. Muốn demo/nộp bài với nhiều thiết bị thật hoạt động ổn định lâu dài (không phụ thuộc laptop của nhóm có đang bật hay không), cần **deploy `backend_api/` lên một nơi chạy liên tục**.
    * Vì SQLite là một file trên ổ đĩa của server, nơi deploy phải có **ổ lưu trữ bền** (persistent disk/volume). Nhiều gói hosting miễn phí dùng ổ đĩa tạm: file bị xoá mỗi khi service ngủ, restart hoặc redeploy. Ví dụ, Render bản free không gắn được persistent disk, nên dùng SQLite trên đó sẽ mất toàn bộ tài khoản và lịch sử. Hai hướng đúng: (a) giữ SQLite, chọn host có volume bền (ví dụ Railway volume, Fly.io volume, hoặc VPS); (b) chuyển sang Postgres được quản lý sẵn — TypeORM chỉ cần đổi cấu hình kết nối. Kiểm tra lại gói và giá hiện hành của host trước khi chọn.
+   * Bản 2.9.0 chọn hướng (b): bản chạy thật dùng Postgres của Neon (Vercel chỉ có ổ đĩa tạm), máy dev và test vẫn dùng SQLite (mục 4).
 7. **Quyền riêng tư dữ liệu sức khoẻ (bổ sung bản 2.3.0):**
    * Dị ứng, chấn thương, tình trạng sức khoẻ và việc mang thai / cho con bú là dữ liệu cá nhân nhạy cảm (Nghị định 13/2023/NĐ-CP). Chúng chỉ lưu trên máy người dùng, gửi kèm từng request rồi bỏ đi: backend không ghi vào database, không ghi log nội dung request hay nội dung Gemini trả về.
    * Plan lưu trong lịch sử (FR-7) không chứa các trường này.
+   * Trang chính sách quyền riêng tư công khai (`frontend_app/web/privacy.html`, đi cùng bản web) nói rõ dữ liệu nào lưu ở đâu, gửi cho ai (kể cả việc gói miễn phí của Gemini API cho Google dùng nội dung gửi lên để cải thiện sản phẩm) và cách xoá tài khoản. Đổi cách lưu hay gửi dữ liệu thì sửa trang này cùng lúc. *(bổ sung bản 2.9.0)*
    * Android không đưa dữ liệu đã lưu của app lên bản sao lưu Google Drive và không chép sang máy mới khi chuyển máy: hồ sơ có dữ liệu sức khoẻ và token đăng nhập chỉ nằm trên máy đã nhập. *(bổ sung bản 2.8.0)*
 8. **Chống prompt injection (bổ sung bản 2.3.0):** Văn bản tự do của người dùng được đặt trong một khối dữ liệu có thẻ phân cách, bỏ ký tự `<` `>` và xuống dòng, giới hạn 300 ký tự mỗi ô; prompt dặn Gemini coi khối này là dữ liệu, không phải chỉ dẫn. Đầu ra vẫn phải qua bộ kiểm tra ở NFR-4, nên dù bị chèn lệnh cũng không làm hỏng app.
 9. **Khuyến cáo y tế (bổ sung bản 2.3.0):** Onboarding ghi rõ gợi ý chỉ mang tính tham khảo, không thay thế tư vấn y tế. Khi người dùng có khai tình trạng sức khoẻ, hoặc khi calo mục tiêu phải nâng lên bằng BMR, response có câu giải thích trong `warnings` để app hiển thị.
@@ -462,6 +492,7 @@ Giá trị cho feedback:
 | **Tuần 4** | **Kết nối API (Integration) & Checklist** | Flutter gọi API Backend hiển thị dữ liệu thật; hoàn thiện tính năng Danh sách đi chợ (Checkbox). |
 | **Tuần 5** | **Hoàn thiện tính năng nâng cao & Demo** | Thêm nút "Đổi món" (Swap); viết Unit Test cho thuật toán BMR; hoàn thiện slide báo cáo và video quay demo nộp môn học. |
 | **Tuần 6** *(bổ sung, bản 2.2.0)* | **Tài khoản & Lịch sử** | Tích hợp `google_sign_in` + `SQLite/TypeORM` trong `backend_api/`; hoàn thiện `/api/v1/auth/google`, `/api/v1/plans/history`, `DELETE /api/v1/me`; màn hình Lịch sử trong Flutter thay placeholder "Thống kê". |
+| **Tuần 7** *(bổ sung, bản 2.9.0)* | **Triển khai & chạy thật** | Backend trên Vercel + Neon Postgres, giới hạn tần suất; bản web trên GitHub Pages kèm trang chính sách quyền riêng tư; APK Android đăng nhập Google được; kiểm thử trên bản thật. |
 
 ---
 

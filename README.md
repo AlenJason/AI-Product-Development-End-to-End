@@ -4,6 +4,14 @@
 
 Ứng dụng di động gợi ý và tự động điều chỉnh thực đơn (món Việt) cùng lịch tập tại nhà theo chu kỳ **3 ngày cuốn chiếu**, dựa trên thể trạng và phản hồi hằng ngày của người dùng. Xem đầy đủ bài toán, kiến trúc hệ thống, JSON schema và roadmap tại **[BRD.md](BRD.md)**.
 
+## Dùng thử bản chạy thật
+
+- **Bản web:** https://alenjason.github.io/AI-Product-Development-End-to-End/ — dùng ngay không cần đăng nhập, hoặc đăng nhập bằng tài khoản Google để lưu lịch sử.
+- **API:** https://smartfit-api.vercel.app — Swagger UI ở [/docs](https://smartfit-api.vercel.app/docs), [/health](https://smartfit-api.vercel.app/health) cho biết đang dùng Gemini thật hay thực đơn mẫu.
+- **Chính sách quyền riêng tư:** https://alenjason.github.io/AI-Product-Development-End-to-End/privacy.html
+
+Gemini gói miễn phí chỉ cho 20 lượt mỗi ngày; hết lượt thì kế hoạch là thực đơn mẫu co giãn theo calo của bạn (trường `source` = `sample`). Mỗi người tạo tối đa 5 kế hoạch mỗi 10 phút, đổi món / đổi bài / đánh giá tối đa 30 lần mỗi 10 phút.
+
 ## Tech stack
 
 | Thành phần | Công nghệ |
@@ -11,12 +19,14 @@
 | Frontend | Flutter (mobile + web) |
 | Backend | NestJS (TypeScript) |
 | AI Engine | Google Gemini API (Structured Output JSON) |
+| Cơ sở dữ liệu | SQLite khi chạy trên máy và khi test; Postgres (Neon) cho bản chạy thật |
+| Triển khai | Backend: Vercel · Bản web: GitHub Pages |
 
 ## Cấu trúc thư mục
 
 ```
 frontend_app/    Ứng dụng Flutter: Onboarding, kế hoạch 3 ngày (đổi món, đổi bài), đi chợ, hồ sơ — nối backend
-backend_api/     API NestJS — generate-plan (Gemini hoặc thực đơn mẫu), đổi món, đổi bài tập, feedback, đăng nhập Google, lịch sử (SQLite)
+backend_api/     API NestJS — generate-plan (Gemini hoặc thực đơn mẫu), đổi món, đổi bài tập, feedback, đăng nhập Google, lịch sử (SQLite trên máy, Postgres khi deploy)
 ai_workspace/    Script Node/TS thử nghiệm prompt & schema Gemini, độc lập với backend
 BRD.md           Tài liệu đặc tả yêu cầu (nguồn spec chính thức)
 ```
@@ -51,7 +61,7 @@ flutter test integration_test -d macos
 
 Đăng nhập: backend giả lập (mặc định) → app hiện "Đăng nhập demo", nhập email bất kỳ là có lịch sử riêng. Đăng nhập Google thật cần Client ID và build với `--dart-define=GOOGLE_WEB_CLIENT_ID=<Web Client ID>` — từng nền tảng ở `docs/SETUP_CREDENTIALS.md` mục 3 (Windows chưa đăng nhập Google được, dùng như khách).
 
-Nền tảng nhắm tới: Android, web, Windows, macOS (iOS tạm bỏ — PLAN D7). Mỗi lần push, CI build bản release của cả bốn; tải về ở tab Actions → lần chạy "Frontend CI" → mục Artifacts (`smartfit-apk`, `smartfit-web`, `smartfit-windows`, `smartfit-macos`). Các bản này gọi backend ở `localhost:3000`.
+Nền tảng nhắm tới: Android, web, Windows, macOS (iOS tạm bỏ — PLAN D7). Mỗi lần push, CI build bản release của cả bốn; tải về ở tab Actions → lần chạy "Frontend CI" → mục Artifacts (`smartfit-apk`, `smartfit-web`, `smartfit-windows`, `smartfit-macos`). Các bản này gọi backend ở `localhost:3000`. Riêng push lên nhánh `Thien-Source`, CI build thêm bản web trỏ backend thật và đưa lên GitHub Pages (địa chỉ backend và Web Client ID lấy từ Variables của repo: `API_BASE_URL`, `GOOGLE_WEB_CLIENT_ID`).
 
 App gọi backend ở `http://localhost:3000` (máy ảo Android: `http://10.0.2.2:3000`). Chạy trên điện thoại thật thì chỉ địa chỉ máy đang chạy backend, hai máy cùng Wi-Fi:
 
@@ -70,6 +80,13 @@ cd backend_api
 npm install
 cp .env.example .env   # để nguyên = chạy giả lập (thực đơn mẫu, đăng nhập giả lập); điền khoá = dùng thật
 npm run start:dev      # http://localhost:3000, Swagger UI tại /docs, /health báo đang dùng Gemini hay dữ liệu mẫu
+npm test && npm run test:e2e && npm run build && npm run test:smoke   # như CI; không cần khoá, DB trong RAM
+```
+
+Mặc định backend dùng SQLite (`database.sqlite`). Có `DATABASE_URL` (Postgres) thì dùng Postgres — bản deploy trên Vercel dùng Neon. Kiểm migration và e2e trên một Postgres riêng cho test (CI dùng Postgres 17; DB đó bị xoá sạch mỗi lần chạy):
+
+```bash
+TEST_DATABASE_URL=postgres://user:pass@localhost:5432/smartfit_test npm run test:postgres
 ```
 
 ### AI Workspace (thử nghiệm prompt Gemini)
@@ -90,6 +107,12 @@ Kết quả build và test tự động của từng commit: tab [Actions](https
 ## Nhật ký thay đổi (Changelog)
 
 Đối chiếu theo phiên bản BRD (mục "Phiên bản" trong [BRD.md](BRD.md)), để giảng viên/trợ giảng theo dõi tiến độ trực tiếp trên repo mà không cần đọc từng commit.
+
+### BRD v2.9.0 — 2026-10-02
+- Giai đoạn 9 — chạy thật: backend lên Vercel (vùng Singapore) với Postgres của Neon, bản web lên GitHub Pages; Gemini thật trên bản deploy tạo kế hoạch trong khoảng 16 giây. Trên máy vẫn chạy SQLite và chế độ giả lập như trước; CI kiểm migration và e2e trên cả SQLite lẫn Postgres
+- Giới hạn tần suất (BRD mục 6.5): tạo kế hoạch 5 lần / 10 phút, đổi món / đổi bài / đánh giá 30 lần / 10 phút — theo tài khoản khi đã đăng nhập, theo IP khi chưa; vượt thì nhận 429 với câu tiếng Việt và thời gian chờ. Tự ghi `X-Forwarded-For` giả không lấy thêm được lượt
+- Trang chính sách quyền riêng tư: dữ liệu nào lưu trên máy, trên máy chủ, gửi cho Gemini; cách xoá tài khoản. Đăng nhập Google mở cho mọi tài khoản
+- Sửa những lỗi chỉ lộ ra khi chạy trên Vercel (chạy thử bị chặn ở từng lỗi): thư viện giới hạn tần suất không nạp được (thay bằng code tự viết), thiếu driver Postgres trong gói deploy, app treo vì tự `listen` lúc khởi động, Swagger UI trắng trang. Smoke test nay chạy bản build thêm một lần theo đúng cách Vercel nạp app để bắt lại các lỗi này. Kiểm thử: 406 unit và 83 e2e backend (e2e chạy cả trên Postgres), 175 test Flutter
 
 ### BRD v2.8.0 — 2026-10-01
 - Giai đoạn 8 — tài khoản & lịch sử: lần đầu mở app có màn chào — đăng nhập hoặc "Dùng ngay, không cần đăng nhập". App tự hỏi backend cách đăng nhập: chế độ giả lập → "Đăng nhập demo" bằng email; chế độ thật → nút Google (Android, macOS, web; Windows dùng như khách)

@@ -6,12 +6,14 @@ import {
   ApiOkResponse,
   ApiOperation,
   ApiTags,
+  ApiTooManyRequestsResponse,
   ApiUnauthorizedResponse,
   ApiUnprocessableEntityResponse,
 } from '@nestjs/swagger';
 import { CurrentUser, OptionalJwtAuthGuard } from '../../auth/jwt-auth.guard.js';
 import type { User } from '../../database/entities/user.entity.js';
 import { HistoryService } from '../../history/history.service.js';
+import { RateLimit, RateLimitGuard } from '../../rate-limit/rate-limit.guard.js';
 import { FeedbackDto, FeedbackResponseDto, PlanEnvelopeDto, SwapExerciseDto, SwapMealDto } from '../dto/adjust-plan.dto.js';
 import type { MealPlanResponseDto } from '../dto/meal-plan-response.dto.js';
 import { WARNINGS } from '../plan-warnings.js';
@@ -26,7 +28,12 @@ import { MealSwapService } from './meal-swap.service.js';
 @ApiBadRequestResponse({ description: 'Request hoặc plan gửi lên sai hợp đồng, hoặc ID không có trong plan' })
 @ApiConflictResponse({ description: 'Plan được tạo cho hồ sơ khác (mục tiêu calo đã đổi) — cần tạo plan mới' })
 @ApiUnauthorizedResponse({ description: 'Có gửi token nhưng token sai, hết hạn, hoặc tài khoản đã bị xoá' })
-@UseGuards(OptionalJwtAuthGuard)
+@ApiTooManyRequestsResponse({
+  description: 'Quá số lần đổi món / đổi bài / feedback cho phép (RATE_LIMIT_ADJUST, dùng chung) — xem header Retry-After',
+})
+// Biết người gọi trước rồi mới đếm lượt (PLAN 9.7); ba endpoint dùng chung hạn mức `adjust`.
+@UseGuards(OptionalJwtAuthGuard, RateLimitGuard)
+@RateLimit('adjust')
 @Controller('api/v1')
 export class PlanAdjustController {
   constructor(

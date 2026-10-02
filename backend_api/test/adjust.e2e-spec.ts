@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import request from 'supertest';
 import { DataSource } from 'typeorm';
+import { PlanRecord } from '../src/database/entities/plan-record.entity.js';
 import { startFakeGemini, type FakeGemini } from './fake-gemini-server.js';
 import { createTestApp, loginMock, type TestApp } from './test-app.js';
 
@@ -24,12 +25,9 @@ describe('Đổi món, đổi bài tập, feedback (e2e, chế độ giả lập
     return req.send(body);
   };
   const generate = async (token?: string) => (await post('generate-plan', PROFILE, token).expect(200)).body;
-  const storedPlan = async (id: string) => {
-    const rows: { plan_json: string }[] = await testApp.app
-      .get(DataSource)
-      .query('SELECT plan_json FROM plan_records WHERE id = ?', [id]);
-    return rows[0] ? JSON.parse(rows[0].plan_json) : undefined;
-  };
+  // Qua repository (không viết SQL) để chạy được cả trên SQLite lẫn Postgres.
+  const storedPlan = async (id: string) =>
+    (await testApp.app.get(DataSource).getRepository(PlanRecord).findOneBy({ id }))?.plan_json;
 
   beforeAll(async () => {
     testApp = await createTestApp();

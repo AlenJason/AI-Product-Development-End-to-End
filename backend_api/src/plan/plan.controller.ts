@@ -4,11 +4,13 @@ import {
   ApiOkResponse,
   ApiOperation,
   ApiTags,
+  ApiTooManyRequestsResponse,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { CurrentUser, OptionalJwtAuthGuard } from '../auth/jwt-auth.guard.js';
 import type { User } from '../database/entities/user.entity.js';
 import { HistoryService } from '../history/history.service.js';
+import { RateLimit, RateLimitGuard } from '../rate-limit/rate-limit.guard.js';
 import { CreatePlanDto } from './dto/create-plan.dto.js';
 import { MealPlanResponseDto } from './dto/meal-plan-response.dto.js';
 import { PlanService } from './plan.service.js';
@@ -24,7 +26,9 @@ export class PlanController {
 
   @Post('generate-plan')
   @HttpCode(HttpStatus.OK)
-  @UseGuards(OptionalJwtAuthGuard)
+  // Thứ tự: biết người gọi trước (OptionalJwtAuthGuard), rồi mới đếm lượt — theo tài khoản hoặc theo IP (PLAN 9.7).
+  @UseGuards(OptionalJwtAuthGuard, RateLimitGuard)
+  @RateLimit('plan')
   @ApiBearerAuth()
   @ApiOperation({
     summary: 'Sinh kế hoạch ăn uống & tập luyện 3 ngày (BRD FR-1, FR-2)',
@@ -32,6 +36,9 @@ export class PlanController {
   })
   @ApiOkResponse({ type: MealPlanResponseDto, description: 'Kế hoạch 3 ngày theo BRD.md mục 6.2' })
   @ApiUnauthorizedResponse({ description: 'Có gửi token nhưng token sai, hết hạn, hoặc tài khoản đã bị xoá' })
+  @ApiTooManyRequestsResponse({
+    description: 'Quá số lần tạo plan cho phép (RATE_LIMIT_PLAN) — header Retry-After là số giây phải chờ',
+  })
   async generatePlan(
     @Body() dto: CreatePlanDto,
     @CurrentUser() user: User | undefined,

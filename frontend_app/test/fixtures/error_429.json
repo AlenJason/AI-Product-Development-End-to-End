@@ -1,0 +1,5 @@
+{
+  "statusCode": 429,
+  "error": "Too Many Requests",
+  "message": "Bạn thao tác quá nhanh. Vui lòng thử lại sau 10 phút."
+}

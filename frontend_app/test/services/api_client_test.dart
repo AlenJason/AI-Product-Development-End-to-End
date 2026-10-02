@@ -168,6 +168,13 @@ void main() {
       expect(noReplacement.message, loadFixture('error_422')['message']);
     });
 
+    test('429 → TooManyRequestsException với câu của server (bao lâu nữa thử lại); không có câu → câu chung', () async {
+      final limited = await errorOf(jsonResponse(loadFixture('error_429'), 429));
+      expect(limited, isA<TooManyRequestsException>());
+      expect(limited.message, loadFixture('error_429')['message']);
+      expect((await errorOf(jsonResponse({'statusCode': 429}, 429))).message, contains('thao tác quá nhanh'));
+    });
+
     test('500, body không phải JSON, JSON sai hợp đồng → ServerException', () async {
       expect(await errorOf(jsonResponse({'statusCode': 500, 'message': 'Internal server error'}, 500)),
           isA<ServerException>().having((e) => e.statusCode, 'statusCode', 500));

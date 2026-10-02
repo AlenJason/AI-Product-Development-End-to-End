@@ -97,4 +97,16 @@ describe('Fixture hợp đồng cho Flutter (e2e)', () => {
     check('error_409', (await http().post('/api/v1/meals/swap').send({ profile: { ...PROFILE, goal: 'bulk' }, plan, meal_id: 'm1_1' }).expect(409)).body);
     check('error_422', (await http().post('/api/v1/exercises/swap').send({ profile: PROFILE, plan, exercise_id: 'e3_2' }).expect(422)).body);
   });
+
+  // Giới hạn tần suất (PLAN 9.7): app riêng với hạn mức 1 lần / 10 phút.
+  it('matches the 429 fixture', async () => {
+    const limited = await createTestApp({ RATE_LIMIT_PLAN: '1/10m' });
+    try {
+      const post = () => request(limited.app.getHttpServer()).post('/api/v1/generate-plan').send(PROFILE);
+      await post().expect(200);
+      check('error_429', (await post().expect(429)).body);
+    } finally {
+      await limited.close();
+    }
+  });
 });

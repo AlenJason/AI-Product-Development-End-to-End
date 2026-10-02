@@ -2,6 +2,7 @@ import type { INestApplication } from '@nestjs/common';
 import { Test, type TestingModuleBuilder } from '@nestjs/testing';
 import request from 'supertest';
 import { configureApp } from '../src/app.setup.js';
+import { TEST_DATABASE_URL, resetPostgres } from './postgres-test-db.js';
 
 export interface TestApp {
   app: INestApplication;
@@ -10,7 +11,7 @@ export interface TestApp {
 
 // Máy dev có thể có khoá Gemini thật, file DB thật, AUTH_MODE=google trong .env (#17):
 // ghim env trước khi nạp AppModule (ConfigModule.forRoot đọc .env ngay lúc import), trả lại khi đóng.
-// Mặc định: DB trong RAM, đăng nhập giả lập, không có Gemini.
+// Mặc định: DB trong RAM, đăng nhập giả lập, không có Gemini. Có TEST_DATABASE_URL → Postgres đó, xoá sạch mỗi lần.
 // `configure` ghi đè provider khi cần kết quả tất định (ví dụ RandomSource khi xuất fixture hợp đồng).
 export async function createTestApp(
   env: Record<string, string> = {},
@@ -18,6 +19,9 @@ export async function createTestApp(
 ): Promise<TestApp> {
   const pinned: Record<string, string> = {
     DATABASE_PATH: ':memory:',
+    DATABASE_URL: TEST_DATABASE_URL,
+    DATABASE_RUN_MIGRATIONS: '',
+    VERCEL: '',
     AUTH_MODE: 'mock',
     GOOGLE_CLIENT_ID: '',
     JWT_SECRET: '',
@@ -28,6 +32,10 @@ export async function createTestApp(
     GEMINI_THINKING: '',
     GEMINI_TOTAL_TIMEOUT_MS: '',
     CORS_ORIGINS: '',
+    // Test cũ tạo nhiều plan trong một app; test giới hạn tần suất tự bật bằng `env`.
+    RATE_LIMIT_PLAN: 'off',
+    RATE_LIMIT_ADJUST: 'off',
+    TRUST_PROXY_HOPS: '',
     ...env,
   };
   const saved = Object.fromEntries(Object.keys(pinned).map((key) => [key, process.env[key]]));
@@ -40,6 +48,7 @@ export async function createTestApp(
   Object.assign(process.env, pinned);
 
   try {
+    if (pinned.DATABASE_URL) await resetPostgres(pinned.DATABASE_URL);
     const { AppModule } = await import('../src/app.module.js');
     const moduleRef = await configure(Test.createTestingModule({ imports: [AppModule] })).compile();
     const app = moduleRef.createNestApplication({ logger: false });

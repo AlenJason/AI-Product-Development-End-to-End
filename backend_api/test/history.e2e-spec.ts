@@ -1,6 +1,7 @@
 import { JwtService } from '@nestjs/jwt';
 import request from 'supertest';
 import { DataSource } from 'typeorm';
+import { PlanRecord } from '../src/database/entities/plan-record.entity.js';
 import { createTestApp, loginMock, type TestApp } from './test-app.js';
 
 const HEALTH_SECRET = 'BENH-NEN-BI-MAT-456';
@@ -28,8 +29,9 @@ describe('Lịch sử kế hoạch (e2e, AUTH_MODE=mock, DB trong RAM)', () => {
       .get(id ? `/api/v1/plans/history/${id}` : '/api/v1/plans/history')
       .set('Authorization', `Bearer ${token}`);
   const db = () => testApp.app.get(DataSource);
+  // Chạy cả trên Postgres (TEST_DATABASE_URL): COUNT(*) của Postgres trả về chuỗi.
   const countPlans = async (): Promise<number> =>
-    (await db().query('SELECT COUNT(*) AS n FROM plan_records'))[0].n;
+    Number((await db().query('SELECT COUNT(*) AS n FROM plan_records'))[0].n);
 
   beforeAll(async () => {
     testApp = await createTestApp();
@@ -118,8 +120,7 @@ describe('Lịch sử kế hoạch (e2e, AUTH_MODE=mock, DB trong RAM)', () => {
     await http().delete('/api/v1/me').set('Authorization', `Bearer ${access_token}`).expect(204);
 
     await history(access_token).expect(401);
-    const rows = await db().query('SELECT COUNT(*) AS n FROM plan_records WHERE user_id = ?', [user.id]);
-    expect(rows[0].n).toBe(0);
+    expect(await db().getRepository(PlanRecord).countBy({ user_id: user.id })).toBe(0);
     const again = await loginMock(testApp, 'xoa@vku.edu.vn');
     expect((await history(again.access_token).expect(200)).body).toEqual({ plans: [] });
   });

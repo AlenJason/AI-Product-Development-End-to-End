@@ -1,6 +1,8 @@
 // Chạy bản build (dist/) như server thật rồi gọi thử các endpoint chính.
 // Bắt những lỗi vitest không thấy vì vitest chạy thẳng file .ts: asset chưa được copy vào dist
-// (nest-cli.json), import vòng giữa các entity khi chạy ESM đã build.
+// (nest-cli.json), import vòng giữa các entity khi chạy ESM đã build, gói CommonJS require() NestJS 12 (chỉ có ESM) —
+// Node 24 cho phép, bộ nạp module của Vercel thì không, nên server chạy với --no-experimental-require-module như Vercel.
+// Chạy hai lần: `node dist/main.js` (máy dev, start:prod) và import như runtime của Vercel (vercel-handler-server.mjs).
 // Không cần khoá nào: DB trong RAM, đăng nhập giả lập, không có Gemini (#17).
 import { spawn } from 'node:child_process';
 
@@ -8,28 +10,40 @@ const PORT = process.env.SMOKE_PORT ?? '3999';
 const BASE = `http://127.0.0.1:${PORT}`;
 const STARTUP_TIMEOUT_MS = 20_000;
 
-const server = spawn(process.execPath, ['dist/main.js'], {
-  env: {
-    ...process.env,
-    PORT,
-    NODE_ENV: 'test',
-    DATABASE_PATH: ':memory:',
-    AUTH_MODE: 'mock',
-    GOOGLE_CLIENT_ID: '',
-    JWT_SECRET: '',
-    JWT_EXPIRES_IN: '',
-    ALLOW_MOCK_AUTH: '',
-    GEMINI_API_KEY: '',
-    GEMINI_BASE_URL: '',
-    GEMINI_THINKING: '',
-    GEMINI_TOTAL_TIMEOUT_MS: '',
-  },
-  stdio: ['ignore', 'pipe', 'pipe'],
-});
-let output = '';
-server.stdout.on('data', (chunk) => (output += chunk));
-server.stderr.on('data', (chunk) => (output += chunk));
-const exited = new Promise((resolve) => server.on('exit', resolve));
+const MODES = [
+  ['node dist/main.js', 'dist/main.js'],
+  ['như trên Vercel', 'scripts/vercel-handler-server.mjs'],
+];
+
+function startServer(script) {
+  const server = spawn(process.execPath, ['--no-experimental-require-module', script], {
+    env: {
+      ...process.env,
+      PORT,
+      NODE_ENV: 'test',
+      DATABASE_PATH: ':memory:',
+      DATABASE_URL: '',
+      AUTH_MODE: 'mock',
+      GOOGLE_CLIENT_ID: '',
+      JWT_SECRET: '',
+      JWT_EXPIRES_IN: '',
+      ALLOW_MOCK_AUTH: '',
+      GEMINI_API_KEY: '',
+      GEMINI_BASE_URL: '',
+      GEMINI_THINKING: '',
+      GEMINI_TOTAL_TIMEOUT_MS: '',
+      // Rộng để không chặn, nhưng bộ đếm trong DB (SQL thô) vẫn chạy thật trên bản build.
+      RATE_LIMIT_PLAN: '100/1m',
+      RATE_LIMIT_ADJUST: '100/1m',
+      TRUST_PROXY_HOPS: '',
+    },
+    stdio: ['ignore', 'pipe', 'pipe'],
+  });
+  const state = { server, output: '', exited: new Promise((resolve) => server.on('exit', resolve)) };
+  server.stdout.on('data', (chunk) => (state.output += chunk));
+  server.stderr.on('data', (chunk) => (state.output += chunk));
+  return state;
+}
 
 async function call(method, path, { token, body } = {}) {
   const res = await fetch(BASE + path, {
@@ -48,7 +62,7 @@ function expect(condition, message) {
   if (!condition) throw new Error(message);
 }
 
-async function waitForServer() {
+async function waitForServer(server) {
   const deadline = Date.now() + STARTUP_TIMEOUT_MS;
   while (Date.now() < deadline) {
     if (server.exitCode !== null) throw new Error(`Server thoát sớm (mã ${server.exitCode})`);
@@ -61,8 +75,8 @@ async function waitForServer() {
   throw new Error(`Server không lên sau ${STARTUP_TIMEOUT_MS} ms`);
 }
 
-try {
-  const health = await waitForServer();
+async function checkEndpoints(server) {
+  const health = await waitForServer(server);
   expect(health.status === 200 && health.body.auth_mode === 'mock', `/health sai: ${JSON.stringify(health)}`);
 
   const login = await call('POST', '/api/v1/auth/google', { body: { id_token: 'mock:smoke@vku.edu.vn' } });
@@ -90,12 +104,19 @@ try {
     body: { ...adjust, day_number: 1, intensity: 'hard', body_states: ['danger_sign'], eating: 'on_plan' },
   });
   expect(feedback.status === 200 && feedback.body.safety_warning, `Feedback lỗi: ${feedback.status}`);
+}
 
-  console.log('Smoke test đạt: /health, đăng nhập giả lập, generate-plan, lịch sử, đổi món, đổi bài tập, feedback.');
-} catch (error) {
-  console.error(`Smoke test thất bại: ${error.message}\n--- log server ---\n${output}`);
-  process.exitCode = 1;
-} finally {
-  server.kill();
-  await exited;
+for (const [label, script] of MODES) {
+  const state = startServer(script);
+  try {
+    await checkEndpoints(state.server);
+    console.log(`Smoke test đạt (${label}): /health, đăng nhập giả lập, generate-plan, lịch sử, đổi món, đổi bài tập, feedback.`);
+  } catch (error) {
+    console.error(`Smoke test thất bại (${label}): ${error.message}\n--- log server ---\n${state.output}`);
+    process.exitCode = 1;
+  } finally {
+    state.server.kill();
+    await state.exited;
+  }
+  if (process.exitCode) break;
 }

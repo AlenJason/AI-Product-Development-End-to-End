@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Chính sách quyền riêng tư — SmartFit AI</title>
+  <link rel="icon" type="image/png" href="favicon.png">
+  <style>
+    :root {
+      --page: #FDFBF7;
+      --panel: #F8FAFC;
+      --ink: #0F172A;
+      --heading: #1E293B;
+      --muted: #64748B;
+      --border: #E2E8F0;
+      --primary: #059669;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --page: #0B1120;
+        --panel: #111827;
+        --ink: #E2E8F0;
+        --heading: #F1F5F9;
+        --muted: #94A3B8;
+        --border: #1F2937;
+        --primary: #10B981;
+      }
+    }
+    body {
+      margin: 0;
+      background: var(--page);
+      color: var(--ink);
+      font: 16px/1.65 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    }
+    main { max-width: 720px; margin: 0 auto; padding: 32px 16px 64px; }
+    h1 { color: var(--heading); font-size: 1.75rem; line-height: 1.3; margin: 0 0 4px; }
+    h2 { color: var(--heading); font-size: 1.15rem; margin: 32px 0 8px; }
+    p, li { margin: 6px 0; }
+    ul { padding-left: 22px; }
+    a { color: var(--primary); }
+    .meta { color: var(--muted); margin-bottom: 24px; }
+    .note {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-left: 4px solid var(--primary);
+      border-radius: 8px;
+      padding: 12px 16px;
+    }
+  </style>
+</head>
+<body>
+<main>
+  <h1>Chính sách quyền riêng tư</h1>
+  <p class="meta">SmartFit AI · cập nhật ngày 01/10/2026</p>
+
+  <p>SmartFit AI là đồ án môn "AI Product Development End-to-End" của sinh viên Trường Đại học Công nghệ Thông tin và
+    Truyền thông Việt – Hàn (VKU): ứng dụng gợi ý thực đơn món Việt và bài tập tại nhà trong 3 ngày. Trang này cho biết
+    ứng dụng thu thập gì, lưu ở đâu, gửi cho ai và bạn xoá dữ liệu của mình thế nào.</p>
+
+  <p class="note">Tóm tắt: không đăng nhập thì mọi thứ chỉ nằm trên máy bạn. Đăng nhập bằng Google thì máy chủ lưu thêm
+    email, tên và lịch sử kế hoạch. Ghi chú dị ứng, chấn thương, sức khoẻ và việc mang thai không bao giờ được lưu trên
+    máy chủ, nhưng được gửi cho Gemini (Google) để lập kế hoạch. Bạn xoá được tài khoản ngay trong ứng dụng.</p>
+
+  <h2>1. Dữ liệu lưu trên máy của bạn</h2>
+  <ul>
+    <li>Hồ sơ: tuổi, giới tính, chiều cao, cân nặng, mức vận động, mục tiêu, ghi chú dị ứng / chấn thương / tình trạng
+      sức khoẻ, việc mang thai hoặc cho con bú.</li>
+    <li>Kế hoạch đang dùng, danh sách đi chợ, những ngày đã gửi đánh giá cuối ngày (chỉ ghi ngày, không ghi câu trả lời).</li>
+    <li>Khi đã đăng nhập: mã đăng nhập của ứng dụng (không phải mật khẩu), tên và email để hiện ở tab Cá nhân.</li>
+  </ul>
+  <p>Trên Android, dữ liệu này không được đưa lên bản sao lưu Google Drive và không chép sang máy mới khi chuyển máy.</p>
+
+  <h2>2. Dữ liệu máy chủ xử lý</h2>
+  <p>Mỗi lần tạo kế hoạch, đổi món, đổi bài tập hay gửi đánh giá, ứng dụng gửi hồ sơ lên máy chủ để tính toán. Máy chủ
+    dùng xong là bỏ: không ghi hồ sơ vào cơ sở dữ liệu, không ghi nội dung yêu cầu hay câu trả lời vào nhật ký.</p>
+  <p>Chỉ khi bạn đăng nhập bằng Google, máy chủ mới lưu:</p>
+  <ul>
+    <li>Tài khoản: email, tên và mã định danh tài khoản Google. Ứng dụng không lưu ảnh đại diện và không bao giờ nhận
+      mật khẩu Google của bạn — việc xác thực do Google đảm nhận.</li>
+    <li>Lịch sử kế hoạch: thực đơn, bài tập, danh sách đi chợ, lượng calo mục tiêu và các chỉ số tính từ hồ sơ (BMI,
+      BMR, TDEE, lượng đạm / tinh bột / chất béo). Lịch sử không chứa hồ sơ gốc, ghi chú sức khoẻ hay việc mang thai.</li>
+  </ul>
+
+  <h2>3. Dữ liệu gửi cho Gemini (Google)</h2>
+  <p>Kế hoạch được lập bởi Gemini, mô hình AI của Google. Để lập hoặc điều chỉnh kế hoạch, máy chủ gửi cho Gemini: mục
+    tiêu, lượng calo và dinh dưỡng mỗi ngày, mức bài tập phù hợp, các ghi chú dị ứng / chấn thương / sức khoẻ bạn đã
+    nhập, việc mang thai hoặc cho con bú (nếu có) và tóm tắt đánh giá cuối ngày. Máy chủ không gửi email hay tên của
+    bạn.</p>
+  <p>Ứng dụng dùng gói miễn phí của Gemini API. Theo
+    <a href="https://ai.google.dev/gemini-api/terms" rel="noopener">điều khoản của Gemini API</a>, với gói này Google
+    có thể dùng nội dung gửi lên để cải thiện sản phẩm của họ, và người của Google có thể đọc nội dung đó. Vì vậy, đừng
+    ghi họ tên, số điện thoại hay thông tin giúp nhận ra bạn vào các ô ghi chú.</p>
+
+  <h2>4. Nhật ký kỹ thuật và giới hạn tần suất</h2>
+  <ul>
+    <li>Nhà cung cấp máy chủ (Vercel) tự ghi nhật ký truy cập — thời điểm, đường dẫn, mã kết quả, địa chỉ IP — và giữ
+      trong thời gian ngắn theo chính sách của họ.</li>
+    <li>Để một người không dùng hết lượt của mọi người, máy chủ đếm số lần gọi trong mỗi 10 phút: theo tài khoản nếu đã
+      đăng nhập, theo địa chỉ IP nếu chưa. Bộ đếm chỉ lưu mã băm (SHA-256) của tài khoản hoặc IP, không lưu IP dạng chữ,
+      và dọn dần các bản ghi đã hết hạn quá một ngày.</li>
+  </ul>
+
+  <h2>5. Nơi lưu và các bên liên quan</h2>
+  <ul>
+    <li>Vercel — chạy máy chủ của ứng dụng (vùng Singapore).</li>
+    <li>Neon — cơ sở dữ liệu Postgres chứa tài khoản và lịch sử kế hoạch.</li>
+    <li>Google — đăng nhập bằng tài khoản Google và mô hình Gemini.</li>
+    <li>GitHub Pages — phục vụ bản web của ứng dụng và trang này.</li>
+  </ul>
+  <p>Ứng dụng không có quảng cáo, không bán dữ liệu và không chia sẻ dữ liệu cho bên nào khác ngoài các bên trên.</p>
+
+  <h2>6. Xoá dữ liệu</h2>
+  <ul>
+    <li>Xoá tài khoản: tab <strong>Cá nhân</strong> → <strong>Xoá tài khoản</strong>. Máy chủ xoá ngay tài khoản cùng
+      toàn bộ lịch sử kế hoạch; việc này không hoàn tác được.</li>
+    <li>Dữ liệu trên máy: gỡ ứng dụng, hoặc xoá dữ liệu trang web trong trình duyệt. Đăng xuất không xoá kế hoạch trên
+      máy.</li>
+    <li>Thu hồi quyền ứng dụng đã được cấp trong tài khoản Google:
+      <a href="https://myaccount.google.com/connections" rel="noopener">myaccount.google.com/connections</a>.</li>
+  </ul>
+  <p>Đây là quyền của bạn với dữ liệu cá nhân theo Nghị định 13/2023/NĐ-CP về bảo vệ dữ liệu cá nhân.</p>
+
+  <h2>7. Đối tượng sử dụng và khuyến cáo y tế</h2>
+  <p>Ứng dụng dành cho người từ 18 tuổi. Gợi ý của ứng dụng chỉ để tham khảo, không thay thế tư vấn của bác sĩ hay
+    chuyên gia dinh dưỡng; người đang mang thai, cho con bú hoặc có bệnh nền nên hỏi ý kiến bác sĩ.</p>
+
+  <h2>8. Liên hệ và thay đổi</h2>
+  <p>Câu hỏi hoặc yêu cầu về dữ liệu, xin gửi qua mục
+    <a href="https://github.com/AlenJason/AI-Product-Development-End-to-End/issues" rel="noopener">Issues của dự án
+      trên GitHub</a>. Khi chính sách thay đổi, ngày cập nhật ở đầu trang sẽ đổi theo.</p>
+</main>
+</body>
+</html>

@@ -82,3 +82,46 @@ jobs:
           name: smartfit-${{ matrix.target }}
           path: ${{ matrix.output }}
           retention-days: 7
+
+  # Bản web chạy thật (PLAN 9.3): GitHub Pages, trỏ backend trên Vercel. Chỉ nhánh Thien-Source (bản demo), và chỉ khi
+  # repo đã có Variables API_BASE_URL, GOOGLE_WEB_CLIENT_ID (Settings → Secrets and variables → Actions → Variables) —
+  # hai giá trị này nằm công khai trong JavaScript của bản web, không phải bí mật.
+  pages:
+    name: deploy web (GitHub Pages)
+    needs: flutter
+    if: github.event_name == 'push' && github.ref == 'refs/heads/Thien-Source' && vars.API_BASE_URL != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    concurrency:
+      group: pages
+      cancel-in-progress: false
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    defaults:
+      run:
+        working-directory: frontend_app
+    steps:
+      - uses: actions/checkout@v7
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: 3.47.5
+          cache: true
+      - run: flutter pub get
+      # Trang nằm ở https://<owner>.github.io/<tên repo>/ nên base href là /<tên repo>/.
+      - run: >-
+          flutter build web --release
+          --base-href "/${{ github.event.repository.name }}/"
+          --dart-define=API_BASE_URL=${{ vars.API_BASE_URL }}
+          --dart-define=GOOGLE_WEB_CLIENT_ID=${{ vars.GOOGLE_WEB_CLIENT_ID }}
+      - uses: actions/configure-pages@v6
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: frontend_app/build/web
+      - id: deploy
+        uses: actions/deploy-pages@v5

@@ -25,6 +25,7 @@ export class PlanRecord {
   plan_json: MealPlanResponseDto;
 
   // Code tự gán (mili-giây); mặc định của SQLite chỉ chính xác tới giây, hai plan liền nhau sẽ trùng giờ.
-  @Column({ type: 'datetime' })
+  // Không ghi `type`: kiểu Date thành `datetime` trên SQLite, `timestamp` trên Postgres (Postgres không có datetime).
+  @Column()
   created_at: Date;
 }
