@@ -113,6 +113,7 @@ Kết quả build và test tự động của từng commit: tab [Actions](https
 - Giới hạn tần suất (BRD mục 6.5): tạo kế hoạch 5 lần / 10 phút, đổi món / đổi bài / đánh giá 30 lần / 10 phút — theo tài khoản khi đã đăng nhập, theo IP khi chưa; vượt thì nhận 429 với câu tiếng Việt và thời gian chờ. Tự ghi `X-Forwarded-For` giả không lấy thêm được lượt
 - Trang chính sách quyền riêng tư: dữ liệu nào lưu trên máy, trên máy chủ, gửi cho Gemini; cách xoá tài khoản. Đăng nhập Google mở cho mọi tài khoản
 - Sửa những lỗi chỉ lộ ra khi chạy trên Vercel (chạy thử bị chặn ở từng lỗi): thư viện giới hạn tần suất không nạp được (thay bằng code tự viết), thiếu driver Postgres trong gói deploy, app treo vì tự `listen` lúc khởi động, Swagger UI trắng trang. Smoke test nay chạy bản build thêm một lần theo đúng cách Vercel nạp app để bắt lại các lỗi này. Kiểm thử: 406 unit và 83 e2e backend (e2e chạy cả trên Postgres), 175 test Flutter
+- Kiểm trên bản thật (02/10): bản web — đăng nhập Google, tạo kế hoạch, lịch sử, đổi món; APK Android (máy ảo Android 16, build trên máy nhóm) — đăng nhập Google thật, tab Lịch sử thấy kế hoạch tạo trên bản web cùng tài khoản, đúng món đã đổi. Một lần tạo kế hoạch gặp Gemini báo quá tải (503) và nhận thực đơn mẫu, đúng như thiết kế
 
 ### BRD v2.8.0 — 2026-10-01
 - Giai đoạn 8 — tài khoản & lịch sử: lần đầu mở app có màn chào — đăng nhập hoặc "Dùng ngay, không cần đăng nhập". App tự hỏi backend cách đăng nhập: chế độ giả lập → "Đăng nhập demo" bằng email; chế độ thật → nút Google (Android, macOS, web; Windows dùng như khách)
