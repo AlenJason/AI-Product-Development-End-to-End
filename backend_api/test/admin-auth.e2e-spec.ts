@@ -3,7 +3,7 @@ import { DataSource } from 'typeorm';
 import { ADMIN_DISABLED, ADMIN_LOGIN_FAILED, ADMIN_SESSION_INVALID } from '../src/admin/admin-auth.service.js';
 import { hashAdminPassword } from '../src/admin/admin-password.js';
 import { UsageDaily } from '../src/stats/usage-daily.entity.js';
-import { createTestApp, loginMock, type TestApp } from './test-app.js';
+import { createFailingTestApp, createTestApp, loginMock, type TestApp } from './test-app.js';
 
 // Đăng nhập trang thống kê bằng tài khoản Admin cấp sẵn (giai đoạn 10, quyết định Q1).
 const PASSWORD = 'mat-khau-quan-tri-123';
@@ -94,6 +94,6 @@ describe('Đăng nhập Admin (e2e)', () => {
   });
 
   it('refuses to start with half an admin account', async () => {
-    await expect(createTestApp({ ADMIN_USERNAME: 'admin' })).rejects.toThrow(/ADMIN_PASSWORD_HASH/);
+    await expect(createFailingTestApp({ ADMIN_USERNAME: 'admin' })).rejects.toThrow(/ADMIN_PASSWORD_HASH/);
   });
 });

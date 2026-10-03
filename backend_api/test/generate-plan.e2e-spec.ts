@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import request from 'supertest';
 import { startFakeGemini, type FakeGemini } from './fake-gemini-server.js';
-import { createTestApp, type TestApp } from './test-app.js';
+import { createFailingTestApp, createTestApp, type TestApp } from './test-app.js';
 
 const SAMPLE_CONTENT: unknown = JSON.parse(
   readFileSync(new URL('../src/plan/data/sample-plan.json', import.meta.url), 'utf-8'),
@@ -140,6 +140,6 @@ describe('POST /api/v1/generate-plan (e2e, SDK thật + server Gemini giả)', (
 
 describe('Cấu hình Gemini lúc khởi động (e2e)', () => {
   it('refuses to start with an unknown GEMINI_THINKING', async () => {
-    await expect(createTestApp({ GEMINI_THINKING: 'fast' })).rejects.toThrow(/GEMINI_THINKING/);
+    await expect(createFailingTestApp({ GEMINI_THINKING: 'fast' })).rejects.toThrow(/GEMINI_THINKING/);
   });
 });

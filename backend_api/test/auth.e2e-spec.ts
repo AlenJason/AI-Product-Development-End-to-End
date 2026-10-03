@@ -1,5 +1,5 @@
 import request from 'supertest';
-import { createTestApp, loginMock, type TestApp } from './test-app.js';
+import { createFailingTestApp, createTestApp, loginMock, type TestApp } from './test-app.js';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
@@ -58,7 +58,7 @@ describe('Đăng nhập & tài khoản (e2e, AUTH_MODE=mock, DB trong RAM)', () 
 
 describe('Cấu hình đăng nhập lúc khởi động (e2e)', () => {
   it('refuses to start with AUTH_MODE=mock in production', async () => {
-    await expect(createTestApp({ NODE_ENV: 'production' })).rejects.toThrow(/ALLOW_MOCK_AUTH/);
+    await expect(createFailingTestApp({ NODE_ENV: 'production' })).rejects.toThrow(/ALLOW_MOCK_AUTH/);
   });
 
   it('starts in production with mock auth only when ALLOW_MOCK_AUTH=true', async () => {
@@ -72,7 +72,7 @@ describe('Cấu hình đăng nhập lúc khởi động (e2e)', () => {
   });
 
   it('refuses to start in google mode without GOOGLE_CLIENT_ID', async () => {
-    await expect(createTestApp({ AUTH_MODE: 'google', JWT_SECRET: 'x'.repeat(32) })).rejects.toThrow(
+    await expect(createFailingTestApp({ AUTH_MODE: 'google', JWT_SECRET: 'x'.repeat(32) })).rejects.toThrow(
       /GOOGLE_CLIENT_ID/,
     );
   });

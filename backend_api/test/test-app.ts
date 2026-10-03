@@ -75,6 +75,14 @@ export async function createTestApp(
   }
 }
 
+// Test "không khởi động": app hỏng giữa chừng có thể để TypeORM chạy migration dở trong nền (Nest dựng provider song
+// song). Trên Postgres dùng chung, migration đó đụng migration của test kế tiếp — "duplicate key value violates unique
+// constraint pg_type_typname_nsp_index" trên CI (giai đoạn 10). Cấu hình sai được kiểm lúc khởi động, không phụ thuộc
+// loại DB, nên các test này luôn chạy trên SQLite trong RAM.
+export function createFailingTestApp(env: Record<string, string>): Promise<TestApp> {
+  return createTestApp({ ...env, DATABASE_URL: '' });
+}
+
 export interface LoginBody {
   access_token: string;
   user: { id: string; email: string; name: string };

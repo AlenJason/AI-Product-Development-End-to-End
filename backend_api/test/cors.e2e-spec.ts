@@ -1,5 +1,5 @@
 import request from 'supertest';
-import { createTestApp, type TestApp } from './test-app.js';
+import { createFailingTestApp, createTestApp, type TestApp } from './test-app.js';
 
 // Trình duyệt gửi preflight OPTIONS trước mọi POST JSON hay request có Authorization từ origin khác (Flutter web).
 const preflight = (testApp: TestApp, origin: string) =>
@@ -61,6 +61,6 @@ describe('CORS cho Flutter web (e2e)', () => {
   });
 
   it('refuses to start with an invalid CORS_ORIGINS', async () => {
-    await expect(createTestApp({ CORS_ORIGINS: '*' })).rejects.toThrow(/CORS_ORIGINS/);
+    await expect(createFailingTestApp({ CORS_ORIGINS: '*' })).rejects.toThrow(/CORS_ORIGINS/);
   });
 });
