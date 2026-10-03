@@ -5,7 +5,7 @@ import { RestrictionsDto } from './dto/restrictions.dto.js';
 import { ActivityLevel } from './enums/activity-level.enum.js';
 import { Gender } from './enums/gender.enum.js';
 import { Goal } from './enums/goal.enum.js';
-import { GeminiService, GeminiTimeoutError } from './gemini.service.js';
+import { classifyGeminiError, GeminiService, GeminiTimeoutError, resolveGeminiModels } from './gemini.service.js';
 import { generateWithRetry } from './gemini-retry.js';
 
 const target = { bmi: 22, bmr: 1399, tdee: 1924, target_calories: 1624, protein_g: 102, carbs_g: 183, fat_g: 54 };
@@ -64,9 +64,9 @@ describe('GeminiService — SDK thật, server Gemini giả', () => {
     const before = fake.requests.length;
     const result = await generateWithRetry(
       logger as never,
-      'thử',
-      { perCallMs: 20_000, totalMs: 40_000 },
-      (timeoutMs) => gemini.generateJson('prompt', timeoutMs),
+      'plan',
+      { budget: { perCallMs: 20_000, totalMs: 40_000 }, models: gemini.models },
+      (timeoutMs, model) => gemini.generateJson('prompt', timeoutMs, model),
       () => ({ value: null, errors: [] }),
     );
     expect(result).toBeNull();
@@ -115,6 +115,42 @@ describe('GeminiService — SDK thật, server Gemini giả', () => {
     expect(fake.paths).toEqual(['/v1beta/models/gemini-3.5-flash:generateContent', '/v1beta/models/gemini-3.8-flash:generateContent']);
   });
 
+  it('sends the model it is given, so a retry can go to the fallback model', async () => {
+    fake.reply({ kind: 'json', body: { days: [] } });
+    await gemini.generateJson('prompt', 200, 'gemini-3.6-flash');
+    expect(fake.paths).toEqual(['/v1beta/models/gemini-3.6-flash:generateContent']);
+  });
+
+  // Quyết định Q4 giai đoạn 10: model chính 503 → lần gọi lại sang model dự phòng (SDK thật, server giả).
+  it('moves to the fallback model when the main model is overloaded (503)', async () => {
+    fake.reply({ kind: 'error', status: 503, message: 'This model is currently experiencing high demand.' }, { kind: 'json', body: { ok: 1 } });
+    const result = await generateWithRetry(
+      { warn: vi.fn(), error: vi.fn() } as never,
+      'plan',
+      gemini,
+      (timeoutMs, model) => gemini.generateJson('prompt', timeoutMs, model),
+      (raw) => ({ value: raw, errors: [] }),
+    );
+    expect(result).toEqual({ ok: 1 });
+    expect(fake.paths).toEqual(['/v1beta/models/gemini-3.5-flash:generateContent', '/v1beta/models/gemini-3.6-flash:generateContent']);
+  });
+
+  it.each([
+    [{ kind: 'error' as const, status: 503, message: 'high demand' }, 'overloaded'],
+    [{ kind: 'error' as const, status: 429, message: 'Quota exceeded' }, 'quota'],
+    [{ kind: 'error' as const, status: 500, message: 'boom' }, 'error'],
+    [{ kind: 'error' as const, status: 504, message: 'Deadline expired' }, 'timeout'],
+    [{ kind: 'text' as const, text: 'không phải JSON' }, 'invalid'],
+    [{ kind: 'text' as const, text: '' }, 'invalid'],
+  ])('classifies %o as %s', async (reply, outcome) => {
+    fake.reply(reply);
+    const error = await gemini.generateJson('prompt').then(
+      () => null,
+      (err: unknown) => err,
+    );
+    expect(classifyGeminiError(error)).toBe(outcome);
+  });
+
   it.each([
     ['low', '"thinkingConfig":{"thinkingLevel":"LOW"}'],
     ['off', '"thinkingConfig":{"thinkingBudget":0}'],
@@ -127,6 +163,17 @@ describe('GeminiService — SDK thật, server Gemini giả', () => {
 
   it('refuses to start with an unknown GEMINI_THINKING', () => {
     expect(() => service({ GEMINI_THINKING: 'fast' })).toThrow(/GEMINI_THINKING/);
+  });
+
+  it('uses gemini-3.6-flash as the fallback model unless GEMINI_FALLBACK_MODEL says otherwise; "off" turns it off', () => {
+    expect(resolveGeminiModels(undefined, undefined)).toEqual({ primary: 'gemini-3.5-flash', fallback: 'gemini-3.6-flash' });
+    expect(resolveGeminiModels(' gemini-3.8-flash ', ' gemini-2.5-flash ')).toEqual({
+      primary: 'gemini-3.8-flash',
+      fallback: 'gemini-2.5-flash',
+    });
+    expect(resolveGeminiModels(undefined, 'off')).toEqual({ primary: 'gemini-3.5-flash', fallback: null });
+    expect(resolveGeminiModels('gemini-3.6-flash', '')).toEqual({ primary: 'gemini-3.6-flash', fallback: null });
+    expect(service({ GEMINI_FALLBACK_MODEL: 'off' }).models.fallback).toBeNull();
   });
 
   it('reads the per-call and total time limits, never letting the total be shorter than one call', () => {
@@ -149,11 +196,11 @@ describe('GeminiService — SDK thật, server Gemini giả', () => {
     const started = Date.now();
     await generateWithRetry(
       logger as never,
-      'thử',
-      { perCallMs: 300, totalMs: 450 },
-      (timeoutMs) => {
+      'plan',
+      { budget: { perCallMs: 300, totalMs: 450 }, models: gemini.models },
+      (timeoutMs, model) => {
         timeouts.push(timeoutMs);
-        return gemini.generateJson('prompt', timeoutMs);
+        return gemini.generateJson('prompt', timeoutMs, model);
       },
       () => ({ value: null, errors: ['sai'] }),
     );

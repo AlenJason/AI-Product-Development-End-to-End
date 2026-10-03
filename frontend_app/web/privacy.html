@@ -51,7 +51,7 @@
 <body>
 <main>
   <h1>Chính sách quyền riêng tư</h1>
-  <p class="meta">SmartFit AI · cập nhật ngày 01/10/2026</p>
+  <p class="meta">SmartFit AI · cập nhật ngày 03/10/2026</p>
 
   <p>SmartFit AI là đồ án môn "AI Product Development End-to-End" của sinh viên Trường Đại học Công nghệ Thông tin và
     Truyền thông Việt – Hàn (VKU): ứng dụng gợi ý thực đơn món Việt và bài tập tại nhà trong 3 ngày. Trang này cho biết
@@ -91,19 +91,23 @@
     có thể dùng nội dung gửi lên để cải thiện sản phẩm của họ, và người của Google có thể đọc nội dung đó. Vì vậy, đừng
     ghi họ tên, số điện thoại hay thông tin giúp nhận ra bạn vào các ô ghi chú.</p>
 
-  <h2>4. Nhật ký kỹ thuật và giới hạn tần suất</h2>
+  <h2>4. Nhật ký kỹ thuật, thống kê và giới hạn tần suất</h2>
   <ul>
     <li>Nhà cung cấp máy chủ (Vercel) tự ghi nhật ký truy cập — thời điểm, đường dẫn, mã kết quả, địa chỉ IP — và giữ
       trong thời gian ngắn theo chính sách của họ.</li>
     <li>Để một người không dùng hết lượt của mọi người, máy chủ đếm số lần gọi trong mỗi 10 phút: theo tài khoản nếu đã
       đăng nhập, theo địa chỉ IP nếu chưa. Bộ đếm chỉ lưu mã băm (SHA-256) của tài khoản hoặc IP, không lưu IP dạng chữ,
       và dọn dần các bản ghi đã hết hạn quá một ngày.</li>
+    <li>Để nhóm theo dõi chất lượng, máy chủ đếm số lần dùng mỗi tính năng theo ngày (ví dụ số kế hoạch tạo bằng Gemini
+      hay bằng thực đơn mẫu) và ghi nhật ký từng lần gọi Gemini: thời điểm, tính năng, model, thành công hay lỗi gì,
+      thời gian chờ. Các số liệu này không gắn với tài khoản, địa chỉ IP hay hồ sơ nào, không chứa nội dung kế hoạch,
+      được giữ lâu dài và chỉ nhóm phát triển xem được qua trang quản trị có mật khẩu.</li>
   </ul>
 
   <h2>5. Nơi lưu và các bên liên quan</h2>
   <ul>
     <li>Vercel — chạy máy chủ của ứng dụng (vùng Singapore).</li>
-    <li>Neon — cơ sở dữ liệu Postgres chứa tài khoản và lịch sử kế hoạch.</li>
+    <li>Neon — cơ sở dữ liệu Postgres chứa tài khoản, lịch sử kế hoạch và số liệu thống kê ẩn danh.</li>
     <li>Google — đăng nhập bằng tài khoản Google và mô hình Gemini.</li>
     <li>GitHub Pages — phục vụ bản web của ứng dụng và trang này.</li>
   </ul>

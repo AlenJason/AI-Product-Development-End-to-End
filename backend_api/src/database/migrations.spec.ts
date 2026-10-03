@@ -28,7 +28,8 @@ describe('database migrations (SQLite — máy dev, test)', () => {
   it('reverts cleanly', async () => {
     for (let i = 0; i < dataSource.migrations.length; i++) await dataSource.undoLastMigration();
     const tables = await dataSource.query(
-      "SELECT name FROM sqlite_master WHERE type = 'table' AND name IN ('users', 'plan_records', 'rate_limits')",
+      "SELECT name FROM sqlite_master WHERE type = 'table' " +
+        "AND name IN ('users', 'plan_records', 'rate_limits', 'usage_daily', 'gemini_calls')",
     );
     expect(tables).toEqual([]);
   });
@@ -68,7 +69,7 @@ describe.skipIf(!TEST_DATABASE_URL)('database migrations (Postgres — productio
     for (let i = 0; i < dataSource.migrations.length; i++) await dataSource.undoLastMigration();
     const tables = await dataSource.query(
       "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' " +
-        "AND table_name IN ('users', 'plan_records', 'rate_limits')",
+        "AND table_name IN ('users', 'plan_records', 'rate_limits', 'usage_daily', 'gemini_calls')",
     );
     expect(tables).toEqual([]);
   });

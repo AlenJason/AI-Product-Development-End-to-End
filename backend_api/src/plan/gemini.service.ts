@@ -1,6 +1,7 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { ApiError, GoogleGenAI, ThinkingLevel, type ThinkingConfig } from '@google/genai';
+import { StatsService } from '../stats/stats.service.js';
 import type { CreatePlanDto } from './dto/create-plan.dto.js';
 import type { DailyTargetDto } from './dto/meal-plan-response.dto.js';
 import { ExerciseTag, MuscleGroup } from './enums/exercise.enum.js';
@@ -9,6 +10,7 @@ import { Goal } from './enums/goal.enum.js';
 import { IngredientCategory, IngredientUnit } from './enums/ingredient.enum.js';
 import { MealType } from './enums/meal-type.enum.js';
 import { dayCalorieBounds, MACRO_CALORIE_TOLERANCE, mealCalorieBounds } from './plan-validation.js';
+import type { GeminiAttempt } from './gemini-retry.js';
 import { exerciseNameKeywords, matchRestrictions, type RestrictionMatch } from './restriction-matcher.js';
 import { type ExerciseLevel, SWAP_EXERCISES } from './swap-pools.js';
 import { sanitizeUserText } from './text.util.js';
@@ -17,6 +19,11 @@ import { sanitizeUserText } from './text.util.js';
 // (~7000 token suy nghĩ), 18–27 s ở mức low, 8–13 s khi tắt; đổi món 13 / 8 / 3 s. 15 s cũ khiến gần như mọi lần gọi
 // hết giờ. Tắt suy nghĩ + prompt ghi rõ danh sách cần tránh: 2/3 plan đạt ngay, lần gọi lại vẫn nằm trong 40 s.
 const DEFAULT_MODEL = 'gemini-3.5-flash';
+// Model gọi lại khi model chính quá tải (503) hay hết lượt (429) — gói miễn phí tính 20 lượt/ngày riêng từng model.
+// Đo 2026-10-03 (`measure:gemini`, tắt suy nghĩ): 3.6-flash đạt hợp đồng trong 17,5 s; 3.7-flash trả JSON hỏng,
+// 3.1-flash-lite sai hợp đồng, 3.5-flash-lite không nhận thinkingBudget: 0. `GEMINI_FALLBACK_MODEL=off` để tắt.
+const DEFAULT_FALLBACK_MODEL = 'gemini-3.6-flash';
+const FALLBACK_OFF = 'off';
 const DEFAULT_TIMEOUT_MS = 20_000;
 const DEFAULT_TOTAL_TIMEOUT_MS = 40_000;
 
@@ -32,6 +39,12 @@ const THINKING_CONFIG: Record<GeminiThinking, ThinkingConfig | undefined> = {
   [GeminiThinking.LOW]: { thinkingLevel: ThinkingLevel.LOW },
   [GeminiThinking.OFF]: { thinkingBudget: 0 },
 };
+
+export interface GeminiModels {
+  primary: string;
+  // null: không có model dự phòng, gọi lại đúng model chính (như trước giai đoạn 10).
+  fallback: string | null;
+}
 
 export interface GeminiBudget {
   // Giới hạn một lần gọi.
@@ -73,6 +86,32 @@ export class GeminiTimeoutError extends Error {
   }
 }
 
+// Gemini trả lời nhưng không dùng được: rỗng, hoặc không phải JSON.
+export class GeminiInvalidJsonError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'GeminiInvalidJsonError';
+  }
+}
+
+// Kết quả một lần gọi Gemini — để chọn model cho lần gọi lại (gemini-retry.ts) và để thống kê.
+export type GeminiOutcome = 'ok' | 'timeout' | 'overloaded' | 'quota' | 'invalid' | 'error';
+
+// Mã HTTP Google trả về (ApiError của SDK có `status`), không có thì undefined.
+export function geminiHttpStatus(error: unknown): number | undefined {
+  const status = (error as { status?: unknown } | null)?.status;
+  return typeof status === 'number' ? status : undefined;
+}
+
+export function classifyGeminiError(error: unknown): Exclude<GeminiOutcome, 'ok'> {
+  if (error instanceof GeminiTimeoutError) return 'timeout';
+  if (error instanceof GeminiInvalidJsonError) return 'invalid';
+  const status = geminiHttpStatus(error);
+  if (status === 503) return 'overloaded';
+  if (status === 429) return 'quota';
+  return 'error';
+}
+
 // Hết giờ có hai dạng: SDK tự ngắt (AbortError), hoặc Google cắt trước — SDK gửi httpOptions.timeout lên server
 // qua header X-Server-Timeout, và Google trả 504 DEADLINE_EXCEEDED ngay trước lúc SDK kịp ngắt. Đo ngày
 // 27/09/2026: cả hai lần hết giờ đều ở dạng 504, nên trước đây backend vẫn gọi lại và người dùng chờ 34 s thay vì 20 s.
@@ -83,13 +122,17 @@ function isTimeout(error: unknown): boolean {
 @Injectable()
 export class GeminiService {
   private readonly client: GoogleGenAI | null;
-  private readonly model: string;
   private readonly thinking: ThinkingConfig | undefined;
+  readonly models: GeminiModels;
   readonly budget: GeminiBudget;
 
-  constructor(private readonly config: ConfigService) {
+  // StatsService luôn có trong app (module global); unit test tạo GeminiService không cần nhật ký.
+  constructor(
+    private readonly config: ConfigService,
+    @Optional() private readonly stats?: StatsService,
+  ) {
     const apiKey = this.config.get<string>('GEMINI_API_KEY');
-    this.model = this.config.get<string>('GEMINI_MODEL') || DEFAULT_MODEL;
+    this.models = resolveGeminiModels(this.config.get<string>('GEMINI_MODEL'), this.config.get<string>('GEMINI_FALLBACK_MODEL'));
     this.thinking = THINKING_CONFIG[parseThinking(this.config.get<string>('GEMINI_THINKING'))];
     const perCallMs = Number(this.config.get<string>('GEMINI_TIMEOUT_MS')) || DEFAULT_TIMEOUT_MS;
     const totalMs = Number(this.config.get<string>('GEMINI_TOTAL_TIMEOUT_MS')) || DEFAULT_TOTAL_TIMEOUT_MS;
@@ -103,18 +146,28 @@ export class GeminiService {
     return this.client !== null;
   }
 
+  // Nhật ký Gemini cho trang thống kê (generateWithRetry gọi sau mỗi lần gọi).
+  async recordAttempt(attempt: GeminiAttempt): Promise<void> {
+    await this.stats?.recordGeminiCall(attempt);
+  }
+
   generatePlanContent(
     profile: CreatePlanDto,
     target: DailyTargetDto,
     feedbackNote?: string,
     timeoutMs?: number,
+    model?: string,
   ): Promise<unknown> {
-    return this.generateJson(buildPlanPrompt(profile, target, feedbackNote), timeoutMs);
+    return this.generateJson(buildPlanPrompt(profile, target, feedbackNote), timeoutMs, model);
   }
 
   // Trả JSON thô; kiểm tra hợp đồng là việc của nơi gọi.
   // Cố ý không truyền retryOptions: bật lên thì SDK tự gọi lại tới 5 lần, chờ tới 60 giây.
-  async generateJson(prompt: string, timeoutMs: number = this.budget.perCallMs): Promise<unknown> {
+  async generateJson(
+    prompt: string,
+    timeoutMs: number = this.budget.perCallMs,
+    model: string = this.models.primary,
+  ): Promise<unknown> {
     if (!this.client) {
       throw new Error('GEMINI_API_KEY chưa được cấu hình trong .env');
     }
@@ -122,7 +175,7 @@ export class GeminiService {
     let text: string | undefined;
     try {
       const response = await this.client.models.generateContent({
-        model: this.model,
+        model,
         contents: prompt,
         config: {
           responseMimeType: 'application/json',
@@ -139,13 +192,13 @@ export class GeminiService {
     }
 
     if (!text) {
-      throw new Error('Gemini trả về response rỗng');
+      throw new GeminiInvalidJsonError('Gemini trả về response rỗng');
     }
     try {
       return JSON.parse(text) as unknown;
     } catch {
       // Không đẩy lỗi gốc ra ngoài: thông báo của JSON.parse trích một đoạn nội dung Gemini trả về (NFR-7).
-      throw new Error('Gemini trả về chuỗi không phải JSON hợp lệ');
+      throw new GeminiInvalidJsonError('Gemini trả về chuỗi không phải JSON hợp lệ');
     }
   }
 }
@@ -258,6 +311,14 @@ export function exerciseCodeRules(): string[] {
     `- exercises[].muscle_group chỉ được là: ${Object.values(MuscleGroup).join(', ')}.`,
     `- exercises[].tags chọn trong: ${Object.values(ExerciseTag).join(', ')} (để mảng rỗng nếu không có).`,
   ];
+}
+
+// GEMINI_FALLBACK_MODEL: trống → mặc định; "off" → không dự phòng; trùng model chính → không dự phòng.
+export function resolveGeminiModels(primaryValue: string | undefined, fallbackValue: string | undefined): GeminiModels {
+  const primary = primaryValue?.trim() || DEFAULT_MODEL;
+  const fallbackSetting = fallbackValue?.trim() || DEFAULT_FALLBACK_MODEL;
+  const fallback = fallbackSetting === FALLBACK_OFF || fallbackSetting === primary ? null : fallbackSetting;
+  return { primary, fallback };
 }
 
 function parseThinking(value: string | undefined): GeminiThinking {

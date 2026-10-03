@@ -12,16 +12,18 @@ import {
 import { Reflector } from '@nestjs/core';
 import type { Request, Response } from 'express';
 import type { User } from '../database/entities/user.entity.js';
+import { StatsService } from '../stats/stats.service.js';
 import { RATE_LIMIT_CONFIG, type RateLimitConfig } from './rate-limit-config.js';
 import { RateLimitStore } from './rate-limit-store.js';
 
 // Tự viết thay cho @nestjs/throttler: gói đó là CommonJS và require('@nestjs/common') — NestJS 12 chỉ có bản ESM, bộ
 // nạp module của Vercel không cho require() ESM nên app không khởi động (thử deploy thật, giai đoạn 9).
 
-export type RateLimitBucket = 'plan' | 'adjust';
+export type RateLimitBucket = 'plan' | 'adjust' | 'admin';
 const RATE_LIMIT_BUCKET = 'smartfit:rate-limit-bucket';
 
-// Hạn mức áp cho route/controller: `plan` (generate-plan) hoặc `adjust` (đổi món, đổi bài, feedback — dùng chung).
+// Hạn mức áp cho route/controller: `plan` (generate-plan), `adjust` (đổi món, đổi bài, feedback — dùng chung),
+// `admin` (đăng nhập trang quản trị, giai đoạn 10).
 export const RateLimit = (bucket: RateLimitBucket) => SetMetadata(RATE_LIMIT_BUCKET, bucket);
 
 // "Bạn thao tác quá nhanh…" — câu tiếng Việt app hiện thẳng cho người dùng (#28).
@@ -50,6 +52,7 @@ export class RateLimitGuard implements CanActivate {
     private readonly reflector: Reflector,
     @Inject(RATE_LIMIT_CONFIG) private readonly config: RateLimitConfig,
     private readonly store: RateLimitStore,
+    private readonly stats: StatsService,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -74,6 +77,7 @@ export class RateLimitGuard implements CanActivate {
     res.setHeader('X-RateLimit-Remaining', Math.max(0, limit.limit - totalHits));
     res.setHeader('X-RateLimit-Reset', timeToExpire);
     if (isBlocked) {
+      await this.stats.count(`rate_limited.${bucket}`);
       res.setHeader('Retry-After', timeToExpire);
       throw new HttpException(
         { statusCode: 429, error: 'Too Many Requests', message: tooManyRequestsMessage(timeToExpire) },

@@ -3,8 +3,8 @@
 **Tên sản phẩm:** Trợ lý AI Gợi ý & Điều chỉnh Thực đơn, Lịch tập Thông minh  
 **Môn học:** AI Product Development End-to-End (Đồ án Kỹ sư / Cử nhân Năm 4)  
 **Đơn vị thực hiện:** Trường Đại học Công nghệ Thông tin và Truyền thông Việt - Hàn (VKU)  
-**Phiên bản:** 2.9.0 (Dành cho Sinh viên thực hành: Flutter & NestJS)  
-**Ngày cập nhật:** 02/10/2026  
+**Phiên bản:** 2.10.0 (Dành cho Sinh viên thực hành: Flutter & NestJS)  
+**Ngày cập nhật:** 03/10/2026  
 **Trạng thái:** Đã phê duyệt (Approved)  
 
 ---
@@ -103,6 +103,7 @@ sequenceDiagram
   * **Quản lý API Key:** Gemini API Key lưu trong file `.env` (đọc qua `@nestjs/config`), **không hardcode trong source code**. File `.env` phải được thêm vào `.gitignore` ngay từ đầu để tránh lộ key khi commit lên Git.
 * **AI Engine (Google Gemini API):**
   * Sử dụng model `gemini-3.5-flash` (mặc định từ bản 2.5.1, đổi qua `GEMINI_MODEL`): đo ngày 24/09/2026 bằng khoá gói miễn phí, `gemini-3.8-flash` liên tục báo quá tải và chưa trả được kế hoạch nào, còn `gemini-3.5-flash` tạo kế hoạch đạt hợp đồng trong 8–15 giây khi tắt chế độ suy nghĩ. Gói miễn phí giới hạn **20 lần gọi mỗi ngày cho mỗi model**. Gọi qua SDK Node.js chính thức `@google/genai` (SDK cũ `@google/generative-ai` đã bị khai tử), tham số cấu hình JSON mode là `config: { responseMimeType: "application/json" }`; mức suy nghĩ đặt qua `thinkingConfig` (`GEMINI_THINKING`, mặc định tắt).
+  * **Model dự phòng** *(bổ sung bản 2.10.0)*: gói miễn phí hay báo 503 "model đang quá tải" — đo ngày 03/10/2026, 503 tới sau khoảng 20 giây và kéo dài theo đợt. Gọi lại khi model chính quá tải (503), hết lượt (429) hay lỗi khác thì dùng ngay model dự phòng `gemini-3.6-flash` (`GEMINI_FALLBACK_MODEL`, `off` để tắt) — đo cùng ngày, model này đạt hợp đồng trong 17,5 giây khi tắt suy nghĩ, còn `gemini-3.7-flash` trả JSON hỏng và các bản `-lite` sai hợp đồng. Mỗi model có 20 lượt/ngày riêng nên tổng lượt Gemini mỗi ngày tăng gấp đôi. Đồ án không dùng gói trả phí.
 * **Cơ sở dữ liệu & Xác thực (mới ở bản 2.2.0):**
   * **SQLite + TypeORM** (`@nestjs/typeorm`, driver `better-sqlite3` bản 12 — TypeORM 1.x không còn driver `sqlite3`): file DB dạng `database.sqlite` ngay trong `backend_api/` (đổi bằng `DATABASE_PATH`), không cần cài đặt server DB riêng — đúng tinh thần "môi trường chạy đơn giản" (NFR mục 7). Bảng được tạo bằng migration chạy tự động khi khởi động, không dùng `synchronize`. File DB phải được thêm vào `.gitignore` vì có thể chứa dữ liệu người dùng thật khi demo.
   * **Postgres cho bản chạy thật** *(bổ sung bản 2.9.0)*: có `DATABASE_URL` thì backend dùng Postgres (driver `pg`, bản deploy dùng Neon), không có thì vẫn là SQLite như trên — máy dev và test không cần cài gì thêm. Mỗi loại DB một bộ migration; CI kiểm cả hai khớp entity và chạy e2e trên Postgres thật. Trên Vercel, migration chạy ở bước build (`npm run vercel-build`), lúc chạy không tự chạy migration (`DATABASE_RUN_MIGRATIONS=false`) để nhiều instance khởi động cùng lúc không chạy chồng lên nhau.
@@ -112,6 +113,7 @@ sequenceDiagram
   * Backend: **Vercel** (gói Hobby miễn phí) — cả app NestJS chạy thành một Vercel Function ở vùng Singapore (`sin1`), mỗi request tối đa 300 giây, đủ cho 40 giây chờ Gemini. Tự deploy khi push lên nhánh `Thien-Source` có đổi `backend_api/`. Khoá và chuỗi kết nối (`GEMINI_API_KEY`, `JWT_SECRET`, `DATABASE_URL`) đặt trong biến môi trường của Vercel, không nằm trong repo.
   * Cơ sở dữ liệu: **Neon** Postgres gói miễn phí (0,5 GB), dùng chuỗi kết nối qua bộ gộp kết nối (`-pooler`) hợp với serverless.
   * Bản web: **GitHub Pages**, CI build và deploy khi push lên `Thien-Source`, địa chỉ backend và Web Client ID lấy từ Variables của repo. Kèm trang chính sách quyền riêng tư (`privacy.html`) — cần để mở đăng nhập Google cho mọi tài khoản.
+  * Trang thống kê cho Admin *(bổ sung bản 2.10.0)*: `https://<backend>/admin` — backend tự phục vụ, tách khỏi app người dùng (FR-8).
   * Bản Android: APK build trên máy dev (khoá ký của máy đó đã đăng ký với Google để đăng nhập được). Bản Windows, macOS dùng như khách khi trỏ vào backend thật (Windows không có `google_sign_in`; macOS cần nhóm ký Apple để bật keychain).
 
 ---
@@ -184,6 +186,14 @@ sequenceDiagram
 * **FR-7.3:** Đăng nhập cùng tài khoản Google trên thiết bị khác vẫn thấy đầy đủ lịch sử — vì dữ liệu gắn với `user_id` trong DB, không gắn với thiết bị.
 * **Lưu ý:** Nếu gọi `/api/v1/generate-plan` mà không đăng nhập (không có JWT), API vẫn hoạt động bình thường như bản 2.1.0 (không lưu lịch sử) — đăng nhập là tuỳ chọn, không bắt buộc để dùng tính năng cốt lõi.
 
+
+### Giai đoạn 4: Vận hành (bổ sung bản 2.10.0)
+
+#### FR-8: Trang thống kê cho Admin
+* **FR-8.1:** Một trang riêng `https://<backend>/admin`, đăng nhập bằng **một tài khoản Admin cấp sẵn** (tên + mật khẩu do nhóm đặt qua biến môi trường), không phải Google. Không có đăng ký hay đổi mật khẩu trong app. Chỉ để xem số liệu — không xem hay sửa được tài khoản, hồ sơ, lịch sử của người dùng nào.
+* **FR-8.2 — thống kê sử dụng:** đếm theo ngày (giờ Việt Nam), xem theo tháng rồi bấm vào tháng để xem từng ngày, giữ mãi: số kế hoạch (bao nhiêu do Gemini thật, bao nhiêu là thực đơn mẫu), khách hay đã đăng nhập, thời gian chờ trung bình, đổi món / đổi bài (Gemini, kho soạn sẵn, không tìm được), đánh giá cuối ngày, số lần bị giới hạn tần suất, số lần Admin đăng nhập sai. Hôm nay: số lượt đã gọi từng model Gemini so với 20 lượt miễn phí.
+* **FR-8.3 — nhật ký Gemini:** mỗi lần gọi Gemini một dòng — thời điểm, tính năng, model, lần gọi thứ mấy, kết quả (thành công / hết giờ / quá tải 503 / hết lượt 429 / kết quả hỏng / lỗi khác), mã lỗi, thời gian chờ, câu lỗi ngắn của Google; lọc theo tháng và kết quả; giữ mãi.
+* **FR-8.4:** Số liệu không gắn với tài khoản, IP hay hồ sơ nào và không chứa nội dung kế hoạch hay chi tiết lỗi hợp đồng (NFR-7).
 ---
 
 ## 6. HỢP ĐỒNG API (REQUEST / RESPONSE JSON)
@@ -434,16 +444,31 @@ Các endpoint có thể gọi Gemini mà không cần đăng nhập bị giới 
 * Cửa sổ đếm cố định: lần gọi đầu mở cửa sổ, hết cửa sổ thì đếm lại từ đầu. Bộ đếm lưu trong DB (các instance serverless không chung bộ nhớ), chỉ lưu mã băm SHA-256 của tài khoản hoặc IP. `/health`, đăng nhập, lịch sử, xoá tài khoản không bị giới hạn.
 * Sau proxy (Vercel), IP thật lấy từ `X-Forwarded-For` khi `TRUST_PROXY_HOPS=1`; chạy trên máy để `0` (mặc định) để người gọi không tự ghi header này mà đổi được IP.
 
+
+### 6.6. Trang thống kê cho Admin (bổ sung bản 2.10.0, FR-8)
+
+| Endpoint | Đăng nhập | Response |
+|---|---|---|
+| `POST /api/v1/admin/login` | — (body `{ "username", "password" }`, mật khẩu tối đa 200 ký tự) | `{ "access_token", "expires_in" }` (giây, mặc định 8 giờ) |
+| `GET /api/v1/admin/session` | token Admin | `{ "username" }` |
+| `GET /api/v1/admin/stats/overview` | token Admin | hôm nay: lượt gọi từng model Gemini, cấu hình Gemini, số tài khoản, số kế hoạch đã lưu, giới hạn tần suất |
+| `GET /api/v1/admin/stats/months` | token Admin | mọi tháng, mới nhất trước: số liệu cộng dồn + Gemini theo model × kết quả |
+| `GET /api/v1/admin/stats/months/:month` | token Admin | từng ngày của tháng `YYYY-MM` |
+| `GET /api/v1/admin/stats/gemini-calls?month=&outcome=&page=` | token Admin | nhật ký Gemini, mới nhất trước, 50 dòng mỗi trang |
+
+* Sai tên hoặc sai mật khẩu → **401** với cùng một câu ("Tên đăng nhập hoặc mật khẩu không đúng."); thử đăng nhập quá `RATE_LIMIT_ADMIN` (mặc định 5 lần / 15 phút theo IP) → **429** như mục 6.5.
+* Token Admin và token người dùng không dùng thay nhau được: token người dùng gọi API Admin → **401**, token Admin gọi API người dùng → **401**. Đổi mật khẩu hoặc tên Admin → mọi phiên Admin cũ hết hiệu lực.
+* Máy chủ chưa cấu hình tài khoản Admin → **404** "Trang quản trị chưa được bật". `month` sai dạng, `outcome` lạ, `page` < 1 → **400**.
 ---
 
 ## 7. YÊU CẦU PHI CHỨC NĂNG THỰC TẾ (STUDENT-FRIENDLY NFRS)
 
 1. **Trải nghiệm người dùng (UX & Loading State):**
    * Tạo kế hoạch 3 ngày bằng Gemini mất khoảng **8–15 giây** (đo ngày 24/09/2026 với `gemini-3.5-flash` đã tắt chế độ suy nghĩ; để model tự suy nghĩ thì 37–42 giây — bản 2.5.1 sửa con số "3–6 giây" cũ), nên Flutter **bắt buộc phải có hiệu ứng chờ thân thiện** (Loading Spinner, thanh tiến trình hoặc câu thông báo vui nhộn như *"SmartFit đang chuẩn bị thực đơn món Việt cho bạn..."*), tránh để màn hình trắng đơ khiến người dùng tưởng ứng dụng bị treo.
-   * Mỗi lần gọi Gemini có giới hạn thời gian (mặc định 20 giây, `GEMINI_TIMEOUT_MS`), cả lần gọi lại cộng lại không quá 40 giây (`GEMINI_TOTAL_TIMEOUT_MS`). Hết giờ thì dùng ngay dữ liệu soạn sẵn, không gọi lại, để người dùng không phải chờ quá lâu.
+   * Mỗi lần gọi Gemini có giới hạn thời gian (mặc định 20 giây, `GEMINI_TIMEOUT_MS`), cả lần gọi lại cộng lại không quá 40 giây (`GEMINI_TOTAL_TIMEOUT_MS`). *(bản 2.10.0)* Có model dự phòng thì gọi lại tối đa 3 lần trong cùng giới hạn tổng: quá tải, hết lượt hay lỗi khác → sang ngay model dự phòng; kết quả hỏng → thử lại model chính một lần rồi mới sang dự phòng. Bản chạy thật đặt 45 / 50 giây (Gemini gói miễn phí chậm hơn ngày đo, mục 4). Hết giờ thì dùng ngay dữ liệu soạn sẵn, không gọi lại, để người dùng không phải chờ quá lâu.
 2. **Xử lý sự cố đơn giản (Graceful Fallback):**
    * Nếu người dùng mất mạng hoặc Gemini API gặp sự cố giới hạn (Rate limit), Backend sẽ trả về mã lỗi dễ hiểu thay vì làm crash ứng dụng Flutter.
-   * Gói miễn phí của Gemini chỉ cho 20 lần gọi mỗi ngày cho mỗi model (đo 24/09/2026); hết hạn mức hoặc model quá tải thì backend dùng dữ liệu soạn sẵn, app vẫn chạy bình thường. *(bổ sung bản 2.5.1)*
+   * Gói miễn phí của Gemini chỉ cho 20 lần gọi mỗi ngày cho mỗi model (đo 24/09/2026); hết hạn mức hoặc model quá tải thì backend dùng dữ liệu soạn sẵn, app vẫn chạy bình thường. *(bổ sung bản 2.5.1)* Trước đó backend thử model dự phòng (mục 4) *(bổ sung bản 2.10.0)*.
    * Bản chạy thật giới hạn số lần gọi của mỗi người (mục 6.5) để một người không dùng hết hạn mức của mọi người. *(bổ sung bản 2.9.0)*
    * Có sẵn thực đơn mẫu 3 ngày (`backend_api/src/plan/data/sample-plan.json`) để demo trơn tru ngay cả khi chưa có khoá Gemini hoặc mạng trường yếu. Response luôn có trường `source` (`gemini` / `sample`) để app biết đang hiển thị dữ liệu nào.
 3. **Môi trường chạy đơn giản (Local Environment):**
@@ -464,6 +489,7 @@ Các endpoint có thể gọi Gemini mà không cần đăng nhập bị giới 
    * JWT có thời hạn hết hạn hợp lý (ví dụ 7 ngày) để hạn chế rủi ro nếu token bị lộ; hết hạn thì Flutter yêu cầu đăng nhập lại qua Google.
    * File `database.sqlite` (chứa email/tên người dùng thật khi demo) phải nằm trong `.gitignore`, không commit lên Git.
    * Không tự lưu hoặc xử lý mật khẩu người dùng dưới bất kỳ hình thức nào — toàn bộ xác thực uỷ quyền cho Google.
+   * *Ngoại lệ hẹp cho tài khoản vận hành (bổ sung bản 2.10.0, FR-8):* một tài khoản Admin cấp ngoài app — tên và mật khẩu **băm bằng scrypt** đặt trong biến môi trường của nơi deploy (`ADMIN_USERNAME`, `ADMIN_PASSWORD_HASH`; tạo bằng `npm run admin:hash` trên máy của Admin, mật khẩu gốc không rời máy đó), không nằm trong DB hay repo. So sánh thời gian hằng, một câu lỗi chung cho sai tên lẫn sai mật khẩu, không ghi log dữ liệu đăng nhập, giới hạn số lần thử theo IP, token riêng (khoá ký sinh từ `JWT_SECRET` và mã băm, hết hạn sau tối đa 1 ngày). Tài khoản này chỉ xem được số liệu ẩn danh. Người dùng app vẫn chỉ đăng nhập bằng Google.
    * JWT chỉ chứa id người dùng, không chứa email hay dữ liệu sức khoẻ. Chế độ `AUTH_MODE=google` bắt buộc có `GOOGLE_CLIENT_ID` và `JWT_SECRET` dài ít nhất 32 ký tự; thiếu thì backend không khởi động. *(bổ sung bản 2.4.0)*
    * Đăng nhập giả lập (`AUTH_MODE=mock`) cho phép bất kỳ ai đăng nhập thành người khác, nên chỉ dùng khi phát triển hoặc demo: backend **không khởi động** khi `NODE_ENV=production` mà vẫn để `AUTH_MODE=mock`, trừ khi đặt `ALLOW_MOCK_AUTH=true` có chủ đích cho buổi demo không có dữ liệu thật. *(bổ sung bản 2.4.0)*
 6. **SQLite nằm ở backend, không nằm trên thiết bị (bổ sung bản 2.2.0):**
@@ -474,6 +500,7 @@ Các endpoint có thể gọi Gemini mà không cần đăng nhập bị giới 
 7. **Quyền riêng tư dữ liệu sức khoẻ (bổ sung bản 2.3.0):**
    * Dị ứng, chấn thương, tình trạng sức khoẻ và việc mang thai / cho con bú là dữ liệu cá nhân nhạy cảm (Nghị định 13/2023/NĐ-CP). Chúng chỉ lưu trên máy người dùng, gửi kèm từng request rồi bỏ đi: backend không ghi vào database, không ghi log nội dung request hay nội dung Gemini trả về.
    * Plan lưu trong lịch sử (FR-7) không chứa các trường này.
+   * Số liệu cho trang Admin (FR-8) chỉ là số đếm theo ngày và nhật ký từng lần gọi Gemini — không có tài khoản, IP, hồ sơ, nội dung kế hoạch hay chi tiết lỗi hợp đồng; trang chính sách ghi rõ điều này. *(bổ sung bản 2.10.0)*
    * Trang chính sách quyền riêng tư công khai (`frontend_app/web/privacy.html`, đi cùng bản web) nói rõ dữ liệu nào lưu ở đâu, gửi cho ai (kể cả việc gói miễn phí của Gemini API cho Google dùng nội dung gửi lên để cải thiện sản phẩm) và cách xoá tài khoản. Đổi cách lưu hay gửi dữ liệu thì sửa trang này cùng lúc. *(bổ sung bản 2.9.0)*
    * Android không đưa dữ liệu đã lưu của app lên bản sao lưu Google Drive và không chép sang máy mới khi chuyển máy: hồ sơ có dữ liệu sức khoẻ và token đăng nhập chỉ nằm trên máy đã nhập. *(bổ sung bản 2.8.0)*
 8. **Chống prompt injection (bổ sung bản 2.3.0):** Văn bản tự do của người dùng được đặt trong một khối dữ liệu có thẻ phân cách, bỏ ký tự `<` `>` và xuống dòng, giới hạn 300 ký tự mỗi ô; prompt dặn Gemini coi khối này là dữ liệu, không phải chỉ dẫn. Đầu ra vẫn phải qua bộ kiểm tra ở NFR-4, nên dù bị chèn lệnh cũng không làm hỏng app.
@@ -493,6 +520,7 @@ Các endpoint có thể gọi Gemini mà không cần đăng nhập bị giới 
 | **Tuần 5** | **Hoàn thiện tính năng nâng cao & Demo** | Thêm nút "Đổi món" (Swap); viết Unit Test cho thuật toán BMR; hoàn thiện slide báo cáo và video quay demo nộp môn học. |
 | **Tuần 6** *(bổ sung, bản 2.2.0)* | **Tài khoản & Lịch sử** | Tích hợp `google_sign_in` + `SQLite/TypeORM` trong `backend_api/`; hoàn thiện `/api/v1/auth/google`, `/api/v1/plans/history`, `DELETE /api/v1/me`; màn hình Lịch sử trong Flutter thay placeholder "Thống kê". |
 | **Tuần 7** *(bổ sung, bản 2.9.0)* | **Triển khai & chạy thật** | Backend trên Vercel + Neon Postgres, giới hạn tần suất; bản web trên GitHub Pages kèm trang chính sách quyền riêng tư; APK Android đăng nhập Google được; kiểm thử trên bản thật. |
+| **Tuần 8** *(bổ sung, bản 2.10.0)* | **Vận hành** | Model Gemini dự phòng khi model chính quá tải; trang thống kê cho Admin (`/admin`): số liệu theo tháng/ngày, nhật ký Gemini. |
 
 ---
 

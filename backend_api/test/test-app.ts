@@ -29,12 +29,20 @@ export async function createTestApp(
     ALLOW_MOCK_AUTH: '',
     GEMINI_API_KEY: '',
     GEMINI_BASE_URL: '',
+    GEMINI_MODEL: '',
+    // Test cũ đếm đúng 1 lần gọi lại; test model dự phòng tự bật bằng `env`.
+    GEMINI_FALLBACK_MODEL: 'off',
     GEMINI_THINKING: '',
+    GEMINI_TIMEOUT_MS: '',
     GEMINI_TOTAL_TIMEOUT_MS: '',
     CORS_ORIGINS: '',
     // Test cũ tạo nhiều plan trong một app; test giới hạn tần suất tự bật bằng `env`.
     RATE_LIMIT_PLAN: 'off',
     RATE_LIMIT_ADJUST: 'off',
+    RATE_LIMIT_ADMIN: 'off',
+    ADMIN_USERNAME: '',
+    ADMIN_PASSWORD_HASH: '',
+    ADMIN_TOKEN_TTL: '',
     TRUST_PROXY_HOPS: '',
     ...env,
   };

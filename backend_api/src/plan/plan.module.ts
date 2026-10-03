@@ -14,5 +14,7 @@ import { GeminiService } from './gemini.service.js';
   imports: [AuthModule, HistoryModule],
   controllers: [PlanController, PlanAdjustController],
   providers: [PlanService, GeminiService, MealSwapService, ExerciseSwapService, FeedbackService, RandomSource],
+  // Trang thống kê đọc cấu hình Gemini (model, giới hạn thời gian) — giai đoạn 10.
+  exports: [GeminiService],
 })
 export class PlanModule {}

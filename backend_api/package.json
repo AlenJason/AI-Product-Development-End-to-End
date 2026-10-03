@@ -23,9 +23,10 @@
     "test:e2e": "vitest run --config ./vitest.config.e2e.ts",
     "fixtures:update": "UPDATE_FIXTURES=1 vitest run --config ./vitest.config.e2e.ts test/contract-fixtures.e2e-spec.ts",
     "test:smoke": "node scripts/smoke-test.mjs",
-    "test:postgres": "node -e \"if (!process.env.TEST_DATABASE_URL) { console.error('Cần TEST_DATABASE_URL (Postgres dùng riêng cho test)'); process.exit(1) }\" && vitest run --no-file-parallelism src/database/migrations.spec.ts src/rate-limit/rate-limit-store.spec.ts && vitest run --config ./vitest.config.e2e.ts --no-file-parallelism",
+    "test:postgres": "node -e \"if (!process.env.TEST_DATABASE_URL) { console.error('Cần TEST_DATABASE_URL (Postgres dùng riêng cho test)'); process.exit(1) }\" && vitest run --no-file-parallelism src/database/migrations.spec.ts src/rate-limit/rate-limit-store.spec.ts src/stats/stats.service.spec.ts src/admin/admin-stats.service.spec.ts && vitest run --config ./vitest.config.e2e.ts --no-file-parallelism",
     "db:migrate": "node --env-file-if-exists=.env scripts/migrate.mjs",
     "vercel-build": "nest build && node scripts/migrate.mjs",
+    "admin:hash": "node scripts/admin-hash.mjs",
     "measure:gemini": "node --env-file=.env scripts/measure-gemini.mjs"
   },
   "dependencies": {

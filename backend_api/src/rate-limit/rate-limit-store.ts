@@ -1,4 +1,5 @@
 import type { DataSource } from 'typeorm';
+import { sqlParams } from '../database/sql-params.js';
 
 interface Row {
   hits: number | string;
@@ -26,36 +27,21 @@ export class RateLimitStore {
 
   async increment(key: string, ttlMs: number, limit: number): Promise<RateLimitResult> {
     const now = this.now();
-    const p = this.placeholder;
+    const { p, params } = sqlParams(this.dataSource, [key, now + ttlMs, now]);
     const rows: Row[] = await this.dataSource.query(
       `INSERT INTO rate_limits ("key", hits, window_ends_at) VALUES (${p(1)}, 1, ${p(2)})
        ON CONFLICT ("key") DO UPDATE SET
          hits = CASE WHEN rate_limits.window_ends_at <= ${p(3)} THEN 1 ELSE rate_limits.hits + 1 END,
          window_ends_at = CASE WHEN rate_limits.window_ends_at <= ${p(3)} THEN ${p(2)} ELSE rate_limits.window_ends_at END
        RETURNING hits, window_ends_at`,
-      this.params([key, now + ttlMs, now]),
+      params,
     );
     const totalHits = Number(rows[0].hits);
     const timeToExpire = Math.max(1, Math.ceil((Number(rows[0].window_ends_at) - now) / 1000));
     if (totalHits === 1) {
-      await this.dataSource.query(
-        `DELETE FROM rate_limits WHERE window_ends_at < ${p(1)}`,
-        this.params([now - KEEP_EXPIRED_MS]),
-      );
+      const expired = sqlParams(this.dataSource, [now - KEEP_EXPIRED_MS]);
+      await this.dataSource.query(`DELETE FROM rate_limits WHERE window_ends_at < ${expired.p(1)}`, expired.params);
     }
     return { totalHits, timeToExpire, isBlocked: totalHits > limit };
-  }
-
-  private get isPostgres(): boolean {
-    return this.dataSource.options.type === 'postgres';
-  }
-
-  // Câu SQL dùng lại một tham số nhiều lần: Postgres có $1, $2…; better-sqlite3 không dùng lại được `?` nên dùng
-  // tham số có tên (@p1…) truyền bằng một object.
-  private readonly placeholder = (index: number): string => (this.isPostgres ? `$${index}` : `@p${index}`);
-
-  private params(values: unknown[]): unknown[] {
-    if (this.isPostgres) return values;
-    return [Object.fromEntries(values.map((value, index) => [`p${index + 1}`, value]))];
   }
 }

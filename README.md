@@ -9,8 +9,9 @@
 - **Bản web:** https://alenjason.github.io/AI-Product-Development-End-to-End/ — dùng ngay không cần đăng nhập, hoặc đăng nhập bằng tài khoản Google để lưu lịch sử.
 - **API:** https://smartfit-api.vercel.app — Swagger UI ở [/docs](https://smartfit-api.vercel.app/docs), [/health](https://smartfit-api.vercel.app/health) cho biết đang dùng Gemini thật hay thực đơn mẫu.
 - **Chính sách quyền riêng tư:** https://alenjason.github.io/AI-Product-Development-End-to-End/privacy.html
+- **Trang thống kê cho nhóm:** https://smartfit-api.vercel.app/admin — cần tài khoản Admin; chỉ có số liệu ẩn danh (số kế hoạch, tỉ lệ Gemini thật, nhật ký từng lần gọi Gemini).
 
-Gemini gói miễn phí chỉ cho 20 lượt mỗi ngày; hết lượt thì kế hoạch là thực đơn mẫu co giãn theo calo của bạn (trường `source` = `sample`). Mỗi người tạo tối đa 5 kế hoạch mỗi 10 phút, đổi món / đổi bài / đánh giá tối đa 30 lần mỗi 10 phút.
+Gemini gói miễn phí chỉ cho 20 lượt mỗi ngày cho mỗi model và hay báo quá tải; backend thử model chính rồi model dự phòng, không được thì kế hoạch là thực đơn mẫu co giãn theo calo của bạn (trường `source` = `sample`). Mỗi người tạo tối đa 5 kế hoạch mỗi 10 phút, đổi món / đổi bài / đánh giá tối đa 30 lần mỗi 10 phút.
 
 ## Tech stack
 
@@ -89,6 +90,13 @@ Mặc định backend dùng SQLite (`database.sqlite`). Có `DATABASE_URL` (Post
 TEST_DATABASE_URL=postgres://user:pass@localhost:5432/smartfit_test npm run test:postgres
 ```
 
+Trang thống kê `/admin` bật khi đặt `ADMIN_USERNAME` và `ADMIN_PASSWORD_HASH`. Mã băm tạo trên máy của Admin — mật khẩu không được in ra hay gửi đi đâu:
+
+```bash
+npm run build && npm run admin:hash                # hỏi mật khẩu 2 lần, không hiện chữ
+npm run build && npm run admin:hash -- --generate  # hoặc tự tạo mật khẩu ngẫu nhiên, in ra đúng một lần
+```
+
 ### AI Workspace (thử nghiệm prompt Gemini)
 
 ```bash
@@ -107,6 +115,11 @@ Kết quả build và test tự động của từng commit: tab [Actions](https
 ## Nhật ký thay đổi (Changelog)
 
 Đối chiếu theo phiên bản BRD (mục "Phiên bản" trong [BRD.md](BRD.md)), để giảng viên/trợ giảng theo dõi tiến độ trực tiếp trên repo mà không cần đọc từng commit.
+
+### BRD v2.10.0 — 2026-10-03
+- Gemini gói miễn phí hay báo "model đang quá tải" (503, tới sau khoảng 20 giây). Nay lần gọi lại chuyển ngay sang model dự phòng `gemini-3.6-flash` (đo cùng ngày: đạt hợp đồng trong 17,5 giây) thay vì gọi lại đúng model đang quá tải; kết quả hỏng thì thử lại model chính một lần trước. Tối đa 3 lần gọi lại trong cùng giới hạn thời gian; mỗi model 20 lượt/ngày riêng nên tổng lượt Gemini gấp đôi. Bản chạy thật chờ tối đa 45 giây mỗi lần, 50 giây tổng
+- Trang thống kê cho nhóm `/admin` (BRD FR-8, mục 6.6): một tài khoản Admin cấp sẵn (mật khẩu băm bằng scrypt trong biến môi trường, không phải Google), chặn dò mật khẩu 5 lần / 15 phút; số liệu theo tháng → từng ngày, giữ mãi: số kế hoạch, tỉ lệ Gemini thật / thực đơn mẫu, đổi món / đổi bài, số lần bị giới hạn tần suất; nhật ký từng lần gọi Gemini (model, kết quả, mã lỗi, thời gian chờ); lượt đã dùng hôm nay của từng model. Không có tài khoản, IP hay hồ sơ nào trong số liệu — trang chính sách quyền riêng tư ghi thêm điều này
+- Kiểm thử: 454 unit và 107 e2e backend (chạy cả trên Postgres); kiểm ngược 35 lỗi cố ý (thứ tự gọi lại, ghi số liệu, đăng nhập Admin, trang thống kê) — mỗi lỗi đều có test đỏ
 
 ### BRD v2.9.0 — 2026-10-02
 - Giai đoạn 9 — chạy thật: backend lên Vercel (vùng Singapore) với Postgres của Neon, bản web lên GitHub Pages; Gemini thật trên bản deploy tạo kế hoạch trong khoảng 16 giây. Trên máy vẫn chạy SQLite và chế độ giả lập như trước; CI kiểm migration và e2e trên cả SQLite lẫn Postgres

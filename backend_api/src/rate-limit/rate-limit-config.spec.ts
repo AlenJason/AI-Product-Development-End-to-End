@@ -4,10 +4,11 @@ import { normalizeIp, tooManyRequestsMessage } from './rate-limit.guard.js';
 const env = (values: Record<string, string>) => (key: string) => values[key];
 
 describe('resolveRateLimitConfig', () => {
-  it('mặc định: tạo plan 5 lần / 10 phút, đổi món·bài·feedback 30 lần / 10 phút, không tin proxy', () => {
+  it('mặc định: tạo plan 5 lần / 10 phút, đổi món·bài·feedback 30 lần / 10 phút, đăng nhập Admin 5 lần / 15 phút, không tin proxy', () => {
     expect(resolveRateLimitConfig(env({}))).toEqual({
       plan: { limit: 5, ttlMs: 600_000 },
       adjust: { limit: 30, ttlMs: 600_000 },
+      admin: { limit: 5, ttlMs: 900_000 },
       trustProxyHops: 0,
     });
   });
@@ -16,7 +17,13 @@ describe('resolveRateLimitConfig', () => {
     const config = resolveRateLimitConfig(
       env({ RATE_LIMIT_PLAN: ' 20/1d ', RATE_LIMIT_ADJUST: 'off', TRUST_PROXY_HOPS: '1' }),
     );
-    expect(config).toEqual({ plan: { limit: 20, ttlMs: 86_400_000 }, adjust: null, trustProxyHops: 1 });
+    expect(config).toEqual({
+      plan: { limit: 20, ttlMs: 86_400_000 },
+      adjust: null,
+      admin: { limit: 5, ttlMs: 900_000 },
+      trustProxyHops: 1,
+    });
+    expect(resolveRateLimitConfig(env({ RATE_LIMIT_ADMIN: '3/1h' })).admin).toEqual({ limit: 3, ttlMs: 3_600_000 });
     expect(resolveRateLimitConfig(env({ RATE_LIMIT_PLAN: '3/45s' })).plan).toEqual({ limit: 3, ttlMs: 45_000 });
   });
 
@@ -25,6 +32,7 @@ describe('resolveRateLimitConfig', () => {
       expect(() => resolveRateLimitConfig(env({ RATE_LIMIT_PLAN: bad })), bad).toThrow(/RATE_LIMIT_PLAN/);
     }
     expect(() => resolveRateLimitConfig(env({ RATE_LIMIT_ADJUST: '1/1w' }))).toThrow(/RATE_LIMIT_ADJUST/);
+    expect(() => resolveRateLimitConfig(env({ RATE_LIMIT_ADMIN: 'nhiều' }))).toThrow(/RATE_LIMIT_ADMIN/);
     for (const bad of ['-1', '10', 'true', '1.5']) {
       expect(() => resolveRateLimitConfig(env({ TRUST_PROXY_HOPS: bad })), bad).toThrow(/TRUST_PROXY_HOPS/);
     }

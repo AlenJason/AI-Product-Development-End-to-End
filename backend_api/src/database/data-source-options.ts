@@ -4,9 +4,13 @@ import { PlanRecord } from './entities/plan-record.entity.js';
 import { User } from './entities/user.entity.js';
 import { InitialSchema1790208000000 } from './migrations/1790208000000-initial-schema.js';
 import { RateLimits1791158400000 } from './migrations/1791158400000-rate-limits.js';
+import { UsageStats1791504000000 } from './migrations/1791504000000-usage-stats.js';
 import { InitialSchemaPostgres1791072000000 } from './migrations/postgres/1791072000000-initial-schema-postgres.js';
 import { RateLimitsPostgres1791158400000 } from './migrations/postgres/1791158400000-rate-limits-postgres.js';
+import { UsageStatsPostgres1791504000000 } from './migrations/postgres/1791504000000-usage-stats-postgres.js';
 import { RateLimitCounter } from '../rate-limit/rate-limit-counter.entity.js';
+import { GeminiCall } from '../stats/gemini-call.entity.js';
+import { UsageDaily } from '../stats/usage-daily.entity.js';
 
 export const DEFAULT_DATABASE_PATH = 'database.sqlite';
 
@@ -37,7 +41,7 @@ export function resolveDatabaseTarget(env: DatabaseEnv): DatabaseTarget {
 // Dùng chung cho DatabaseModule, script migrate và test. Không bao giờ bật `synchronize`: TypeORM có thể xoá
 // cột và dữ liệu khi entity đổi. Đổi entity = viết migration mới cho CẢ HAI loại DB.
 export function dataSourceOptions(target: DatabaseTarget, { migrationsRun = true } = {}): DataSourceOptions {
-  const common = { entities: [User, PlanRecord, RateLimitCounter], migrationsRun, synchronize: false };
+  const common = { entities: [User, PlanRecord, RateLimitCounter, UsageDaily, GeminiCall], migrationsRun, synchronize: false };
   if (target.kind === 'postgres') {
     return {
       ...common,
@@ -46,11 +50,11 @@ export function dataSourceOptions(target: DatabaseTarget, { migrationsRun = true
       // Truyền thẳng module `pg`: TypeORM tự nạp bằng require động, Vercel không thấy nên không đóng gói `pg` vào
       // function ("Postgres package has not been found installed" khi deploy thử, giai đoạn 9).
       driver: pg,
-      migrations: [InitialSchemaPostgres1791072000000, RateLimitsPostgres1791158400000],
+      migrations: [InitialSchemaPostgres1791072000000, RateLimitsPostgres1791158400000, UsageStatsPostgres1791504000000],
       // gen_random_uuid() có sẵn từ Postgres 13 — không cần CREATE EXTENSION (Neon không cho mọi extension).
       uuidExtension: 'pgcrypto',
       installExtensions: false,
     };
   }
-  return { ...common, type: 'better-sqlite3', database: target.path, migrations: [InitialSchema1790208000000, RateLimits1791158400000] };
+  return { ...common, type: 'better-sqlite3', database: target.path, migrations: [InitialSchema1790208000000, RateLimits1791158400000, UsageStats1791504000000] };
 }

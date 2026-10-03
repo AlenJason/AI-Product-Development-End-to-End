@@ -1,4 +1,5 @@
-import { BadRequestException, Injectable, Logger, UnprocessableEntityException } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, Optional, UnprocessableEntityException } from '@nestjs/common';
+import { StatsService } from '../../stats/stats.service.js';
 import type { SwapExerciseDto } from '../dto/adjust-plan.dto.js';
 import type { MealPlanResponseDto } from '../dto/meal-plan-response.dto.js';
 import { type DayContentDto, ExerciseContentDto } from '../dto/plan-content.dto.js';
@@ -24,6 +25,7 @@ export class ExerciseSwapService {
   constructor(
     private readonly gemini: GeminiService,
     private readonly random: RandomSource,
+    @Optional() private readonly stats?: StatsService,
   ) {}
 
   async swap(dto: SwapExerciseDto): Promise<MealPlanResponseDto> {
@@ -48,10 +50,12 @@ export class ExerciseSwapService {
     const fromGemini = await this.fromGemini(context, original, violations);
     const replacement = fromGemini ?? this.fromPool(context, original, dayNames, violations, profileMaxLevel);
     if (!replacement) {
+      await this.stats?.count('exercise_swap.none');
       throw new UnprocessableEntityException(
         'Không tìm được động tác nhẹ hơn cùng nhóm cơ phù hợp với bạn — động tác này có thể đã là mức nhẹ nhất.',
       );
     }
+    await this.stats?.count(fromGemini ? 'exercise_swap.gemini' : 'exercise_swap.pool');
     const days: DayContentDto[] = context.plan.days.map((day, d) => ({
       ...day,
       workout: {
@@ -72,9 +76,9 @@ export class ExerciseSwapService {
     const names = context.plan.days.flatMap((day) => day.workout.exercises.map((exercise) => exercise.name));
     return generateWithRetry(
       this.logger,
-      'đổi bài tập',
-      this.gemini.budget,
-      (timeoutMs) => this.gemini.generateJson(buildExerciseSwapPrompt(context.profile, original, names), timeoutMs),
+      'exercise_swap',
+      this.gemini,
+      (timeoutMs, model) => this.gemini.generateJson(buildExerciseSwapPrompt(context.profile, original, names), timeoutMs, model),
       (raw) => {
         const parsed = parseContent(ExerciseContentDto, raw);
         if (!parsed.value) return parsed;

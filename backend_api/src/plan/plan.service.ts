@@ -1,6 +1,7 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
+import { StatsService } from '../stats/stats.service.js';
 import type { CreatePlanDto } from './dto/create-plan.dto.js';
 import type { DailyTargetDto, MealPlanResponseDto } from './dto/meal-plan-response.dto.js';
 import type { PlanContentDto } from './dto/plan-content.dto.js';
@@ -29,9 +30,14 @@ export interface GeneratePlanOptions {
 export class PlanService {
   private readonly logger = new Logger(PlanService.name);
 
-  constructor(private readonly gemini: GeminiService) {}
+  // StatsService luôn có trong app (module global); unit test logic kế hoạch không cần số liệu.
+  constructor(
+    private readonly gemini: GeminiService,
+    @Optional() private readonly stats?: StatsService,
+  ) {}
 
   async generatePlan(profile: CreatePlanDto, options: GeneratePlanOptions = {}): Promise<MealPlanResponseDto> {
+    const startedAt = Date.now();
     const { target, flooredToBmr } = computeDailyTarget(profile);
     const warnings = profileWarnings(profile, flooredToBmr, target.bmr);
     const match = matchRestrictions(profile.restrictions);
@@ -40,13 +46,17 @@ export class PlanService {
     const content = await this.generateWithGemini(profile, target, match, options.feedbackNote);
     if (content) {
       // Prompt đã ghi mức tối đa; động tác Gemini vẫn vượt mức thì thay bằng động tác trong kho, không gọi lại.
-      return assemblePlan(capWorkoutLevel(content, maxLevel, match.avoidTags), target, PlanSource.GEMINI, warnings);
+      const plan = assemblePlan(capWorkoutLevel(content, maxLevel, match.avoidTags), target, PlanSource.GEMINI, warnings);
+      await this.stats?.count('plan.gemini', Date.now() - startedAt);
+      return plan;
     }
 
     const sample = buildSampleContent(target, match, maxLevel);
     if (hasRestrictions(profile)) warnings.push(WARNINGS.sampleKeywordFiltered);
     if (match.hasUnrecognized || sample.incomplete) warnings.push(WARNINGS.restrictionsIncomplete);
-    return assemblePlan(sample.plan, target, PlanSource.SAMPLE, warnings);
+    const plan = assemblePlan(sample.plan, target, PlanSource.SAMPLE, warnings);
+    await this.stats?.count('plan.sample', Date.now() - startedAt);
+    return plan;
   }
 
   // Log chỉ ghi thông báo lỗi và vi phạm hợp đồng, không ghi request hay nội dung Gemini (NFR-7).
@@ -62,9 +72,9 @@ export class PlanService {
     }
     const content = await generateWithRetry(
       this.logger,
-      'tạo kế hoạch',
-      this.gemini.budget,
-      (timeoutMs) => this.gemini.generatePlanContent(profile, target, feedbackNote, timeoutMs),
+      'plan',
+      this.gemini,
+      (timeoutMs, model) => this.gemini.generatePlanContent(profile, target, feedbackNote, timeoutMs, model),
       (raw) => {
         const { plan, errors } = parsePlanContent(raw, target);
         if (!plan) return { value: null, errors };

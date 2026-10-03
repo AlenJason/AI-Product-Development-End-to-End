@@ -1,4 +1,5 @@
-import { BadRequestException, Injectable, Logger, UnprocessableEntityException } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, Optional, UnprocessableEntityException } from '@nestjs/common';
+import { StatsService } from '../../stats/stats.service.js';
 import type { SwapMealDto } from '../dto/adjust-plan.dto.js';
 import type { MealPlanResponseDto } from '../dto/meal-plan-response.dto.js';
 import { type DayContentDto, MealContentDto } from '../dto/plan-content.dto.js';
@@ -24,6 +25,7 @@ export class MealSwapService {
   constructor(
     private readonly gemini: GeminiService,
     private readonly random: RandomSource,
+    @Optional() private readonly stats?: StatsService,
   ) {}
 
   async swap(dto: SwapMealDto): Promise<MealPlanResponseDto> {
@@ -50,8 +52,10 @@ export class MealSwapService {
     const fromGemini = await this.fromGemini(context, original, range, usedNames, violations);
     const replacement = fromGemini ?? this.fromPool(context, original, usedNames, violations);
     if (!replacement) {
+      await this.stats?.count('meal_swap.none');
       throw new UnprocessableEntityException('Không tìm được món thay thế phù hợp với bữa này và các hạn chế bạn đã nhập.');
     }
+    await this.stats?.count(fromGemini ? 'meal_swap.gemini' : 'meal_swap.pool');
     const extra = !fromGemini && context.match.hasUnrecognized ? [WARNINGS.restrictionsIncomplete] : [];
     return rebuildPlan(context, withMeal(replacement), extra);
   }
@@ -67,9 +71,10 @@ export class MealSwapService {
     const names = context.plan.days.flatMap((day) => day.meals.map((meal) => meal.name));
     return generateWithRetry(
       this.logger,
-      'đổi món',
-      this.gemini.budget,
-      (timeoutMs) => this.gemini.generateJson(buildMealSwapPrompt(context.profile, original, range, names), timeoutMs),
+      'meal_swap',
+      this.gemini,
+      (timeoutMs, model) =>
+        this.gemini.generateJson(buildMealSwapPrompt(context.profile, original, range, names), timeoutMs, model),
       (raw) => {
         const parsed = parseContent(MealContentDto, raw);
         if (!parsed.value) return parsed;

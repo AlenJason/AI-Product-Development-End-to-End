@@ -1,4 +1,5 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
+import { StatsService } from '../../stats/stats.service.js';
 import { Type } from 'class-transformer';
 import { ArrayMaxSize, ArrayMinSize, IsArray, ValidateNested } from 'class-validator';
 import type { FeedbackDto, FeedbackResponseDto } from '../dto/adjust-plan.dto.js';
@@ -45,11 +46,13 @@ export class FeedbackService {
   constructor(
     private readonly gemini: GeminiService,
     private readonly planService: PlanService,
+    @Optional() private readonly stats?: StatsService,
   ) {}
 
   async apply(dto: FeedbackDto): Promise<FeedbackResult> {
     const context = readClientPlan(dto.profile, dto.plan);
     const feedback = normalizeFeedback(dto);
+    await this.stats?.count('feedback.total');
     const safety_warning = hasDangerSign(feedback) ? { message: SAFETY_WARNING_MESSAGE } : null;
     const trainedMuscles = new Set(
       context.plan.days[dto.day_number - 1].workout.exercises.map((exercise) => exercise.muscle_group),
@@ -73,6 +76,7 @@ export class FeedbackService {
       const meals = await this.rebalanceMeals(context, days, nextIndex, feedback.eating);
       if (meals) days[nextIndex] = { ...days[nextIndex], meals };
       else extra.push(WARNINGS.mealsNotRebalanced);
+      await this.stats?.count(meals ? 'feedback.rebalanced' : 'feedback.unchanged');
     }
     return { response: { plan: rebuildPlan(context, days, extra), safety_warning }, isNewPlan: false };
   }
@@ -113,12 +117,13 @@ export class FeedbackService {
 
     return generateWithRetry(
       this.logger,
-      'cân đối món ăn',
-      this.gemini.budget,
-      (timeoutMs) =>
+      'feedback',
+      this.gemini,
+      (timeoutMs, model) =>
         this.gemini.generateJson(
           buildDayMealsPrompt(context.profile, target.target_calories, dayIndex + 1, dayCalories, range, eating, otherNames),
           timeoutMs,
+          model,
         ),
       (raw) => {
         const parsed = parseContent(DayMealsDto, raw);

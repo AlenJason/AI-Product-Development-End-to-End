@@ -11,6 +11,7 @@ import { CurrentUser, OptionalJwtAuthGuard } from '../auth/jwt-auth.guard.js';
 import type { User } from '../database/entities/user.entity.js';
 import { HistoryService } from '../history/history.service.js';
 import { RateLimit, RateLimitGuard } from '../rate-limit/rate-limit.guard.js';
+import { StatsService } from '../stats/stats.service.js';
 import { CreatePlanDto } from './dto/create-plan.dto.js';
 import { MealPlanResponseDto } from './dto/meal-plan-response.dto.js';
 import { PlanService } from './plan.service.js';
@@ -22,6 +23,7 @@ export class PlanController {
   constructor(
     private readonly planService: PlanService,
     private readonly history: HistoryService,
+    private readonly stats: StatsService,
   ) {}
 
   @Post('generate-plan')
@@ -44,6 +46,7 @@ export class PlanController {
     @CurrentUser() user: User | undefined,
   ): Promise<MealPlanResponseDto> {
     const plan = await this.planService.generatePlan(dto);
+    await this.stats.count(user ? 'plan.signed_in' : 'plan.guest');
     if (user && !(await this.history.save(user.id, plan))) {
       plan.warnings.push(WARNINGS.historyNotSaved);
     }

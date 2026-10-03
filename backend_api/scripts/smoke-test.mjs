@@ -36,6 +36,8 @@ function startServer(script) {
       RATE_LIMIT_PLAN: '100/1m',
       RATE_LIMIT_ADJUST: '100/1m',
       TRUST_PROXY_HOPS: '',
+      ADMIN_USERNAME: '',
+      ADMIN_PASSWORD_HASH: '',
     },
     stdio: ['ignore', 'pipe', 'pipe'],
   });
@@ -104,13 +106,19 @@ async function checkEndpoints(server) {
     body: { ...adjust, day_number: 1, intensity: 'hard', body_states: ['danger_sign'], eating: 'on_plan' },
   });
   expect(feedback.status === 200 && feedback.body.safety_warning, `Feedback lỗi: ${feedback.status}`);
+
+  // Giai đoạn 10: trang thống kê nằm trong code TS (không asset) — bản build vẫn phải phục vụ được.
+  const page = await fetch(BASE + '/admin');
+  expect(page.status === 200 && (await page.text()).includes('SmartFit AI — Thống kê'), `/admin lỗi: ${page.status}`);
+  const script = await fetch(BASE + '/admin/app.js');
+  expect(script.status === 200 && (await script.text()).includes('/api/v1/admin/login'), `/admin/app.js lỗi: ${script.status}`);
 }
 
 for (const [label, script] of MODES) {
   const state = startServer(script);
   try {
     await checkEndpoints(state.server);
-    console.log(`Smoke test đạt (${label}): /health, đăng nhập giả lập, generate-plan, lịch sử, đổi món, đổi bài tập, feedback.`);
+    console.log(`Smoke test đạt (${label}): /health, đăng nhập giả lập, generate-plan, lịch sử, đổi món, đổi bài tập, feedback, /admin.`);
   } catch (error) {
     console.error(`Smoke test thất bại (${label}): ${error.message}\n--- log server ---\n${state.output}`);
     process.exitCode = 1;

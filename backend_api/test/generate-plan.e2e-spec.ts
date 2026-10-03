@@ -62,6 +62,24 @@ describe('POST /api/v1/generate-plan (e2e, SDK thật + server Gemini giả)', (
     expect(res.body.warnings.some((warning: string) => warning.startsWith('Đang dùng thực đơn mẫu'))).toBe(true);
   });
 
+  // Quyết định Q4 giai đoạn 10, qua toàn bộ đường HTTP → PlanService → GeminiService → SDK → server giả.
+  it('serves a Gemini plan from the fallback model when the main model is overloaded', async () => {
+    const withFallback = await createTestApp({
+      GEMINI_API_KEY: 'test-key',
+      GEMINI_BASE_URL: fake.url,
+      GEMINI_TIMEOUT_MS: '200',
+      GEMINI_FALLBACK_MODEL: 'gemini-3.6-flash',
+    });
+    try {
+      fake.reply({ kind: 'error', status: 503, message: 'This model is currently experiencing high demand.' }, { kind: 'json', body: SAMPLE_CONTENT });
+      const res = await request(withFallback.app.getHttpServer()).post('/api/v1/generate-plan').send(body()).expect(200);
+      expect(res.body.source).toBe('gemini');
+      expect(fake.paths).toEqual(['/v1beta/models/gemini-3.5-flash:generateContent', '/v1beta/models/gemini-3.6-flash:generateContent']);
+    } finally {
+      await withFallback.close();
+    }
+  });
+
   it('rejects Gemini output that contains a recognised allergen, then serves the filtered sample', async () => {
     fake.reply({ kind: 'json', body: SAMPLE_CONTENT }); // thực đơn mẫu có "Nước mắm"
     const res = await post(body({ restrictions: { allergies: 'Hải sản' } })).expect(200);

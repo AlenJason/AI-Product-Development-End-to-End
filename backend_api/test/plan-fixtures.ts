@@ -36,7 +36,8 @@ export function geminiAnswering(...answers: unknown[]) {
     else generateJson.mockResolvedValueOnce(answer);
   }
   const budget = { perCallMs: 20_000, totalMs: 40_000 };
-  return { gemini: { isConfigured: true, generateJson, budget } as unknown as GeminiService, generateJson };
+  const models = { primary: 'gemini-3.5-flash', fallback: null };
+  return { gemini: { isConfigured: true, generateJson, budget, models } as unknown as GeminiService, generateJson };
 }
 
 // Plan hợp lệ do chính server tạo (thực đơn mẫu, không Gemini) — giống plan app sẽ gửi lại.
