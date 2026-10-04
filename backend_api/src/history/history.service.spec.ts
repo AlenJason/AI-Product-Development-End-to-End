@@ -5,10 +5,11 @@ import { createMemoryDataSource } from '../../test/memory-data-source.js';
 import { PlanRecord } from '../database/entities/plan-record.entity.js';
 import { User } from '../database/entities/user.entity.js';
 import type { MealPlanResponseDto } from '../plan/dto/meal-plan-response.dto.js';
+import { WARNINGS } from '../plan/plan-warnings.js';
 import { HISTORY_LIMIT, HistoryService } from './history.service.js';
 
-const fakePlan = (targetCalories = 1800): MealPlanResponseDto =>
-  ({ plan_id: randomUUID(), daily_target: { target_calories: targetCalories }, days: [] }) as unknown as MealPlanResponseDto;
+const fakePlan = (targetCalories = 1800, warnings: string[] = []): MealPlanResponseDto =>
+  ({ plan_id: randomUUID(), warnings, daily_target: { target_calories: targetCalories }, days: [] }) as unknown as MealPlanResponseDto;
 
 describe('HistoryService', () => {
   let dataSource: DataSource;
@@ -102,6 +103,16 @@ describe('HistoryService', () => {
     vi.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
     await dataSource.query('DROP TABLE plan_records');
     expect(await service.update(an.id, fakePlan())).toBe(false);
+  });
+
+  it('drops the warnings that reveal health status (pregnancy, health conditions) on save and update, keeps the rest', async () => {
+    const plan = fakePlan(1624, [WARNINGS.bmrFloor(1399), WARNINGS.healthConditions, WARNINGS.pregnancy]);
+    await service.save(an.id, plan);
+    await expect(service.findOne(an.id, plan.plan_id)).resolves.toEqual({ ...plan, warnings: [WARNINGS.bmrFloor(1399)] });
+    expect(plan.warnings).toHaveLength(3); // plan trả cho app không bị sửa
+
+    await service.update(an.id, { ...plan, warnings: [WARNINGS.pregnancy, WARNINGS.sampleKeywordFiltered] } as MealPlanResponseDto);
+    await expect(service.findOne(an.id, plan.plan_id)).resolves.toEqual({ ...plan, warnings: [WARNINGS.sampleKeywordFiltered] });
   });
 
   it('answers an unknown id with 404', async () => {

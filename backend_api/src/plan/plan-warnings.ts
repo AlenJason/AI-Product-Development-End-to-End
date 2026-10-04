@@ -19,6 +19,14 @@ export const WARNINGS = {
     'Chưa cân đối lại được món ăn ngày kế tiếp theo phản hồi của bạn, nên thực đơn ngày đó giữ nguyên.',
 };
 
+// Câu cảnh báo cho biết tình trạng sức khoẻ (có bệnh nền, mang thai / cho con bú): app nhận đủ trong response, nhưng
+// bản lưu vào lịch sử bỏ chúng — lịch sử không chứa dữ liệu sức khoẻ (NFR-7, BRD 2.10.1).
+export const HEALTH_STATUS_WARNINGS: readonly string[] = [WARNINGS.healthConditions, WARNINGS.pregnancy];
+
+export function withoutHealthStatusWarnings<T extends { warnings: string[] }>(plan: T): T {
+  return { ...plan, warnings: plan.warnings.filter((warning) => !HEALTH_STATUS_WARNINGS.includes(warning)) };
+}
+
 // Cảnh báo chỉ phụ thuộc hồ sơ — mọi endpoint trả plan đều tính lại, không lấy `warnings` client gửi lên.
 export function profileWarnings(profile: CreatePlanDto, flooredToBmr: boolean, bmr: number): string[] {
   const warnings: string[] = [];

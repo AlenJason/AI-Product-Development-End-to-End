@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import type { Repository } from 'typeorm';
 import { PlanRecord } from '../database/entities/plan-record.entity.js';
 import type { MealPlanResponseDto } from '../plan/dto/meal-plan-response.dto.js';
+import { withoutHealthStatusWarnings } from '../plan/plan-warnings.js';
 import type { PlanHistoryResponseDto } from './dto/plan-history-response.dto.js';
 
 export const HISTORY_LIMIT = 50;
@@ -14,13 +15,14 @@ export class HistoryService {
   constructor(@InjectRepository(PlanRecord) private readonly plans: Repository<PlanRecord>) {}
 
   // Trả false thay vì ném lỗi: lịch sử lỗi không được làm mất plan vừa tạo xong.
+  // Lưu và cập nhật đều bỏ câu cảnh báo cho biết tình trạng sức khoẻ (NFR-7); plan trả cho app không đổi.
   async save(userId: string, plan: MealPlanResponseDto): Promise<boolean> {
     try {
       await this.plans.insert({
         id: plan.plan_id,
         user_id: userId,
         target_calories: plan.daily_target.target_calories,
-        plan_json: plan,
+        plan_json: withoutHealthStatusWarnings(plan),
         created_at: new Date(),
       });
       return true;
@@ -38,7 +40,7 @@ export class HistoryService {
     try {
       await this.plans.update(
         { id: plan.plan_id, user_id: userId },
-        { plan_json: plan, target_calories: plan.daily_target.target_calories },
+        { plan_json: withoutHealthStatusWarnings(plan), target_calories: plan.daily_target.target_calories },
       );
       return true;
     } catch (error) {

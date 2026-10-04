@@ -5,9 +5,11 @@ import { User } from './entities/user.entity.js';
 import { InitialSchema1790208000000 } from './migrations/1790208000000-initial-schema.js';
 import { RateLimits1791158400000 } from './migrations/1791158400000-rate-limits.js';
 import { UsageStats1791504000000 } from './migrations/1791504000000-usage-stats.js';
+import { StripHealthWarnings1791590400000 } from './migrations/1791590400000-strip-health-warnings.js';
 import { InitialSchemaPostgres1791072000000 } from './migrations/postgres/1791072000000-initial-schema-postgres.js';
 import { RateLimitsPostgres1791158400000 } from './migrations/postgres/1791158400000-rate-limits-postgres.js';
 import { UsageStatsPostgres1791504000000 } from './migrations/postgres/1791504000000-usage-stats-postgres.js';
+import { StripHealthWarningsPostgres1791590400000 } from './migrations/postgres/1791590400000-strip-health-warnings-postgres.js';
 import { RateLimitCounter } from '../rate-limit/rate-limit-counter.entity.js';
 import { GeminiCall } from '../stats/gemini-call.entity.js';
 import { UsageDaily } from '../stats/usage-daily.entity.js';
@@ -50,11 +52,21 @@ export function dataSourceOptions(target: DatabaseTarget, { migrationsRun = true
       // Truyền thẳng module `pg`: TypeORM tự nạp bằng require động, Vercel không thấy nên không đóng gói `pg` vào
       // function ("Postgres package has not been found installed" khi deploy thử, giai đoạn 9).
       driver: pg,
-      migrations: [InitialSchemaPostgres1791072000000, RateLimitsPostgres1791158400000, UsageStatsPostgres1791504000000],
+      migrations: [
+        InitialSchemaPostgres1791072000000,
+        RateLimitsPostgres1791158400000,
+        UsageStatsPostgres1791504000000,
+        StripHealthWarningsPostgres1791590400000,
+      ],
       // gen_random_uuid() có sẵn từ Postgres 13 — không cần CREATE EXTENSION (Neon không cho mọi extension).
       uuidExtension: 'pgcrypto',
       installExtensions: false,
     };
   }
-  return { ...common, type: 'better-sqlite3', database: target.path, migrations: [InitialSchema1790208000000, RateLimits1791158400000, UsageStats1791504000000] };
+  return {
+    ...common,
+    type: 'better-sqlite3',
+    database: target.path,
+    migrations: [InitialSchema1790208000000, RateLimits1791158400000, UsageStats1791504000000, StripHealthWarnings1791590400000],
+  };
 }

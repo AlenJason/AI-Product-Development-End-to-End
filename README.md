@@ -116,6 +116,10 @@ Kết quả build và test tự động của từng commit: tab [Actions](https
 
 Đối chiếu theo phiên bản BRD (mục "Phiên bản" trong [BRD.md](BRD.md)), để giảng viên/trợ giảng theo dõi tiến độ trực tiếp trên repo mà không cần đọc từng commit.
 
+### BRD v2.10.1 — 2026-10-04
+- Sửa lỗi quyền riêng tư: kế hoạch lưu vào lịch sử từng giữ nguyên câu cảnh báo "Bạn đang mang thai hoặc cho con bú…" và "Bạn có khai báo tình trạng sức khoẻ…", nên server biết người dùng đang mang thai hay có bệnh nền — trái với NFR-7 và trang chính sách. Nay backend bỏ hai câu này khỏi bản lưu (app vẫn nhận đủ cảnh báo); migration dọn các kế hoạch đã lưu trước đó trên cả SQLite và Postgres
+- Kiểm thử: 456 unit và 108 e2e backend (chạy cả trên Postgres); kiểm ngược 5 lỗi cố ý — 4 lỗi có test đỏ, lỗi còn lại cho ra đúng dữ liệu cũ (chỉ ghi lại dòng không đổi)
+
 ### BRD v2.10.0 — 2026-10-03
 - Gemini gói miễn phí hay báo "model đang quá tải" (503, tới sau khoảng 20 giây). Nay lần gọi lại chuyển ngay sang model dự phòng `gemini-3.6-flash` (đo cùng ngày: đạt hợp đồng trong 17,5 giây) thay vì gọi lại đúng model đang quá tải; kết quả hỏng thì thử lại model chính một lần trước. Tối đa 3 lần gọi lại trong cùng giới hạn thời gian; mỗi model 20 lượt/ngày riêng nên tổng lượt Gemini gấp đôi. Bản chạy thật chờ tối đa 45 giây mỗi lần, 50 giây tổng
 - Trang thống kê cho nhóm `/admin` (BRD FR-8, mục 6.6): một tài khoản Admin cấp sẵn (mật khẩu băm bằng scrypt trong biến môi trường, không phải Google), chặn dò mật khẩu 5 lần / 15 phút; số liệu theo tháng → từng ngày, giữ mãi: số kế hoạch, tỉ lệ Gemini thật / thực đơn mẫu, đổi món / đổi bài, số lần bị giới hạn tần suất; nhật ký từng lần gọi Gemini (model, kết quả, mã lỗi, thời gian chờ); lượt đã dùng hôm nay của từng model. Không có tài khoản, IP hay hồ sơ nào trong số liệu — trang chính sách quyền riêng tư ghi thêm điều này

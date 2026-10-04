@@ -2,6 +2,7 @@ import { JwtService } from '@nestjs/jwt';
 import request from 'supertest';
 import { DataSource } from 'typeorm';
 import { PlanRecord } from '../src/database/entities/plan-record.entity.js';
+import { HEALTH_STATUS_WARNINGS, WARNINGS } from '../src/plan/plan-warnings.js';
 import { createTestApp, loginMock, type TestApp } from './test-app.js';
 
 const HEALTH_SECRET = 'BENH-NEN-BI-MAT-456';
@@ -41,7 +42,7 @@ describe('Lịch sử kế hoạch (e2e, AUTH_MODE=mock, DB trong RAM)', () => {
     await testApp.close();
   });
 
-  it('saves a plan generated while logged in and serves it back unchanged', async () => {
+  it('saves a plan generated while logged in and serves it back without the health-status warnings', async () => {
     const { access_token } = await loginMock(testApp, 'an@vku.edu.vn');
     const { body: plan } = await generate(`Bearer ${access_token}`).expect(200);
 
@@ -52,7 +53,8 @@ describe('Lịch sử kế hoạch (e2e, AUTH_MODE=mock, DB trong RAM)', () => {
       target_calories: plan.daily_target.target_calories,
     });
     const { body: saved } = await history(access_token, plan.plan_id).expect(200);
-    expect(saved).toEqual(plan);
+    expect(plan.warnings).toContain(WARNINGS.healthConditions);
+    expect(saved).toEqual({ ...plan, warnings: plan.warnings.filter((w: string) => w !== WARNINGS.healthConditions) });
   });
 
   it('lists the newest plan first', async () => {
@@ -112,6 +114,23 @@ describe('Lịch sử kế hoạch (e2e, AUTH_MODE=mock, DB trong RAM)', () => {
     expect(rows.length).toBeGreaterThan(0);
     expect(stored).not.toContain(HEALTH_SECRET);
     expect(stored).not.toContain(ALLERGY_SECRET);
+  });
+
+  it('never stores whether the user is pregnant or has a health condition, even as a warning (NFR-7)', async () => {
+    const { access_token } = await loginMock(testApp, 'mang-thai@vku.edu.vn');
+    const pregnant = { ...PROFILE, goal: 'maintain', pregnant_or_breastfeeding: true };
+    const { body: plan } = await http()
+      .post('/api/v1/generate-plan')
+      .set('Authorization', `Bearer ${access_token}`)
+      .send(pregnant)
+      .expect(200);
+    expect(plan.warnings).toEqual(expect.arrayContaining([...HEALTH_STATUS_WARNINGS])); // app vẫn nhận đủ cảnh báo
+
+    const { body: saved } = await history(access_token, plan.plan_id).expect(200);
+    expect(saved.warnings).not.toEqual(expect.arrayContaining([WARNINGS.pregnancy]));
+    expect(saved.warnings).not.toEqual(expect.arrayContaining([WARNINGS.healthConditions]));
+    const rows: { plan_json: string }[] = await db().query('SELECT plan_json FROM plan_records');
+    expect(rows.map((row) => row.plan_json).join('\n')).not.toMatch(/mang thai|khai báo tình trạng sức khoẻ/);
   });
 
   it('deletes the history together with the account', async () => {

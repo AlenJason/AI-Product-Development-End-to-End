@@ -3,8 +3,8 @@
 **Tên sản phẩm:** Trợ lý AI Gợi ý & Điều chỉnh Thực đơn, Lịch tập Thông minh  
 **Môn học:** AI Product Development End-to-End (Đồ án Kỹ sư / Cử nhân Năm 4)  
 **Đơn vị thực hiện:** Trường Đại học Công nghệ Thông tin và Truyền thông Việt - Hàn (VKU)  
-**Phiên bản:** 2.10.0 (Dành cho Sinh viên thực hành: Flutter & NestJS)  
-**Ngày cập nhật:** 03/10/2026  
+**Phiên bản:** 2.10.1 (Dành cho Sinh viên thực hành: Flutter & NestJS)  
+**Ngày cập nhật:** 04/10/2026  
 **Trạng thái:** Đã phê duyệt (Approved)  
 
 ---
@@ -499,7 +499,7 @@ Các endpoint có thể gọi Gemini mà không cần đăng nhập bị giới 
    * Bản 2.9.0 chọn hướng (b): bản chạy thật dùng Postgres của Neon (Vercel chỉ có ổ đĩa tạm), máy dev và test vẫn dùng SQLite (mục 4).
 7. **Quyền riêng tư dữ liệu sức khoẻ (bổ sung bản 2.3.0):**
    * Dị ứng, chấn thương, tình trạng sức khoẻ và việc mang thai / cho con bú là dữ liệu cá nhân nhạy cảm (Nghị định 13/2023/NĐ-CP). Chúng chỉ lưu trên máy người dùng, gửi kèm từng request rồi bỏ đi: backend không ghi vào database, không ghi log nội dung request hay nội dung Gemini trả về.
-   * Plan lưu trong lịch sử (FR-7) không chứa các trường này.
+   * Plan lưu trong lịch sử (FR-7) không chứa các trường này, kể cả câu cảnh báo cho biết chúng (đang mang thai / cho con bú, có khai báo bệnh nền): backend bỏ hai câu đó khỏi bản lưu, còn app vẫn nhận đủ cảnh báo trong response. Plan đã lưu trước bản 2.10.1 được dọn bằng migration. *(làm rõ bản 2.10.1)*
    * Số liệu cho trang Admin (FR-8) chỉ là số đếm theo ngày và nhật ký từng lần gọi Gemini — không có tài khoản, IP, hồ sơ, nội dung kế hoạch hay chi tiết lỗi hợp đồng; trang chính sách ghi rõ điều này. *(bổ sung bản 2.10.0)*
    * Trang chính sách quyền riêng tư công khai (`frontend_app/web/privacy.html`, đi cùng bản web) nói rõ dữ liệu nào lưu ở đâu, gửi cho ai (kể cả việc gói miễn phí của Gemini API cho Google dùng nội dung gửi lên để cải thiện sản phẩm) và cách xoá tài khoản. Đổi cách lưu hay gửi dữ liệu thì sửa trang này cùng lúc. *(bổ sung bản 2.9.0)*
    * Android không đưa dữ liệu đã lưu của app lên bản sao lưu Google Drive và không chép sang máy mới khi chuyển máy: hồ sơ có dữ liệu sức khoẻ và token đăng nhập chỉ nằm trên máy đã nhập. *(bổ sung bản 2.8.0)*
