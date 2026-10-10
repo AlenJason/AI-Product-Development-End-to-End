@@ -1,6 +1,6 @@
 # Mục lục Knowledge Base
 
-_Cập nhật lần cuối: 2026-09-27_
+_Cập nhật lần cuối: 2026-09-24_
 
 ## Danh sách chủ đề
 
@@ -8,7 +8,7 @@ _Cập nhật lần cuối: 2026-09-27_
 | --------------------------- | --------------------------------------------------------------------- |
 | [[critical-constraints]]    | Các quy tắc cứng của dự án — đọc trước khi đụng vào route hay module nào |
 | [[wiki-triggers]]           | Bảng ánh xạ đường dẫn file + từ khóa chủ đề → bài wiki tương ứng       |
-| [[reference-materials]]     | Tài liệu/công nghệ tham khảo bên ngoài liên quan tới dự án             |
+| [[reference-materials]]      | Link các kho lưu trữ, framework và package chính của dự án |
 | [[plan-data-contract]]      | Hợp đồng dữ liệu plan: luồng generate-plan, hai lớp DTO, mã cố định, danh sách đi chợ |
 | [[gemini-integration]]      | Hành vi thật của SDK Gemini (hết giờ, lỗi, không tự gọi lại), cách test không cần khoá |
 | [[auth-and-history]]        | Đăng nhập Google/giả lập, JWT, guard, SQLite + migration, lịch sử kế hoạch; hành vi thư viện đã kiểm chứng |
@@ -19,3 +19,4 @@ _Cập nhật lần cuối: 2026-09-27_
 ## Tra cứu nhanh
 
 _Bổ sung dần khi có thêm bài wiki._
+

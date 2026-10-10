@@ -6,7 +6,6 @@ import { Gender } from '../src/plan/enums/gender.enum.js';
 import { Goal } from '../src/plan/enums/goal.enum.js';
 import type { GeminiService } from '../src/plan/gemini.service.js';
 import { PlanService } from '../src/plan/plan.service.js';
-import { RandomSource } from '../src/plan/adjust/random-source.js';
 
 // Dữ liệu dùng chung cho test đổi món, đổi bài tập, feedback (giai đoạn 4).
 
@@ -44,6 +43,3 @@ export function samplePlan(profile: CreatePlanDto = makeProfile()): Promise<Meal
   return new PlanService(geminiOff).generatePlan(profile);
 }
 
-// Luôn chọn ứng viên đầu tiên (hoặc cuối cùng) để test lặp lại được.
-export const firstPick = { next: () => 0 } as RandomSource;
-export const lastPick = { next: () => 0.999 } as RandomSource;

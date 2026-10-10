@@ -29,11 +29,11 @@ Cả hai dịch vụ bên ngoài đều có chế độ giả lập, nên toàn 
 
 ## Hiện trạng (đã xong)
 
-- [x] BRD v2.6.0 (MVP, tính năng nâng cao, tài khoản & lịch sử, hợp đồng API đầy đủ)
-- [x] Backend: `GET /health`, `POST /api/v1/generate-plan` (tính BMR/TDEE, gọi Gemini, kiểm tra khoảng calo, fallback), đổi món, đổi bài tập, feedback, đăng nhập Google (giả lập mặc định), lịch sử kế hoạch (SQLite), validate DTO, Swagger UI, CORS cho bản web
-- [x] `ai_workspace/`: script thử prompt Gemini
-- [x] Frontend: Onboarding 3 bước, màn chờ, kế hoạch 3 ngày (đổi món, đổi bài), đi chợ, hồ sơ — đọc/ghi qua provider, không còn dữ liệu viết cứng (giai đoạn 6). Chưa có: bảng feedback cuối ngày (giai đoạn 7), đăng nhập và lịch sử (giai đoạn 8)
-- [x] Wiki nội bộ `docs/knowledge/`, `CLAUDE.md`
+- [ ] BRD v2.6.0 (MVP, tính năng nâng cao, tài khoản & lịch sử, hợp đồng API đầy đủ)
+- [ ] Backend: `GET /health`, `POST /api/v1/generate-plan` (tính BMR/TDEE, gọi Gemini, kiểm tra khoảng calo, fallback), đổi món, đổi bài tập, feedback, đăng nhập Google (giả lập mặc định), lịch sử kế hoạch (SQLite), validate DTO, Swagger UI, CORS cho bản web
+- [ ] `ai_workspace/`: script thử prompt Gemini
+- [ ] Frontend: Onboarding 3 bước, màn chờ, kế hoạch 3 ngày (đổi món, đổi bài), đi chợ, hồ sơ — đọc/ghi qua provider, không còn dữ liệu viết cứng (giai đoạn 6). Chưa có: bảng feedback cuối ngày (giai đoạn 7), đăng nhập và lịch sử (giai đoạn 8)
+- [ ] Wiki nội bộ `docs/knowledge/`, `CLAUDE.md`
 
 ---
 
@@ -89,13 +89,13 @@ A1–A4 đổi hợp đồng và luật dinh dưỡng → BRD v2.6.0 ở giai đ
 
 ## Giai đoạn 0 — Dọn dẹp & chuẩn bị · S
 
-- [x] **0.1** Sửa `CLAUDE.md`: `gemini.service.ts` đã dùng `@google/genai` (đang ghi SDK cũ); thêm quyết định auth/DB; trỏ tới plan này
-- [x] **0.2** Sửa lỗi trong wiki `reference-materials.md`: ràng buộc `sdk: ^3.13.1` trong `pubspec.yaml` **đã thoả** yêu cầu Dart 3.9+ của `shared_preferences`, không cần nâng như đã ghi
-- [x] **0.3** Sửa BRD mục 7.6: Render bản free không giữ file SQLite (mất dữ liệu khi service ngủ/restart); thay bằng nơi có ổ lưu trữ bền, hoặc Postgres
-- [x] **0.4** Các endpoint POST trả HTTP 200 như sơ đồ BRD (NestJS mặc định trả 201)
-- [x] **0.5** `GET /health` báo trạng thái cấu hình `{ status, gemini: "configured" | "fallback" }` để kiểm tra nhanh khoá đã gắn đúng chưa (trường `auth_mode` thêm ở bước 3.3, khi đã có auth)
-- [x] **0.6** Tạo `docs/SETUP_CREDENTIALS.md` — phần **Gemini API key**: lấy key ở đâu, điền vào file nào, kiểm tra thế nào
-- [x] **0.7** README trỏ tới plan này và file hướng dẫn
+- [ ] **0.1** Sửa `CLAUDE.md`: `gemini.service.ts` đã dùng `@google/genai` (đang ghi SDK cũ); thêm quyết định auth/DB; trỏ tới plan này
+- [ ] **0.2** Sửa lỗi trong wiki `reference-materials.md`: ràng buộc `sdk: ^3.13.1` trong `pubspec.yaml` **đã thoả** yêu cầu Dart 3.9+ của `shared_preferences`, không cần nâng như đã ghi
+- [ ] **0.3** Sửa BRD mục 7.6: Render bản free không giữ file SQLite (mất dữ liệu khi service ngủ/restart); thay bằng nơi có ổ lưu trữ bền, hoặc Postgres
+- [ ] **0.4** Các endpoint POST trả HTTP 200 như sơ đồ BRD (NestJS mặc định trả 201)
+- [ ] **0.5** `GET /health` báo trạng thái cấu hình `{ status, gemini: "configured" | "fallback" }` để kiểm tra nhanh khoá đã gắn đúng chưa (trường `auth_mode` thêm ở bước 3.3, khi đã có auth)
+- [ ] **0.6** Tạo `docs/SETUP_CREDENTIALS.md` — phần **Gemini API key**: lấy key ở đâu, điền vào file nào, kiểm tra thế nào
+- [ ] **0.7** README trỏ tới plan này và file hướng dẫn
 
 ## Giai đoạn 1 — Chốt hợp đồng API · M
 
@@ -120,36 +120,31 @@ Chi tiết: brainstorm `docs/superpowers/brainstorms/phase-1-api-contract.md` (h
 - [x] **2.2** ~~Unit test `isNutritionWithinBounds()`~~ — hàm này đã được thay bằng `findPlanViolations()` và có test ở giai đoạn 1 (`plan-validation.spec.ts`)
 - [x] **2.3** Unit test `PlanService.generatePlan()` với Gemini giả: kết quả hợp lệ → `source: gemini`; sai hợp đồng → gọi lại → thực đơn mẫu; hết giờ → không gọi lại; khoá sai → thực đơn mẫu (trường hợp không có khoá đã có test ở giai đoạn 1)
 - [x] **2.4** E2E `POST /api/v1/generate-plan`: payload đúng → 200, payload sai → 400, `restrictions` kiểu mảng cũ → 400 (test e2e cần bật `ValidationPipe` giống `main.ts`)
-- [x] **2.5** *(bổ sung, quyết định Q1)* Test `GeminiService` với SDK `@google/genai` thật trỏ vào server Gemini giả cục bộ (`GEMINI_BASE_URL`): hết giờ, khoá sai, không tự gọi lại, lỗi JSON không lộ nội dung
-- [x] **2.6** *(bổ sung, quyết định Q2)* GitHub Actions: build + unit + e2e backend trên Node 24 và 26, kiểm kiểu `ai_workspace`, mỗi lần push
-
-Chi tiết: brainstorm `docs/superpowers/brainstorms/phase-2-backend-tests.md`, plan `docs/superpowers/plans/phase-2-backend-tests/`.
-
 ## Giai đoạn 3 — Backend: Tài khoản & Lịch sử (FR-6, FR-7) · L
 
-- [x] **3.1** Thêm TypeORM + SQLite: `better-sqlite3@12` (TypeORM 1.1 không còn driver `sqlite3`, chỉ nhận `better-sqlite3 ^12`; install script được duyệt tường minh trong `package.json`). Entity chỉ dùng kiểu cột có ở cả SQLite và Postgres
-- [x] **3.2** Entity `User` (google_sub, email, name) và `PlanRecord` (user, plan_json, target_calories, created_at); bảng tạo bằng migration chạy khi khởi động, không `synchronize`; file DB nằm trong `.gitignore`
-- [x] **3.3** `AuthModule`: `POST /api/v1/auth/google`, hai chế độ `AUTH_MODE=mock | google`, JWT hết hạn sau 7 ngày. Chế độ google bắt buộc có `GOOGLE_CLIENT_ID` và `JWT_SECRET` ≥ 32 ký tự (thiếu thì không cho khởi động); chế độ mock được dùng secret mặc định kèm cảnh báo, và bị chặn khi `NODE_ENV=production` trừ khi `ALLOW_MOCK_AUTH=true`. `/health` báo thêm `auth_mode`
-- [x] **3.4** Guard: bắt buộc đăng nhập cho API lịch sử; tuỳ chọn cho `generate-plan` (token hợp lệ → lưu lịch sử; token sai → 401; không có token → chạy như cũ, không lưu)
-- [x] **3.5** `GET /api/v1/plans/history` (50 plan mới nhất) và `GET /api/v1/plans/history/:id` (plan của người khác → 404)
-- [x] **3.6** Test: auth hai chế độ (Google test bằng khoá RSA tự tạo, không gọi mạng), guard, quyền sở hữu plan, migration khớp entity, E2E: đăng nhập giả lập → tạo plan → xem lịch sử
-- [x] **3.7** `SETUP_CREDENTIALS.md` — phần **Google Sign-In (backend)**: tạo OAuth Client ID trên Google Cloud Console, điền `.env`, kiểm tra qua `/health`
-- [x] **3.8** *(bổ sung, quyết định Q4)* `DELETE /api/v1/me`: xoá tài khoản cùng toàn bộ lịch sử (BRD FR-6.4, v2.4.0)
-- [x] **3.9** *(bổ sung khi lập plan)* Smoke test chạy bản build (`npm run test:smoke`) trong CI — bắt lỗi import vòng giữa entity mà vitest không thấy
+- [ ] **3.1** Thêm TypeORM + SQLite: `better-sqlite3@12` (TypeORM 1.1 không còn driver `sqlite3`, chỉ nhận `better-sqlite3 ^12`; install script được duyệt tường minh trong `package.json`). Entity chỉ dùng kiểu cột có ở cả SQLite và Postgres
+- [ ] **3.2** Entity `User` (google_sub, email, name) và `PlanRecord` (user, plan_json, target_calories, created_at); bảng tạo bằng migration chạy khi khởi động, không `synchronize`; file DB nằm trong `.gitignore`
+- [ ] **3.3** `AuthModule`: `POST /api/v1/auth/google`, hai chế độ `AUTH_MODE=mock | google`, JWT hết hạn sau 7 ngày. Chế độ google bắt buộc có `GOOGLE_CLIENT_ID` và `JWT_SECRET` ≥ 32 ký tự (thiếu thì không cho khởi động); chế độ mock được dùng secret mặc định kèm cảnh báo, và bị chặn khi `NODE_ENV=production` trừ khi `ALLOW_MOCK_AUTH=true`. `/health` báo thêm `auth_mode`
+- [ ] **3.4** Guard: bắt buộc đăng nhập cho API lịch sử; tuỳ chọn cho `generate-plan` (token hợp lệ → lưu lịch sử; token sai → 401; không có token → chạy như cũ, không lưu)
+- [ ] **3.5** `GET /api/v1/plans/history` (50 plan mới nhất) và `GET /api/v1/plans/history/:id` (plan của người khác → 404)
+- [ ] **3.6** Test: auth hai chế độ (Google test bằng khoá RSA tự tạo, không gọi mạng), guard, quyền sở hữu plan, migration khớp entity, E2E: đăng nhập giả lập → tạo plan → xem lịch sử
+- [ ] **3.7** `SETUP_CREDENTIALS.md` — phần **Google Sign-In (backend)**: tạo OAuth Client ID trên Google Cloud Console, điền `.env`, kiểm tra qua `/health`
+- [ ] **3.8** *(bổ sung, quyết định Q4)* `DELETE /api/v1/me`: xoá tài khoản cùng toàn bộ lịch sử (BRD FR-6.4, v2.4.0)
+- [ ] **3.9** *(bổ sung khi lập plan)* Smoke test chạy bản build (`npm run test:smoke`) trong CI — bắt lỗi import vòng giữa entity mà vitest không thấy
 
 Chi tiết: brainstorm `docs/superpowers/brainstorms/phase-3-auth-history.md` (quyết định Q1–Q4 ở mục 8), plan `docs/superpowers/plans/phase-3-auth-history/`.
 
 ## Giai đoạn 4 — Backend: Đổi món, đổi bài tập, feedback (FR-4, FR-5) · L
 
-- [x] **4.1** Bộ khớp từ khoá cho chế độ giả lập (`data/restriction-keywords.json`, `restriction-matcher.ts`): nhận ra dị ứng/chấn thương phổ biến, gõ có dấu hay không dấu; phần không nhận ra → cảnh báo chung, không nhắc lại chữ người dùng (D4). Lọc luôn thực đơn mẫu của `generate-plan` và kiểm lại mọi kết quả Gemini
-- [x] **4.2** `POST /api/v1/meals/swap`: Gemini sinh món thay thế lệch không quá ±10% calo, tránh các hạn chế người dùng nhập, không trùng món đã có trong plan; backend tính lại toàn bộ `grocery_list` (#7). Fallback: kho món Việt `data/swap-meals.json` lọc bằng bộ khớp từ khoá, nhân khẩu phần về đúng calo món cũ; hết món phù hợp → 422
-- [x] **4.3** `POST /api/v1/exercises/swap` *(quyết định Q2: Gemini trước)*: động tác nhẹ hơn, cùng nhóm cơ, tránh chấn thương — kết quả Gemini phải qua điều kiện đo được (số hiệp không tăng, không thêm kiểu tải). Fallback: `data/swap-exercises.json` có mức khó 1–3; đã nhẹ nhất → 422
-- [x] **4.4** `POST /api/v1/feedback` theo D2: bài tập điều chỉnh bằng quy tắc cố định; món ăn nhờ Gemini *(quyết định Q3)* — ăn nhiều → ngày kế tiếp ~90% mục tiêu, ăn ít → giữ mục tiêu, không có key thì giữ nguyên món kèm cảnh báo. Dấu hiệu nguy hiểm → `safety_warning` và ngày kế tiếp chỉ nghỉ hoặc đi bộ nhẹ. **Không bao giờ hạ calo mục tiêu xuống dưới BMR.** Ngày 3 → plan mới
-- [x] **4.5** Test cả 4 phần trên, chạy được khi không có key; dấu hiệu nguy hiểm có test riêng. E2E qua HTTP thật, một đường qua SDK Gemini thật + server giả; smoke test gọi 3 endpoint trên bản build
+- [ ] **4.1** Bộ khớp từ khoá cho chế độ giả lập (`data/restriction-keywords.json`, `restriction-matcher.ts`): nhận ra dị ứng/chấn thương phổ biến, gõ có dấu hay không dấu; phần không nhận ra → cảnh báo chung, không nhắc lại chữ người dùng (D4). Lọc luôn thực đơn mẫu của `generate-plan` và kiểm lại mọi kết quả Gemini
+- [ ] **4.2** `POST /api/v1/meals/swap`: Gemini sinh món thay thế lệch không quá ±10% calo, tránh các hạn chế người dùng nhập, không trùng món đã có trong plan; backend tính lại toàn bộ `grocery_list` (#7). Fallback: kho món Việt `data/swap-meals.json` lọc bằng bộ khớp từ khoá, nhân khẩu phần về đúng calo món cũ; hết món phù hợp → 422
+- [ ] **4.3** `POST /api/v1/exercises/swap` *(quyết định Q2: Gemini trước)*: động tác nhẹ hơn, cùng nhóm cơ, tránh chấn thương — kết quả Gemini phải qua điều kiện đo được (số hiệp không tăng, không thêm kiểu tải). Fallback: `data/swap-exercises.json` có mức khó 1–3; đã nhẹ nhất → 422
+- [ ] **4.4** `POST /api/v1/feedback` theo D2: bài tập điều chỉnh bằng quy tắc cố định; món ăn nhờ Gemini *(quyết định Q3)* — ăn nhiều → ngày kế tiếp ~90% mục tiêu, ăn ít → giữ mục tiêu, không có key thì giữ nguyên món kèm cảnh báo. Dấu hiệu nguy hiểm → `safety_warning` và ngày kế tiếp chỉ nghỉ hoặc đi bộ nhẹ. **Không bao giờ hạ calo mục tiêu xuống dưới BMR.** Ngày 3 → plan mới
+- [ ] **4.5** Test cả 4 phần trên, chạy được khi không có key; dấu hiệu nguy hiểm có test riêng. E2E qua HTTP thật, một đường qua SDK Gemini thật + server giả; smoke test gọi 3 endpoint trên bản build
 - [ ] **4.6** *(Tuỳ chọn, để sau)* Dùng `responseSchema` của Gemini để ép JSON đúng cấu trúc ngay từ API — cần khoá thật để đo nó giảm lỗi bao nhiêu (thử bằng `ai_workspace/`); bước kiểm hợp đồng vẫn phải giữ
-- [x] **4.7** *(bổ sung, quyết định Q1)* Khoảng calo theo tỉ lệ mục tiêu, kiểm tổng calo ngày (≥ BMR), nhân khẩu phần thực đơn mẫu cho khớp mục tiêu — sửa lỗi thực đơn thấp hơn BMR của nhiều người (BRD NFR-4, v2.5.0)
-- [x] **4.8** *(bổ sung, quyết định Q4)* Đã đăng nhập: đổi món, đổi bài, feedback cập nhật plan đã lưu; plan từ feedback ngày 3 lưu mới
-- [x] **4.9** *(bổ sung sau khi thử bằng khoá thật)* Đo Gemini thật (`npm run measure:gemini`): để model tự suy nghĩ thì tạo plan mất 37–42 s, vượt giới hạn 15 s nên luôn rơi về thực đơn mẫu. Sửa: prompt ghi rõ danh sách nguyên liệu/động tác backend sẽ loại; `GEMINI_THINKING` (mặc định `off`, 8–13 s); giới hạn 20 s mỗi lần, 40 s tổng; model mặc định `gemini-3.5-flash` (3.8 liên tục quá tải). Gói miễn phí: 20 lần gọi/ngày mỗi model (BRD v2.5.1)
+- [ ] **4.7** *(bổ sung, quyết định Q1)* Khoảng calo theo tỉ lệ mục tiêu, kiểm tổng calo ngày (≥ BMR), nhân khẩu phần thực đơn mẫu cho khớp mục tiêu — sửa lỗi thực đơn thấp hơn BMR của nhiều người (BRD NFR-4, v2.5.0)
+- [ ] **4.8** *(bổ sung, quyết định Q4)* Đã đăng nhập: đổi món, đổi bài, feedback cập nhật plan đã lưu; plan từ feedback ngày 3 lưu mới
+- [ ] **4.9** *(bổ sung sau khi thử bằng khoá thật)* Đo Gemini thật (`npm run measure:gemini`): để model tự suy nghĩ thì tạo plan mất 37–42 s, vượt giới hạn 15 s nên luôn rơi về thực đơn mẫu. Sửa: prompt ghi rõ danh sách nguyên liệu/động tác backend sẽ loại; `GEMINI_THINKING` (mặc định `off`, 8–13 s); giới hạn 20 s mỗi lần, 40 s tổng; model mặc định `gemini-3.5-flash` (3.8 liên tục quá tải). Gói miễn phí: 20 lần gọi/ngày mỗi model (BRD v2.5.1)
 
 Chi tiết: brainstorm `docs/superpowers/brainstorms/phase-4-swap-feedback.md` (quyết định Q1–Q4 ở mục 8), plan `docs/superpowers/plans/phase-4-swap-feedback/`.
 
@@ -157,39 +152,39 @@ Chi tiết: brainstorm `docs/superpowers/brainstorms/phase-4-swap-feedback.md` (
 
 ## Giai đoạn 5 — Frontend: nền tảng · M
 
-- [x] **5.1** Thêm package `http`, `provider`, `shared_preferences`
-- [x] **5.2** Địa chỉ backend qua `--dart-define=API_BASE_URL` — web: `localhost`; máy ảo Android: `10.0.2.2`; điện thoại thật: IP mạng LAN của máy chạy backend (`lib/config/api_config.dart`). Quyền mạng Android (release), iOS, macOS
-- [x] **5.3** Model Dart có `fromJson`/`toJson` theo BRD mục 6 (`lib/models/api/`), đi vòng tròn đúng JSON server trả. Màn hình chuyển sang model mới và xoá view-model cũ `meal_plan.dart` ở 6.7
-- [x] **5.4** `ApiClient` (`lib/services/`): gọi mọi endpoint; lỗi → `ApiException` có câu tiếng Việt, không crash (NFR-2); timeout 60 s cho request có Gemini
-- [x] **5.5** `PlanProvider` (plan + hồ sơ, lưu `shared_preferences`) và `AuthProvider` (JWT; 401 → đăng xuất)
-- [x] **5.6** `MainShell`: chưa có plan → mở Onboarding, đã có → Dashboard; viết lại `widget_test.dart`
-- [x] **5.7** Bật CORS trong `configureApp()` qua `CORS_ORIGINS` (trống khi phát triển → `localhost`/`127.0.0.1` mọi cổng; trống khi deploy → tắt), cho phép header `Authorization`
-- [x] **5.8** *(bổ sung, quyết định Q1)* Fixture hợp đồng: backend xuất 14 JSON thật vào `frontend_app/test/fixtures/` (`npm run fixtures:update`), test hai phía cùng dùng
-- [x] **5.9** *(bổ sung, quyết định Q4)* CI Flutter: `flutter analyze` + `flutter test` (`.github/workflows/frontend.yml`)
-- [x] **5.10** *(bổ sung sau khi kiểm lại)* Chạy trên máy ảo Android 16: sửa `compileSdk` 34 → 36 (APK không build được sau khi thêm `shared_preferences`); `integration_test/backend_smoke_test.dart` gọi backend thật từ máy ảo (chạy tay); mở app có plan đã lưu → Dashboard kể cả khi backend tắt, plan hỏng → Onboarding
+- [ ] **5.1** Thêm package `http`, `provider`, `shared_preferences`
+- [ ] **5.2** Địa chỉ backend qua `--dart-define=API_BASE_URL` — web: `localhost`; máy ảo Android: `10.0.2.2`; điện thoại thật: IP mạng LAN của máy chạy backend (`lib/config/api_config.dart`). Quyền mạng Android (release), iOS, macOS
+- [ ] **5.3** Model Dart có `fromJson`/`toJson` theo BRD mục 6 (`lib/models/api/`), đi vòng tròn đúng JSON server trả. Màn hình chuyển sang model mới và xoá view-model cũ `meal_plan.dart` ở 6.7
+- [ ] **5.4** `ApiClient` (`lib/services/`): gọi mọi endpoint; lỗi → `ApiException` có câu tiếng Việt, không crash (NFR-2); timeout 60 s cho request có Gemini
+- [ ] **5.5** `PlanProvider` (plan + hồ sơ, lưu `shared_preferences`) và `AuthProvider` (JWT; 401 → đăng xuất)
+- [ ] **5.6** `MainShell`: chưa có plan → mở Onboarding, đã có → Dashboard; viết lại `widget_test.dart`
+- [ ] **5.7** Bật CORS trong `configureApp()` qua `CORS_ORIGINS` (trống khi phát triển → `localhost`/`127.0.0.1` mọi cổng; trống khi deploy → tắt), cho phép header `Authorization`
+- [ ] **5.8** *(bổ sung, quyết định Q1)* Fixture hợp đồng: backend xuất 14 JSON thật vào `frontend_app/test/fixtures/` (`npm run fixtures:update`), test hai phía cùng dùng
+- [ ] **5.9** *(bổ sung, quyết định Q4)* CI Flutter: `flutter analyze` + `flutter test` (`.github/workflows/frontend.yml`)
+- [ ] **5.10** *(bổ sung sau khi kiểm lại)* Chạy trên máy ảo Android 16: sửa `compileSdk` 34 → 36 (APK không build được sau khi thêm `shared_preferences`); `integration_test/backend_smoke_test.dart` gọi backend thật từ máy ảo (chạy tay); mở app có plan đã lưu → Dashboard kể cả khi backend tắt, plan hỏng → Onboarding
 
 Chi tiết: brainstorm `docs/superpowers/brainstorms/phase-5-frontend-foundation.md` (quyết định Q1–Q4 ở mục 8), plan `docs/superpowers/plans/phase-5-frontend-foundation/`.
 
 ## Giai đoạn 6 — Frontend: nối MVP (FR-1 → FR-3) · L
 
-- [x] **6.1** Onboarding chia 3 bước (D6-B2): thêm tuổi (≥ 18), giới tính, mức vận động (FR-1.1, FR-1.2 — backend bắt buộc nhưng giao diện chưa có); khoá "Giảm mỡ" khi BMI < 18,5 hoặc mang thai / cho con bú (D6-A1, A3); nhập hạn chế theo D5 + dòng khuyến cáo y tế (D4); validate cùng giới hạn với backend, báo lỗi ngay khi nhập. Bỏ giá trị điền sẵn 168 / 62; nút tiếp tục phải mang hồ sơ đi (hiện `onNext` không truyền dữ liệu nào)
-- [x] **6.2** Tab "Cá nhân": xem và sửa hồ sơ, lưu trên máy (FR-1.6); sửa xong thì gợi ý tạo lại plan (hiện ghi cứng "168 cm • 62 kg • Giảm mỡ", không theo Onboarding)
-- [x] **6.3** Loading: gọi API thật thay cho bộ đếm giờ giả; lỗi → nút thử lại (NFR-1, NFR-2). Có Gemini thì chờ thật khoảng 10–15 giây, tối đa khoảng 40 giây — câu chờ và thanh tiến trình phải hợp với khoảng này; HTTP client của app để timeout dài hơn 40 giây. Bỏ nút "Xem trước kế hoạch ngay" và các câu chờ bịa số liệu ("Cân đối Macro: 140g Carbs, 65g Protein…", "phù hợp ngân sách")
-- [x] **6.4** Dashboard: hiển thị đủ 3 ngày, 3 bữa/ngày, bài tập, calo và macro (FR-2.3); hiện cảnh báo khi chế độ giả lập chưa kiểm tra được hết hạn chế. Thấy khi chạy trên máy ảo (giai đoạn 5): ngày ghi cứng "Thứ Ba, 15/9/2026"; thiếu bữa sáng; bộ chọn S1–S5 là 5 ngày và bấm không đổi nội dung; món/động tác không theo hạn chế đã chọn (vẫn có cá khi dị ứng hải sản); chưa hiện tổng calo và macro mỗi ngày (FR-2.3) — widget `macro_ring.dart` có sẵn nhưng chưa dùng; nhãn "Dễ", "Không tạ", chữ "T", "3 ngày" ghi cứng; hiện `warnings` của plan
-- [x] **6.5** Grocery: dựng từ `grocery_list`; trạng thái tích chọn lưu cục bộ (FR-3.2). Tên nhóm theo BRD FR-3.1 (*Đạm*, *Rau củ quả*, *Gạo, bún & gia vị* — hiện là "Thịt & Thủy hải sản", "Gia vị & nguyên liệu khác"); thêm thao tác xoá món đã có sẵn trong tủ lạnh (FR-3.2); quyết định giữ hay bỏ nút "Thêm nguyên liệu" (không có trong BRD)
-- [x] **6.6** Widget test dùng backend giả `test/fake_backend.dart` (có từ giai đoạn 5)
-- [x] **6.7** Màn hình đọc/ghi qua `PlanProvider`/`AuthProvider` và model `lib/models/api/`; xoá view-model cũ `lib/models/meal_plan.dart`. Thao tác lại toàn luồng trên máy ảo Android và chạy `flutter test integration_test`
-- [x] **6.8** Tên app hiển thị "my_ai_app" (Android, web) và "My Ai App" (iOS) → "SmartFit AI"; icon vẫn là icon mặc định của Flutter; màn khởi động còn logo Flutter; thanh trạng thái màu đen trên nền app sáng
-- [x] **6.9** *(D6-A1, A2, A3)* Backend: tuổi tối thiểu 18; BMI < 18,5 hoặc mang thai / cho con bú mà chọn `cut` → 400 kèm câu tiếng Việt; test + fixture hợp đồng xuất lại; BRD v2.6.0
-- [x] **6.10** *(D6-A4)* Backend: chọn mức động tác theo tuổi và `activity_level` cho thực đơn mẫu và kho đổi bài; prompt Gemini cùng luật; đo lại bằng `npm run measure:gemini` nếu đổi prompt
-- [x] **6.11** *(D6-B1)* App lưu ngày bắt đầu plan, Dashboard mở đúng ngày theo lịch; quá 3 ngày → gợi ý tạo plan mới
+- [ ] **6.1** Onboarding chia 3 bước (D6-B2): thêm tuổi (≥ 18), giới tính, mức vận động (FR-1.1, FR-1.2 — backend bắt buộc nhưng giao diện chưa có); khoá "Giảm mỡ" khi BMI < 18,5 hoặc mang thai / cho con bú (D6-A1, A3); nhập hạn chế theo D5 + dòng khuyến cáo y tế (D4); validate cùng giới hạn với backend, báo lỗi ngay khi nhập. Bỏ giá trị điền sẵn 168 / 62; nút tiếp tục phải mang hồ sơ đi (hiện `onNext` không truyền dữ liệu nào)
+- [ ] **6.2** Tab "Cá nhân": xem và sửa hồ sơ, lưu trên máy (FR-1.6); sửa xong thì gợi ý tạo lại plan (hiện ghi cứng "168 cm • 62 kg • Giảm mỡ", không theo Onboarding)
+- [ ] **6.3** Loading: gọi API thật thay cho bộ đếm giờ giả; lỗi → nút thử lại (NFR-1, NFR-2). Có Gemini thì chờ thật khoảng 10–15 giây, tối đa khoảng 40 giây — câu chờ và thanh tiến trình phải hợp với khoảng này; HTTP client của app để timeout dài hơn 40 giây. Bỏ nút "Xem trước kế hoạch ngay" và các câu chờ bịa số liệu ("Cân đối Macro: 140g Carbs, 65g Protein…", "phù hợp ngân sách")
+- [ ] **6.4** Dashboard: hiển thị đủ 3 ngày, 3 bữa/ngày, bài tập, calo và macro (FR-2.3); hiện cảnh báo khi chế độ giả lập chưa kiểm tra được hết hạn chế. Thấy khi chạy trên máy ảo (giai đoạn 5): ngày ghi cứng "Thứ Ba, 15/9/2026"; thiếu bữa sáng; bộ chọn S1–S5 là 5 ngày và bấm không đổi nội dung; món/động tác không theo hạn chế đã chọn (vẫn có cá khi dị ứng hải sản); chưa hiện tổng calo và macro mỗi ngày (FR-2.3) — widget `macro_ring.dart` có sẵn nhưng chưa dùng; nhãn "Dễ", "Không tạ", chữ "T", "3 ngày" ghi cứng; hiện `warnings` của plan
+- [ ] **6.5** Grocery: dựng từ `grocery_list`; trạng thái tích chọn lưu cục bộ (FR-3.2). Tên nhóm theo BRD FR-3.1 (*Đạm*, *Rau củ quả*, *Gạo, bún & gia vị* — hiện là "Thịt & Thủy hải sản", "Gia vị & nguyên liệu khác"); thêm thao tác xoá món đã có sẵn trong tủ lạnh (FR-3.2); quyết định giữ hay bỏ nút "Thêm nguyên liệu" (không có trong BRD)
+- [ ] **6.6** Widget test dùng backend giả `test/fake_backend.dart` (có từ giai đoạn 5)
+- [ ] **6.7** Màn hình đọc/ghi qua `PlanProvider`/`AuthProvider` và model `lib/models/api/`; xoá view-model cũ `lib/models/meal_plan.dart`. Thao tác lại toàn luồng trên máy ảo Android và chạy `flutter test integration_test`
+- [ ] **6.8** Tên app hiển thị "my_ai_app" (Android, web) và "My Ai App" (iOS) → "SmartFit AI"; icon vẫn là icon mặc định của Flutter; màn khởi động còn logo Flutter; thanh trạng thái màu đen trên nền app sáng
+- [ ] **6.9** *(D6-A1, A2, A3)* Backend: tuổi tối thiểu 18; BMI < 18,5 hoặc mang thai / cho con bú mà chọn `cut` → 400 kèm câu tiếng Việt; test + fixture hợp đồng xuất lại; BRD v2.6.0
+- [ ] **6.10** *(D6-A4)* Backend: chọn mức động tác theo tuổi và `activity_level` cho thực đơn mẫu và kho đổi bài; prompt Gemini cùng luật; đo lại bằng `npm run measure:gemini` nếu đổi prompt
+- [ ] **6.11** *(D6-B1)* App lưu ngày bắt đầu plan, Dashboard mở đúng ngày theo lịch; quá 3 ngày → gợi ý tạo plan mới
 
 Chi tiết: brainstorm `docs/superpowers/brainstorms/phase-6-connect-mvp.md` (quyết định Q1–Q4 ở mục 8), plan `docs/superpowers/plans/phase-6-connect-mvp/`. Nút đổi món, đổi bài làm luôn ở giai đoạn này (7.1, 7.2 — quyết định Q3); nút feedback ẩn tới giai đoạn 7.
 
 ## Giai đoạn 7 — Frontend: tính năng nâng cao (FR-4, FR-5) · M
 
-- [x] **7.1** Nút "Đổi món" gọi API (hiện đang xoay vòng trong danh sách món viết cứng); thay cả plan và checklist bằng plan server trả về. 409 → báo hồ sơ đã đổi, gợi ý tạo plan mới; 422 → báo không còn món thay thế phù hợp *(làm ở giai đoạn 6, quyết định Q3)*
-- [x] **7.2** Nút "Đổi bài" gọi API *(làm ở giai đoạn 6, quyết định Q3)*
+- [ ] **7.1** Nút "Đổi món" gọi API (hiện đang xoay vòng trong danh sách món viết cứng); thay cả plan và checklist bằng plan server trả về. 409 → báo hồ sơ đã đổi, gợi ý tạo plan mới; 422 → báo không còn món thay thế phù hợp *(làm ở giai đoạn 6, quyết định Q3)*
+- [ ] **7.2** Nút "Đổi bài" gọi API *(làm ở giai đoạn 6, quyết định Q3)*
 - [ ] **7.3** Làm lại bảng feedback theo D2 (3 câu hỏi, câu tình trạng cơ thể chọn nhiều); gọi API, cập nhật ngày kế tiếp; nhận `safety_warning` → hiện khuyến cáo ngừng tập, hỏi ý kiến bác sĩ. **Khoá nút sau khi đã gửi feedback cho một ngày** — backend không lưu trạng thái, gửi lại sẽ điều chỉnh thêm lần nữa. Bỏ câu báo viết sẵn "AI đã cân đối lại thực đơn Ngày 2!" (hiện hiện ra dù không có gì thay đổi)
 
 ## Giai đoạn 8 — Frontend: Tài khoản & Lịch sử (FR-6, FR-7) · M
