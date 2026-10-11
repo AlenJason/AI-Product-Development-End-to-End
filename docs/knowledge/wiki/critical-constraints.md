@@ -1,5 +1,5 @@
 ---
-last_updated: 2026-09-24
+last_updated: 2026-10-11
 ---
 
 # Ràng buộc cứng của dự án
@@ -11,7 +11,7 @@ Các quy tắc bắt buộc phải biết trước khi đụng vào `backend_api
 | # | Quy tắc | Lý do |
 |---|---|---|
 | 1 | TDEE = BMR (công thức Mifflin-St Jeor) × hệ số vận động. Hệ số cố định: ít vận động 1.2, vận động nhẹ 1.375, vận động nhiều 1.55 (`ACTIVITY_MULTIPLIER` trong `backend_api/src/plan/enums/activity-level.enum.ts`). | BRD FR-1.5. Form onboarding luôn phải thu thập `activity_level` — thiếu trường này thì TDEE sai hẳn, không chỉ là kém chính xác. |
-| 2 | Mọi plan — kết quả Gemini, thực đơn mẫu, và (giai đoạn 4) plan client gửi lên — phải qua `parsePlanContent()` trong `backend_api/src/plan/plan-validation.ts`: class-validator theo hợp đồng BRD 6.2, rồi `findPlanViolations()` (khoảng calo theo `MealType`: breakfast 250–600, lunch/dinner 400–800; calo lệch không quá 15% so với 4P+4C+9F; không trùng món). Mã ngoài danh sách (ví dụ `meal_type: "Bữa sáng"`) bị coi là sai — không bao giờ cho qua khi tra cứu không ra. | BRD NFR-4. Bản cũ (`nutrition-sanity.util.ts`, đã xoá) tra khoảng calo theo chuỗi tiếng Việt và cho qua khi không khớp, nên Gemini chỉ cần viết khác một chữ là lọt kiểm tra. Không đạt → gọi lại 1 lần → thực đơn mẫu. |
+| 2 | Mọi plan — kết quả Gemini, thực đơn mẫu và plan client gửi lên — phải qua kiểm tra trong `backend_api/src/plan/plan-validation.ts`: class-validator theo hợp đồng BRD 6.2, rồi `findPlanViolations(plan, target)`. Calo từng bữa theo tỉ lệ mục tiêu (`MEAL_CALORIE_SHARE`: breakfast 15–35%, lunch/dinner 25–45%); tổng ngày nằm trong [max(85% mục tiêu, BMR); 110% mục tiêu] (`dayCalorieBounds()`); calo lệch không quá 15% so với 4P+4C+9F; không trùng món. Plan client gửi lên khi đổi món, đổi bài hoặc feedback phải qua `readClientPlan()` (`src/plan/adjust/client-plan.ts`). Mã ngoài danh sách bị coi là sai — không bao giờ bỏ qua kiểm tra khi tra cứu mã không ra. | BRD NFR-4 (v2.5.0). Khoảng cố định cũ (sáng 250–600, trưa/tối 400–800 kcal) giới hạn tổng ngày ở 2200 kcal, thấp hơn mục tiêu của nhiều hồ sơ, và không kiểm tra tổng ngày. Không đạt → gọi lại tối đa một lần nếu còn thời gian, sau đó dùng dữ liệu soạn sẵn. |
 | 3 | `GEMINI_API_KEY` đọc qua `@nestjs/config` từ file `.env`, không hardcode. `.env` đã được gitignore ở cả `backend_api/` và `ai_workspace/`. | BRD mục 4 (Backend NestJS). Lộ key trong repo sinh viên là sự cố thực tế rất hay gặp. |
 | 4 | `backend_api/` là package ESM (`"type": "module"` trong `package.json`) — import tương đối phải có đuôi `.js` dù file nguồn là `.ts` (ví dụ `from './app.service.js'`). | Cơ chế resolve module ESM của Node yêu cầu vậy; thiếu đuôi file có thể build qua `tsc` nhưng lỗi lúc chạy — rất dễ bỏ sót. |
 | 5 | Mọi file không phải `.ts` nằm dưới `backend_api/src/` mà cần tồn tại lúc chạy (ví dụ `plan/data/sample-plan.json`) phải được khai báo trong `compilerOptions.assets` của `nest-cli.json`. | `nest build` mặc định chỉ compile `.ts`. Lỗ hổng này từng gây lỗi `ENOENT` (500) khi gọi `/api/v1/generate-plan` lúc mới dựng khung — đã fix, tránh lặp lại. |

@@ -143,7 +143,7 @@ Chi tiết: brainstorm `docs/superpowers/brainstorms/phase-3-auth-history.md` (q
 - [x] **4.5** Test cả 4 phần trên, chạy được khi không có key; dấu hiệu nguy hiểm có test riêng. E2E qua HTTP thật, một đường qua SDK Gemini thật + server giả; smoke test gọi 3 endpoint trên bản build
 - [ ] **4.6** *(Tuỳ chọn, để sau)* Dùng `responseSchema` của Gemini để ép JSON đúng cấu trúc ngay từ API — cần khoá thật để đo nó giảm lỗi bao nhiêu (thử bằng `ai_workspace/`); bước kiểm hợp đồng vẫn phải giữ
 - [x] **4.7** *(bổ sung, quyết định Q1)* Khoảng calo theo tỉ lệ mục tiêu, kiểm tổng calo ngày (≥ BMR), nhân khẩu phần thực đơn mẫu cho khớp mục tiêu — sửa lỗi thực đơn thấp hơn BMR của nhiều người (BRD NFR-4, v2.5.0)
-- [ ] **4.8** *(bổ sung, quyết định Q4)* Đã đăng nhập: đổi món, đổi bài, feedback cập nhật plan đã lưu; plan từ feedback ngày 3 lưu mới
+- [x] **4.8** *(bổ sung, quyết định Q4)* Đã đăng nhập: đổi món, đổi bài, feedback cập nhật plan đã lưu; plan từ feedback ngày 3 lưu mới
 - [ ] **4.9** *(bổ sung sau khi thử bằng khoá thật)* Đo Gemini thật (`npm run measure:gemini`): để model tự suy nghĩ thì tạo plan mất 37–42 s, vượt giới hạn 15 s nên luôn rơi về thực đơn mẫu. Sửa: prompt ghi rõ danh sách nguyên liệu/động tác backend sẽ loại; `GEMINI_THINKING` (mặc định `off`, 8–13 s); giới hạn 20 s mỗi lần, 40 s tổng; model mặc định `gemini-3.5-flash` (3.8 liên tục quá tải). Gói miễn phí: 20 lần gọi/ngày mỗi model (BRD v2.5.1)
 
 Chi tiết: brainstorm `docs/superpowers/brainstorms/phase-4-swap-feedback.md` (quyết định Q1–Q4 ở mục 8), plan `docs/superpowers/plans/phase-4-swap-feedback/`.
@@ -183,9 +183,9 @@ Chi tiết: brainstorm `docs/superpowers/brainstorms/phase-6-connect-mvp.md` (qu
 
 ## Giai đoạn 7 — Frontend: tính năng nâng cao (FR-4, FR-5) · M
 
-- [ ] **7.1** Nút "Đổi món" gọi API (hiện đang xoay vòng trong danh sách món viết cứng); thay cả plan và checklist bằng plan server trả về. 409 → báo hồ sơ đã đổi, gợi ý tạo plan mới; 422 → báo không còn món thay thế phù hợp *(làm ở giai đoạn 6, quyết định Q3)*
+- [ ] **7.1** Nút "Đổi món" thay cả plan và checklist bằng plan server trả về. 409 → báo hồ sơ đã đổi, gợi ý tạo plan mới; 422 → báo không còn món thay thế phù hợp
 - [ ] **7.2** Nút "Đổi bài" gọi API *(làm ở giai đoạn 6, quyết định Q3)*
-- [ ] **7.3** Làm lại bảng feedback theo D2 (3 câu hỏi, câu tình trạng cơ thể chọn nhiều); gọi API, cập nhật ngày kế tiếp; nhận `safety_warning` → hiện khuyến cáo ngừng tập, hỏi ý kiến bác sĩ. **Khoá nút sau khi đã gửi feedback cho một ngày** — backend không lưu trạng thái, gửi lại sẽ điều chỉnh thêm lần nữa. Bỏ câu báo viết sẵn "AI đã cân đối lại thực đơn Ngày 2!" (hiện hiện ra dù không có gì thay đổi)
+- [ ] **7.3** Làm lại bảng feedback theo D2 (3 câu hỏi, câu tình trạng cơ thể chọn nhiều); gọi API, cập nhật ngày kế tiếp; nhận `safety_warning` → hiện khuyến cáo ngừng tập, hỏi ý kiến bác sĩ. **Khoá nút sau khi đã gửi feedback cho một ngày** — backend không lưu trạng thái, gửi lại sẽ điều chỉnh thêm lần nữa
 
 ## Giai đoạn 8 — Frontend: Tài khoản & Lịch sử (FR-6, FR-7) · M
 

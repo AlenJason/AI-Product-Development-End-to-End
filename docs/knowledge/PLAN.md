@@ -1,6 +1,6 @@
 # Kế hoạch triển khai SmartFit AI
 
-Plan này chia [BRD.md](../BRD.md) (v2.6.0) thành các bước làm được theo thứ tự. BRD vẫn là nguồn yêu cầu; plan chỉ trả lời "làm gì trước, làm gì sau, xong khi nào".
+Plan này chia [BRD.md](../../BRD.md) (v2.6.0) thành các bước làm được theo thứ tự. BRD vẫn là nguồn yêu cầu; plan chỉ trả lời "làm gì trước, làm gì sau, xong khi nào".
 
 **Thứ tự tổng thể:** hoàn thiện backend trước (kiểm thử toàn bộ qua Swagger), sau đó mới làm frontend bám theo hợp đồng API đã chốt.
 
