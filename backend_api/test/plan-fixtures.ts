@@ -6,6 +6,7 @@ import { Gender } from '../src/plan/enums/gender.enum.js';
 import { Goal } from '../src/plan/enums/goal.enum.js';
 import type { GeminiService } from '../src/plan/gemini.service.js';
 import { PlanService } from '../src/plan/plan.service.js';
+import { RandomSource } from '../src/plan/adjust/random-source.js';
 
 // Dữ liệu dùng chung cho test đổi món, đổi bài tập, feedback (giai đoạn 4).
 
@@ -34,8 +35,7 @@ export function geminiAnswering(...answers: unknown[]) {
     if (answer instanceof Error) generateJson.mockRejectedValueOnce(answer);
     else generateJson.mockResolvedValueOnce(answer);
   }
-  const budget = { perCallMs: 20_000, totalMs: 40_000 };
-  return { gemini: { isConfigured: true, generateJson, budget } as unknown as GeminiService, generateJson };
+  return { gemini: { isConfigured: true, generateJson, budget: { totalMs: 15000, perCallMs: 7500 } } as unknown as GeminiService, generateJson };
 }
 
 // Plan hợp lệ do chính server tạo (thực đơn mẫu, không Gemini) — giống plan app sẽ gửi lại.
@@ -43,3 +43,6 @@ export function samplePlan(profile: CreatePlanDto = makeProfile()): Promise<Meal
   return new PlanService(geminiOff).generatePlan(profile);
 }
 
+// Luôn chọn ứng viên đầu tiên (hoặc cuối cùng) để test lặp lại được.
+export const firstPick = { next: () => 0 } as RandomSource;
+export const lastPick = { next: () => 0.999 } as RandomSource;

@@ -24,10 +24,8 @@ export class HistoryService {
         created_at: new Date(),
       });
       return true;
-    } catch (error) {
-      // Chỉ ghi thông báo lỗi của DB, không ghi nội dung plan (NFR-7).
-      const message = error instanceof Error ? error.message : String(error);
-      this.logger.error(`Không lưu được kế hoạch vào lịch sử: ${message}`);
+    } catch {
+      this.logger.error('Không lưu được kế hoạch vào lịch sử.');
       return false;
     }
   }
@@ -41,9 +39,8 @@ export class HistoryService {
         { plan_json: plan, target_calories: plan.daily_target.target_calories },
       );
       return true;
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      this.logger.error(`Không cập nhật được kế hoạch trong lịch sử: ${message}`);
+    } catch {
+      this.logger.error('Không cập nhật được kế hoạch trong lịch sử.');
       return false;
     }
   }

@@ -99,9 +99,11 @@ describe('HistoryService', () => {
   });
 
   it('returns false instead of throwing when the update fails', async () => {
-    vi.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
-    await dataSource.query('DROP TABLE plan_records');
+    const sensitiveError = 'restricted-health-data';
+    const log = vi.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
+    vi.spyOn(plans, 'update').mockRejectedValue(new Error(sensitiveError));
     expect(await service.update(an.id, fakePlan())).toBe(false);
+    expect(log.mock.calls.flat().join(' ')).not.toContain(sensitiveError);
   });
 
   it('answers an unknown id with 404', async () => {
