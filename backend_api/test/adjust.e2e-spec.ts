@@ -134,6 +134,137 @@ describe('Đổi món (e2e, chế độ giả lập)', () => {
     });
   });
 
+  describe('POST /api/v1/feedback', () => {
+    const payload = (plan = samplePlan, overrides: Record<string, unknown> = {}) => ({
+      profile: PROFILE,
+      plan,
+      day_number: 1,
+      intensity: 'hard',
+      body_states: ['sore'],
+      eating: 'on_plan',
+      ...overrides,
+    });
+
+    it('validates feedback fields and the supplied plan', async () => {
+      await post('/api/v1/feedback', { profile: PROFILE, day_number: 1 }).expect(400);
+      await post('/api/v1/feedback', payload(samplePlan, { day_number: 4 })).expect(400);
+      await post('/api/v1/feedback', payload(samplePlan, { body_states: [] })).expect(400);
+      await post('/api/v1/feedback', payload(samplePlan, { intensity: 'unknown' })).expect(400);
+      await post('/api/v1/feedback', payload(samplePlan, { plan: { days: [] } })).expect(400);
+      await post('/api/v1/feedback', payload(samplePlan, { profile: { ...PROFILE, age: 40 } })).expect(409);
+    });
+
+    it('adjusts next-day workout for a guest without saving history', async () => {
+      const response = await post('/api/v1/feedback', payload()).expect(200);
+      expect(response.body.safety_warning).toBeNull();
+      expect(response.body.plan.plan_id).toBe(samplePlan.plan_id);
+      expect(response.body.plan.days[1].workout.duration_minutes).toBeLessThan(samplePlan.days[1].workout.duration_minutes);
+      expect(await db.getRepository(PlanRecord).count({ where: { id: samplePlan.plan_id } })).toBe(0);
+    });
+
+    it('returns safety warning and rest on danger signs without calling Gemini', async () => {
+      fake.reply({ kind: 'json', body: { meals: [] } });
+      const response = await post(
+        '/api/v1/feedback',
+        payload(samplePlan, { body_states: ['danger_sign'], eating: 'over' }),
+      ).expect(200);
+      expect(response.body.safety_warning.message).toContain('115');
+      expect(response.body.plan.days[1].workout.title).toContain('Nghỉ ngơi');
+      expect(response.body.plan.days[1].meals).toEqual(samplePlan.days[1].meals);
+      expect(fake.paths).toHaveLength(0);
+    });
+
+    it('rebalances meals when Gemini succeeds and safely falls back after AI failure', async () => {
+      const rebalanced = {
+        meals: [
+          { meal_type: 'breakfast', name: 'Cháo yến mạch táo', portion: '1 bát', calories: 400, protein_g: 25, carbs_g: 50, fat_g: 11.11, ingredients: [{ name: 'Yến mạch', amount: 50, unit: 'g', category: 'pantry' }] },
+          { meal_type: 'lunch', name: 'Cơm gạo lứt, gà hấp gừng', portion: '1 chén', calories: 600, protein_g: 37.5, carbs_g: 75, fat_g: 16.67, ingredients: [{ name: 'Gạo lứt', amount: 90, unit: 'g', category: 'pantry' }] },
+          { meal_type: 'dinner', name: 'Canh rau củ đậu phụ non', portion: '1 bát', calories: 600, protein_g: 37.5, carbs_g: 75, fat_g: 16.67, ingredients: [{ name: 'Đậu phụ non', amount: 150, unit: 'g', category: 'protein' }] },
+        ],
+      };
+      fake.reply({ kind: 'json', body: rebalanced });
+      const success = await post('/api/v1/feedback', payload(samplePlan, { eating: 'over' })).expect(200);
+      expect(success.body.plan.days[1].meals[0].name).toBe('Cháo yến mạch táo');
+
+      fake.reply({ kind: 'error', status: 500, message: 'temporary upstream error' });
+      const fallback = await post('/api/v1/feedback', payload(samplePlan, { eating: 'under' })).expect(200);
+      expect(fallback.body.plan.days[1].meals).toEqual(samplePlan.days[1].meals);
+      expect(fallback.body.plan.warnings).toContain(WARNINGS.mealsNotRebalanced);
+      expect(fake.paths).toHaveLength(2);
+    });
+
+    it('creates and saves a new plan on day three, and rejects invalid tokens', async () => {
+      await post('/api/v1/feedback', payload(samplePlan, { day_number: 3 }), 'invalid-token').expect(401);
+      const { access_token: token, user } = await loginMock(testApp, 'feedback-owner@example.com');
+      const original = (await post('/api/v1/generate-plan', PROFILE, token).expect(200)).body;
+      const response = await post('/api/v1/feedback', payload(original, { day_number: 3 }), token).expect(200);
+      expect(response.body.plan.plan_id).not.toBe(original.plan_id);
+      const records = await db.getRepository(PlanRecord).find({ where: { user_id: user.id }, order: { created_at: 'ASC' } });
+      expect(records).toHaveLength(2);
+      expect(records[1].id).toBe(response.body.plan.plan_id);
+      expect(records[1].plan_json.plan_id).toBe(response.body.plan.plan_id);
+    });
+
+    it('rejects expired tokens and never stores sensitive restrictions in feedback plans', async () => {
+      const { user, access_token: token } = await loginMock(testApp, 'feedback-sensitive@example.com');
+      const expired = await testApp.app.get(JwtService).signAsync({ sub: user.id }, { expiresIn: -60 });
+      await post('/api/v1/feedback', payload(samplePlan), expired).expect(401);
+
+      const secret = 'DI-UNG-BI-MAT-321';
+      const secretProfile = {
+        ...PROFILE,
+        restrictions: { ...PROFILE.restrictions, allergies: secret },
+      };
+      fake.reply(
+        { kind: 'error', status: 500, message: 'temporary upstream error' },
+        { kind: 'error', status: 500, message: 'temporary upstream error' },
+      );
+      const original = (await post('/api/v1/generate-plan', secretProfile, token).expect(200)).body;
+      fake.reply(
+        { kind: 'error', status: 500, message: 'temporary upstream error' },
+        { kind: 'error', status: 500, message: 'temporary upstream error' },
+      );
+      const response = await post('/api/v1/feedback', payload(original, { day_number: 3, profile: secretProfile }), token).expect(200);
+      const saved = await db.getRepository(PlanRecord).findOneBy({ id: response.body.plan.plan_id });
+      expect(JSON.stringify(response.body)).not.toContain(secret);
+      expect(JSON.stringify(saved?.plan_json)).not.toContain(secret);
+    });
+
+    it('does not update another user’s saved plan and warns when history persistence fails', async () => {
+      const owner = await loginMock(testApp, 'feedback-plan-owner@example.com');
+      const other = await loginMock(testApp, 'feedback-plan-other@example.com');
+      const original = (await post('/api/v1/generate-plan', PROFILE, owner.access_token).expect(200)).body;
+      await post('/api/v1/feedback', payload(original), other.access_token).expect(200);
+      const unchanged = await db.getRepository(PlanRecord).findOneBy({ id: original.plan_id });
+      expect(unchanged?.user_id).toBe(owner.user.id);
+      expect(unchanged?.plan_json.days[1].workout.duration_minutes).toBe(original.days[1].workout.duration_minutes);
+
+      const ownerResponse = await post('/api/v1/feedback', payload(original), owner.access_token).expect(200);
+      const updated = await db.getRepository(PlanRecord).findOneBy({ id: original.plan_id });
+      expect(ownerResponse.body.plan.plan_id).toBe(original.plan_id);
+      expect(updated?.plan_json.days[1].workout.duration_minutes).toBe(
+        ownerResponse.body.plan.days[1].workout.duration_minutes,
+      );
+      expect(updated?.plan_json.days[1].workout.duration_minutes).toBeLessThan(original.days[1].workout.duration_minutes);
+
+      const update = vi.spyOn(testApp.app.get(HistoryService), 'update').mockResolvedValue(false);
+      try {
+        const response = await post('/api/v1/feedback', payload(original), owner.access_token).expect(200);
+        expect(response.body.plan.warnings).toContain(WARNINGS.historyNotSaved);
+      } finally {
+        update.mockRestore();
+      }
+
+      const save = vi.spyOn(testApp.app.get(HistoryService), 'save').mockResolvedValue(false);
+      try {
+        const response = await post('/api/v1/feedback', payload(original, { day_number: 3 }), owner.access_token).expect(200);
+        expect(response.body.plan.warnings).toContain(WARNINGS.historyNotSaved);
+      } finally {
+        save.mockRestore();
+      }
+    });
+  });
+
   describe('POST /api/v1/meals/swap', () => {
     const payload = () => ({ profile: PROFILE, plan: samplePlan, meal_id: 'm1_2' });
 

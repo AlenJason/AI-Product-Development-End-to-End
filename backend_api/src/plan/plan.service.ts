@@ -23,6 +23,8 @@ const SAMPLE_CONTENT = loadSampleContent();
 export interface GeneratePlanOptions {
   // Tóm tắt feedback ngày cuối của plan trước (FR-5.3), dựng từ mã cố định — không chứa chữ người dùng nhập.
   feedbackNote?: string;
+  // Dấu hiệu nguy hiểm ưu tiên an toàn (#14): tạo plan mẫu mà không gửi feedback tới Gemini.
+  skipGemini?: boolean;
 }
 
 @Injectable()
@@ -37,7 +39,7 @@ export class PlanService {
     const match = matchRestrictions(profile.restrictions);
     const maxLevel = maxExerciseLevel(profile);
 
-    const content = await this.generateWithGemini(profile, target, match, options.feedbackNote);
+    const content = options.skipGemini ? null : await this.generateWithGemini(profile, target, match, options.feedbackNote);
     if (content) {
       // Prompt đã ghi mức tối đa; động tác Gemini vẫn vượt mức thì thay bằng động tác trong kho, không gọi lại.
       return assemblePlan(capWorkoutLevel(content, maxLevel, match.avoidTags), target, PlanSource.GEMINI, warnings);
