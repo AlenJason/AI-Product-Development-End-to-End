@@ -12,9 +12,10 @@ import {
 import { CurrentUser, OptionalJwtAuthGuard } from '../../auth/jwt-auth.guard.js';
 import type { User } from '../../database/entities/user.entity.js';
 import { HistoryService } from '../../history/history.service.js';
-import { PlanEnvelopeDto, SwapMealDto } from '../dto/adjust-plan.dto.js';
+import { PlanEnvelopeDto, SwapExerciseDto, SwapMealDto } from '../dto/adjust-plan.dto.js';
 import type { MealPlanResponseDto } from '../dto/meal-plan-response.dto.js';
 import { WARNINGS } from '../plan-warnings.js';
+import { ExerciseSwapService } from './exercise-swap.service.js';
 import { MealSwapService } from './meal-swap.service.js';
 
 @ApiTags('plan')
@@ -27,6 +28,7 @@ import { MealSwapService } from './meal-swap.service.js';
 export class PlanAdjustController {
   constructor(
     private readonly meals: MealSwapService,
+    private readonly exercises: ExerciseSwapService,
     private readonly history: HistoryService,
   ) {}
 
@@ -37,6 +39,15 @@ export class PlanAdjustController {
   @ApiUnprocessableEntityResponse({ description: 'Không còn món thay thế phù hợp' })
   async swapMeal(@Body() dto: SwapMealDto, @CurrentUser() user: User | undefined): Promise<PlanEnvelopeDto> {
     return { plan: await this.record(user, await this.meals.swap(dto), false) };
+  }
+
+  @Post('exercises/swap')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Đổi một động tác sang bài nhẹ hơn cùng nhóm cơ (BRD FR-4.2)' })
+  @ApiOkResponse({ type: PlanEnvelopeDto })
+  @ApiUnprocessableEntityResponse({ description: 'Không còn động tác nhẹ hơn phù hợp' })
+  async swapExercise(@Body() dto: SwapExerciseDto, @CurrentUser() user: User | undefined): Promise<PlanEnvelopeDto> {
+    return { plan: await this.record(user, await this.exercises.swap(dto), false) };
   }
 
   private async record(user: User | undefined, plan: MealPlanResponseDto, isNew: boolean): Promise<MealPlanResponseDto> {
