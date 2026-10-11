@@ -9,8 +9,8 @@ import {
 import type { FeedbackDto } from '../dto/adjust-plan.dto.js';
 import type { MealPlanResponseDto } from '../dto/meal-plan-response.dto.js';
 import { MealContentDto, type DayContentDto } from '../dto/plan-content.dto.js';
-import { ExerciseTag, type MuscleGroup } from '../enums/exercise.enum.js';
-import { BodyState, Eating } from '../enums/feedback.enum.js';
+import type { MuscleGroup } from '../enums/exercise.enum.js';
+import { Eating } from '../enums/feedback.enum.js';
 import { PlanSource } from '../enums/plan-source.enum.js';
 import { GeminiService } from '../gemini.service.js';
 import { generateWithRetry } from '../gemini-retry.js';

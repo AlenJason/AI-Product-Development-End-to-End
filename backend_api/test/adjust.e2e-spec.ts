@@ -246,6 +246,11 @@ describe('Đổi món (e2e, chế độ giả lập)', () => {
         ownerResponse.body.plan.days[1].workout.duration_minutes,
       );
       expect(updated?.plan_json.days[1].workout.duration_minutes).toBeLessThan(original.days[1].workout.duration_minutes);
+      const historyDetail = await request(testApp.app.getHttpServer())
+        .get(`/api/v1/plans/history/${original.plan_id}`)
+        .set('Authorization', `Bearer ${owner.access_token}`)
+        .expect(200);
+      expect(historyDetail.body).toEqual(ownerResponse.body.plan);
 
       const update = vi.spyOn(testApp.app.get(HistoryService), 'update').mockResolvedValue(false);
       try {
@@ -267,6 +272,13 @@ describe('Đổi món (e2e, chế độ giả lập)', () => {
 
   describe('POST /api/v1/meals/swap', () => {
     const payload = () => ({ profile: PROFILE, plan: samplePlan, meal_id: 'm1_2' });
+
+    it('falls back after one Gemini timeout request', async () => {
+      fake.reply({ kind: 'hang' });
+      const response = await post('/api/v1/meals/swap', payload()).expect(200);
+      expect(response.body.plan.days[0].meals[1].name).not.toBe(samplePlan.days[0].meals[1].name);
+      expect(fake.paths).toHaveLength(1);
+    });
 
     it('returns 401 if token is invalid', async () => {
       await post('/api/v1/meals/swap', payload(), 'invalid-token').expect(401);
@@ -290,9 +302,24 @@ describe('Đổi món (e2e, chế độ giả lập)', () => {
     });
 
     it('swaps meal successfully and does not save to DB for guest', async () => {
-      fake.reply({ kind: 'json', body: { meal_type: 'lunch', name: 'Com chien', portion: '1', calories: 600, protein_g: 40, carbs_g: 60, fat_g: 22, ingredients: [] } });
+      const original = samplePlan.days[0].meals[1];
+      fake.reply({
+        kind: 'json',
+        body: {
+          meal_type: original.meal_type,
+          name: 'Món Gemini kiểm thử',
+          portion: '1 phần',
+          calories: original.calories,
+          protein_g: (original.calories * 0.25) / 4,
+          carbs_g: (original.calories * 0.45) / 4,
+          fat_g: (original.calories * 0.3) / 9,
+          ingredients: [{ name: 'Yến mạch', amount: 50, unit: 'g', category: 'pantry' }],
+        },
+      });
       const res = await post('/api/v1/meals/swap', payload()).expect(200);
-      expect(res.body.plan.days[0].meals[1].name).not.toBe(samplePlan.days[0].meals[1].name);
+      expect(res.body.plan.days[0].meals[1].name).toBe('Món Gemini kiểm thử');
+      expect(fake.paths).toHaveLength(1);
+      expect(fake.requests[0]).toContain('du_lieu_nguoi_dung');
 
       const count = await db.getRepository(PlanRecord).count({ where: { id: samplePlan.plan_id } });
       expect(count).toBe(0);
