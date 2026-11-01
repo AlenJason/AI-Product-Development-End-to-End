@@ -11,8 +11,11 @@ class AuthUser {
   final String email;
   final String name;
 
-  factory AuthUser.fromJson(Json json) =>
-      AuthUser(id: readString(json, 'id'), email: readString(json, 'email'), name: readString(json, 'name'));
+  factory AuthUser.fromJson(Json json) => AuthUser(
+    id: readString(json, 'id'),
+    email: readString(json, 'email'),
+    name: readString(json, 'name'),
+  );
 
   Json toJson() => {'id': id, 'email': email, 'name': name};
 }
@@ -24,15 +27,19 @@ class AuthResult {
   final AuthUser user;
 
   factory AuthResult.fromJson(Json json) => AuthResult(
-        accessToken: readString(json, 'access_token'),
-        user: AuthUser.fromJson(readMap(json['user'], 'user')),
-      );
+    accessToken: readString(json, 'access_token'),
+    user: AuthUser.fromJson(readMap(json['user'], 'user')),
+  );
 
   Json toJson() => {'access_token': accessToken, 'user': user.toJson()};
 }
 
 class PlanSummary {
-  const PlanSummary({required this.id, required this.createdAt, required this.targetCalories});
+  const PlanSummary({
+    required this.id,
+    required this.createdAt,
+    required this.targetCalories,
+  });
 
   final String id;
   final DateTime createdAt;
@@ -40,15 +47,28 @@ class PlanSummary {
 
   factory PlanSummary.fromJson(Json json) {
     final createdAt = DateTime.tryParse(readString(json, 'created_at'));
-    if (createdAt == null) throw const FormatException('"created_at" phải là thời điểm ISO 8601');
-    return PlanSummary(id: readString(json, 'id'), createdAt: createdAt.toUtc(), targetCalories: readNum(json, 'target_calories'));
+    if (createdAt == null) {
+      throw const FormatException('"created_at" phải là thời điểm ISO 8601');
+    }
+    return PlanSummary(
+      id: readString(json, 'id'),
+      createdAt: createdAt.toUtc(),
+      targetCalories: readNum(json, 'target_calories'),
+    );
   }
 
-  Json toJson() => {'id': id, 'created_at': createdAt.toUtc().toIso8601String(), 'target_calories': targetCalories};
+  Json toJson() => {
+    'id': id,
+    'created_at': createdAt.toUtc().toIso8601String(),
+    'target_calories': targetCalories,
+  };
 }
 
-List<PlanSummary> planSummariesFromJson(Json json) =>
-    readList(json, 'plans', (item) => PlanSummary.fromJson(readMap(item, 'plans[]')));
+List<PlanSummary> planSummariesFromJson(Json json) => readList(
+  json,
+  'plans',
+  (item) => PlanSummary.fromJson(readMap(item, 'plans[]')),
+);
 
 class FeedbackResult {
   const FeedbackResult({required this.plan, this.safetyWarning});
@@ -61,37 +81,79 @@ class FeedbackResult {
     final warning = json['safety_warning'];
     return FeedbackResult(
       plan: MealPlan.fromJson(readMap(json['plan'], 'plan')),
-      safetyWarning: warning == null ? null : readString(readMap(warning, 'safety_warning'), 'message'),
+      safetyWarning: warning == null
+          ? null
+          : readString(readMap(warning, 'safety_warning'), 'message'),
     );
   }
 
   Json toJson() => {
-        'plan': plan.toJson(),
-        'safety_warning': safetyWarning == null ? null : {'message': safetyWarning},
-      };
+    'plan': plan.toJson(),
+    'safety_warning': safetyWarning == null ? null : {'message': safetyWarning},
+  };
 }
 
 class HealthStatus {
-  const HealthStatus({required this.status, required this.gemini, required this.authMode});
+  const HealthStatus({
+    required this.status,
+    required this.gemini,
+    required this.authMode,
+    this.aiProvider,
+    this.aiStatus,
+  });
 
   final String status;
   // "configured" | "fallback" — backend đang dùng Gemini thật hay dữ liệu mẫu.
   final String gemini;
   // "mock" | "google".
   final String authMode;
+  final String? aiProvider;
+  final String? aiStatus;
 
   factory HealthStatus.fromJson(Json json) => HealthStatus(
-        status: readString(json, 'status'),
-        gemini: readString(json, 'gemini'),
-        authMode: readString(json, 'auth_mode'),
-      );
+    status: readString(json, 'status'),
+    gemini: readString(json, 'gemini'),
+    authMode: readString(json, 'auth_mode'),
+    aiProvider: json['ai_provider'] == null
+        ? null
+        : readString(json, 'ai_provider'),
+    aiStatus: json['ai_status'] == null ? null : readString(json, 'ai_status'),
+  );
 
-  Json toJson() => {'status': status, 'gemini': gemini, 'auth_mode': authMode};
+  Json toJson() => {
+    'status': status,
+    'gemini': gemini,
+    'auth_mode': authMode,
+    if (aiProvider != null) 'ai_provider': aiProvider,
+    if (aiStatus != null) 'ai_status': aiStatus,
+  };
 }
 
 // Câu trả lời bảng feedback cuối ngày (BRD 6.4).
 class FeedbackAnswers {
-  const FeedbackAnswers({required this.dayNumber, required this.intensity, required this.bodyStates, required this.eating});
+  factory FeedbackAnswers.fromJson(Json json) {
+    final day = readInt(json, 'day_number');
+    final states = readList(
+      json,
+      'body_states',
+      (v) => readCode({'state': v}, 'state', BodyState.values, (e) => e.code),
+    ).toSet();
+    if (day < 1 || day > 3 || states.isEmpty) {
+      throw const FormatException('Phản hồi không hợp lệ');
+    }
+    return FeedbackAnswers(
+      dayNumber: day,
+      intensity: readCode(json, 'intensity', Intensity.values, (e) => e.code),
+      bodyStates: states,
+      eating: readCode(json, 'eating', Eating.values, (e) => e.code),
+    );
+  }
+  const FeedbackAnswers({
+    required this.dayNumber,
+    required this.intensity,
+    required this.bodyStates,
+    required this.eating,
+  });
 
   final int dayNumber;
   final Intensity intensity;
@@ -99,11 +161,9 @@ class FeedbackAnswers {
   final Eating eating;
 
   Json toJson() => {
-        'day_number': dayNumber,
-        'intensity': intensity.code,
-        'body_states': bodyStates.map((state) => state.code).toList(),
-        'eating': eating.code,
-      };
+    'day_number': dayNumber,
+    'intensity': intensity.code,
+    'body_states': bodyStates.map((state) => state.code).toList(),
+    'eating': eating.code,
+  };
 }
-
-

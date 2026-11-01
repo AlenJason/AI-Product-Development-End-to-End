@@ -53,19 +53,22 @@ class AuthProvider extends ChangeNotifier {
   }
 
   void _restore() {
-    final token = _prefs.getString(tokenKey);
-    final userText = _prefs.getString(userKey);
-    if (token != null && userText != null) {
-      try {
-        _user = AuthUser.fromJson(readMap(jsonDecode(userText), userKey));
-        _api.accessToken = token;
-        return;
-      } on FormatException {
-        // bản lưu hỏng → xoá bên dưới
+    try {
+      final token = _prefs.getString(tokenKey);
+      final userText = _prefs.getString(userKey);
+      if (token != null && userText != null) {
+        try {
+          _user = AuthUser.fromJson(readMap(jsonDecode(userText), userKey));
+          _api.accessToken = token;
+          return;
+        } on FormatException {
+          // bản lưu hỏng → xoá bên dưới
+        }
       }
+      unawaited(_prefs.remove(tokenKey));
+      unawaited(_prefs.remove(userKey));
+    } on TypeError {
+      // Ignore incompatible local auth data without blocking offline plans.
     }
-    unawaited(_prefs.remove(tokenKey));
-    unawaited(_prefs.remove(userKey));
   }
 }
-
