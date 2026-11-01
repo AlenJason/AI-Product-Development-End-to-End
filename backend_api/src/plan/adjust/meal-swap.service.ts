@@ -1,17 +1,32 @@
-import { BadRequestException, Injectable, Logger, UnprocessableEntityException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Inject,
+  Injectable,
+  Logger,
+  UnprocessableEntityException,
+} from '@nestjs/common';
+import { PLAN_AI, type PlanAi, taskSourceWarning } from '../ai-provider.js';
 import type { SwapMealDto } from '../dto/adjust-plan.dto.js';
 import type { MealPlanResponseDto } from '../dto/meal-plan-response.dto.js';
 import { type DayContentDto, MealContentDto } from '../dto/plan-content.dto.js';
-import { GeminiService } from '../gemini.service.js';
 import { generateWithRetry } from '../gemini-retry.js';
 import { scaleMealToCalories } from '../meal-scaling.js';
-import { type CalorieRange, findPlanViolations, mealCalorieBounds, parseContent } from '../plan-validation.js';
+import {
+  type CalorieRange,
+  findPlanViolations,
+  mealCalorieBounds,
+  parseContent,
+} from '../plan-validation.js';
 import { WARNINGS } from '../plan-warnings.js';
 import { findAvoidedIngredient } from '../restriction-matcher.js';
 import { mealCandidates } from '../swap-pools.js';
 import { normalizeKey } from '../text.util.js';
 import { buildMealSwapPrompt } from './adjust-prompts.js';
-import { type ClientPlanContext, readClientPlan, rebuildPlan } from './client-plan.js';
+import {
+  type ClientPlanContext,
+  readClientPlan,
+  rebuildPlan,
+} from './client-plan.js';
 import { pickOne, RandomSource } from './random-source.js';
 
 // Calo món mới lệch tối đa ±10% so với món cũ (BRD FR-4.1).
@@ -22,7 +37,7 @@ export class MealSwapService {
   private readonly logger = new Logger(MealSwapService.name);
 
   constructor(
-    private readonly gemini: GeminiService,
+    @Inject(PLAN_AI) private readonly ai: PlanAi,
     private readonly random: RandomSource,
   ) {}
 
@@ -30,52 +45,102 @@ export class MealSwapService {
     const context = readClientPlan(dto.profile, dto.plan);
     const [dayIndex, mealIndex] = parseMealId(dto.meal_id);
     const original = context.plan.days[dayIndex]?.meals[mealIndex];
-    if (!original) throw new BadRequestException(`meal_id ${dto.meal_id} không có trong plan`);
+    if (!original)
+      throw new BadRequestException(
+        `meal_id ${dto.meal_id} không có trong plan`,
+      );
 
-    const range = swapCalorieRange(original.calories, mealCalorieBounds(context.target.target_calories)[original.meal_type]);
-    const usedNames = new Set(context.plan.days.flatMap((day) => day.meals.map((meal) => normalizeKey(meal.name))));
+    const range = swapCalorieRange(
+      original.calories,
+      mealCalorieBounds(context.target.target_calories)[original.meal_type],
+    );
+    const usedNames = new Set(
+      context.plan.days.flatMap((day) =>
+        day.meals.map((meal) => normalizeKey(meal.name)),
+      ),
+    );
     const withMeal = (meal: MealContentDto): DayContentDto[] =>
       context.plan.days.map((day, d) => ({
         ...day,
-        meals: day.meals.map((existing, m) => (d === dayIndex && m === mealIndex ? meal : existing)),
+        meals: day.meals.map((existing, m) =>
+          d === dayIndex && m === mealIndex ? meal : existing,
+        ),
       }));
     const violations = (meal: MealContentDto): string[] => [
-      ...(meal.meal_type === original.meal_type ? [] : [`meal_type phải là ${original.meal_type}`]),
-      ...(meal.calories >= range.min && meal.calories <= range.max ? [] : [`calories ${meal.calories} ngoài khoảng ${range.min}–${range.max}`]),
-      ...(usedNames.has(normalizeKey(meal.name)) ? [`món "${meal.name}" đã có trong kế hoạch`] : []),
-      ...(findAvoidedIngredient(meal, context.match.avoidIngredients) === null ? [] : ['có nguyên liệu người dùng cần tránh']),
+      ...(meal.meal_type === original.meal_type
+        ? []
+        : [`meal_type phải là ${original.meal_type}`]),
+      ...(meal.calories >= range.min && meal.calories <= range.max
+        ? []
+        : [`calories ${meal.calories} ngoài khoảng ${range.min}–${range.max}`]),
+      ...(usedNames.has(normalizeKey(meal.name))
+        ? [`món "${meal.name}" đã có trong kế hoạch`]
+        : []),
+      ...(findAvoidedIngredient(meal, context.match.avoidIngredients) === null
+        ? []
+        : ['có nguyên liệu người dùng cần tránh']),
       ...findPlanViolations({ days: withMeal(meal) }, context.target),
     ];
 
-    const fromGemini = await this.fromGemini(context, original, range, usedNames, violations);
-    const replacement = fromGemini ?? this.fromPool(context, original, usedNames, violations);
+    const fromAi = await this.fromAi(
+      context,
+      original,
+      range,
+      usedNames,
+      violations,
+    );
+    const replacement =
+      fromAi ?? this.fromPool(context, original, usedNames, violations);
     if (!replacement) {
-      throw new UnprocessableEntityException('Không tìm được món thay thế phù hợp với bữa này và các hạn chế bạn đã nhập.');
+      throw new UnprocessableEntityException(
+        'Không tìm được món thay thế phù hợp với bữa này và các hạn chế bạn đã nhập.',
+      );
     }
-    const extra = !fromGemini && context.match.hasUnrecognized ? [WARNINGS.restrictionsIncomplete] : [];
+    const extra = [
+      ...taskSourceWarning(this.ai, 'meal-swap', !!fromAi),
+      ...(!fromAi && context.match.hasUnrecognized
+        ? [WARNINGS.restrictionsIncomplete]
+        : []),
+    ];
     return rebuildPlan(context, withMeal(replacement), extra);
   }
 
-  private async fromGemini(
+  private async fromAi(
     context: ClientPlanContext,
     original: MealContentDto,
     range: CalorieRange,
     usedNames: Set<string>,
     violations: (meal: MealContentDto) => string[],
   ): Promise<MealContentDto | null> {
-    if (!this.gemini.isConfigured) return null;
-    const names = context.plan.days.flatMap((day) => day.meals.map((meal) => meal.name));
+    if (!this.ai.isConfigured) {
+      this.logger.warn(
+        JSON.stringify({
+          event: 'ai_fallback',
+          provider: this.ai.providerName ?? 'gemini',
+          reason: 'NOT_CONFIGURED',
+        }),
+      );
+      return null;
+    }
+    const names = context.plan.days.flatMap((day) =>
+      day.meals.map((meal) => meal.name),
+    );
     return generateWithRetry(
       this.logger,
       'đổi món',
-      this.gemini.budget,
-      (timeoutMs) => this.gemini.generateJson(buildMealSwapPrompt(context.profile, original, range, names), timeoutMs),
+      this.ai.budget,
+      (timeoutMs) =>
+        this.ai.generateJson(
+          buildMealSwapPrompt(context.profile, original, range, names),
+          timeoutMs,
+        ),
       (raw) => {
         const parsed = parseContent(MealContentDto, raw);
         if (!parsed.value) return parsed;
         const errors = violations(parsed.value);
         return errors.length > 0 ? { value: null, errors } : parsed;
       },
+      this.ai.providerName,
     );
   }
 
@@ -96,10 +161,19 @@ export class MealSwapService {
   }
 }
 
-export function swapCalorieRange(calories: number, mealBounds: CalorieRange): CalorieRange {
+export function swapCalorieRange(
+  calories: number,
+  mealBounds: CalorieRange,
+): CalorieRange {
   return {
-    min: Math.max(Math.round(calories * (1 - SWAP_CALORIE_TOLERANCE)), mealBounds.min),
-    max: Math.min(Math.round(calories * (1 + SWAP_CALORIE_TOLERANCE)), mealBounds.max),
+    min: Math.max(
+      Math.round(calories * (1 - SWAP_CALORIE_TOLERANCE)),
+      mealBounds.min,
+    ),
+    max: Math.min(
+      Math.round(calories * (1 + SWAP_CALORIE_TOLERANCE)),
+      mealBounds.max,
+    ),
   };
 }
 

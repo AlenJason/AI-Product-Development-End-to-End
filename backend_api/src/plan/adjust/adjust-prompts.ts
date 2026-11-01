@@ -1,5 +1,8 @@
 import type { CreatePlanDto } from '../dto/create-plan.dto.js';
-import type { ExerciseContentDto, MealContentDto } from '../dto/plan-content.dto.js';
+import type {
+  ExerciseContentDto,
+  MealContentDto,
+} from '../dto/plan-content.dto.js';
 import { Eating } from '../enums/feedback.enum.js';
 import { MealType } from '../enums/meal-type.enum.js';
 import {
@@ -11,15 +14,20 @@ import {
   mealRules,
   PROMPT_ROLE,
   userDataBlock,
+  WORKOUT_LANGUAGE_RULE,
 } from '../gemini.service.js';
 import type { CalorieRange } from '../plan-validation.js';
+import { aiExerciseInstructions } from '../ai-exercise.js';
+import { profileAssessmentExample } from '../profile-exercise.js';
 
 // Prompt cho đổi món (FR-4.1), đổi bài tập (FR-4.2), cân đối món ăn sau feedback (FR-5.2).
 // Chữ người dùng nhập chỉ nằm trong userDataBlock() (NFR-8). Tên món/động tác lấy từ plan hiện tại.
 
 const EATING_NOTE: Record<Exclude<Eating, Eating.ON_PLAN>, string> = {
-  [Eating.OVER]: 'hôm trước ăn nhiều hơn thực đơn — ngày này nhẹ hơn một chút, nhiều rau, ít dầu mỡ, vẫn đủ 3 bữa',
-  [Eating.UNDER]: 'hôm trước ăn ít hơn thực đơn hoặc bỏ bữa — ngày này chọn món dễ ăn, đủ chất, không ăn bù',
+  [Eating.OVER]:
+    'hôm trước ăn nhiều hơn thực đơn — ngày này nhẹ hơn một chút, nhiều rau, ít dầu mỡ, vẫn đủ 3 bữa',
+  [Eating.UNDER]:
+    'hôm trước ăn ít hơn thực đơn hoặc bỏ bữa — ngày này chọn món dễ ăn, đủ chất, không ăn bù',
 };
 
 export function buildMealSwapPrompt(
@@ -51,7 +59,8 @@ export function buildExerciseSwapPrompt(
   original: ExerciseContentDto,
   avoidNames: string[],
 ): string {
-  const tags = original.tags.length > 0 ? original.tags.join(', ') : '(để mảng rỗng)';
+  const tags =
+    original.tags.length > 0 ? original.tags.join(', ') : '(để mảng rỗng)';
   return [
     PROMPT_ROLE,
     `Nhiệm vụ: đề xuất 1 động tác NHẸ HƠN để thay "${original.name}" (nhóm cơ ${original.muscle_group}, ${original.sets} hiệp × ${original.reps_or_duration}).`,
@@ -60,13 +69,19 @@ export function buildExerciseSwapPrompt(
     '',
     'Quy tắc bắt buộc:',
     `- Cùng nhóm cơ: muscle_group là ${original.muscle_group}. Bodyweight, không cần dụng cụ.`,
+    WORKOUT_LANGUAGE_RULE,
     '- Không chọn động tác gây tải lên vùng chấn thương người dùng đã khai.',
     `- sets không quá ${original.sets}. tags chỉ được chọn trong: ${tags}.`,
+    `- Số lần/thời lượng không vượt ${original.reps_or_duration}; giữ cùng đơn vị lần hoặc thời gian.`,
+    ...aiExerciseInstructions(profile),
     `- Không trùng các động tác đã có trong buổi: ${avoidNames.join('; ')}.`,
     ...exerciseCodeRules(),
     '',
     'Chỉ trả về JSON của 1 động tác, không kèm giải thích, đúng cấu trúc:',
-    EXERCISE_JSON_SHAPE,
+    JSON.stringify({
+      ...(JSON.parse(EXERCISE_JSON_SHAPE) as Record<string, unknown>),
+      assessment: profileAssessmentExample(profile),
+    }),
   ].join('\n');
 }
 

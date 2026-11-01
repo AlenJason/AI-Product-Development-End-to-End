@@ -1,0 +1,316 @@
+[
+    {
+        "days":  [
+                     {
+                         "workout":  {
+                                         "exercises":  [
+                                                           {
+                                                               "name":  "Đứng lên ngồi xuống ghế (không dùng ghế)",
+                                                               "sets":  3,
+                                                               "reps_or_duration":  "10 lần",
+                                                               "muscle_group":  "legs",
+                                                               "tags":  [
+
+                                                                        ],
+                                                               "assessment":  {
+                                                                                  "difficulty_level":  1,
+                                                                                  "equipment":  "none",
+                                                                                  "impact":  "low",
+                                                                                  "instructions":  "Đứng thẳng, hạ người xuống như ngồi, sau đó đứng lên, giữ lưng thẳng."
+                                                                              }
+                                                           },
+                                                           {
+                                                               "name":  "Plank tường",
+                                                               "sets":  3,
+                                                               "reps_or_duration":  "30 giây",
+                                                               "muscle_group":  "core",
+                                                               "tags":  [
+
+                                                                        ],
+                                                               "assessment":  {
+                                                                                  "difficulty_level":  1,
+                                                                                  "equipment":  "none",
+                                                                                  "impact":  "low",
+                                                                                  "instructions":  "Đặt tay lên tường, cơ thể thành góc 45°, giữ cơ bụng căng."
+                                                                              }
+                                                           },
+                                                           {
+                                                               "name":  "Động tác “đứng chân lên cao” (marching)",
+                                                               "sets":  2,
+                                                               "reps_or_duration":  "1 phút",
+                                                               "muscle_group":  "cardio",
+                                                               "tags":  [
+
+                                                                        ],
+                                                               "assessment":  {
+                                                                                  "difficulty_level":  1,
+                                                                                  "equipment":  "none",
+                                                                                  "impact":  "low",
+                                                                                  "instructions":  "Nâng gối lên cao luân phiên, giữ tốc độ vừa phải, không nhảy."
+                                                                              }
+                                                           }
+                                                       ]
+                                     }
+                     },
+                     {
+                         "workout":  {
+                                         "exercises":  [
+                                                           {
+                                                               "name":  "Gập người đứng (hip hinge)",
+                                                               "sets":  3,
+                                                               "reps_or_duration":  "12 lần",
+                                                               "muscle_group":  "back",
+                                                               "tags":  [
+                                                                            "kneeling"
+                                                                        ],
+                                                               "assessment":  {
+                                                                                  "difficulty_level":  1,
+                                                                                  "equipment":  "none",
+                                                                                  "impact":  "low",
+                                                                                  "instructions":  "Đứng chân rộng hông, gập hông xuống, lưng thẳng, sau đó đứng thẳng lại."
+                                                                              }
+                                                           },
+                                                           {
+                                                               "name":  "Đẩy tường (wall push‑up)",
+                                                               "sets":  3,
+                                                               "reps_or_duration":  "10 lần",
+                                                               "muscle_group":  "chest",
+                                                               "tags":  [
+
+                                                                        ],
+                                                               "assessment":  {
+                                                                                  "difficulty_level":  1,
+                                                                                  "equipment":  "none",
+                                                                                  "impact":  "low",
+                                                                                  "instructions":  "Đặt tay lên tường, nghiêng người về phía tường, đẩy người ra lại."
+                                                                              }
+                                                           },
+                                                           {
+                                                               "name":  "Chạy tại chỗ chậm",
+                                                               "sets":  2,
+                                                               "reps_or_duration":  "1 phút",
+                                                               "muscle_group":  "cardio",
+                                                               "tags":  [
+
+                                                                        ],
+                                                               "assessment":  {
+                                                                                  "difficulty_level":  1,
+                                                                                  "equipment":  "none",
+                                                                                  "impact":  "low",
+                                                                                  "instructions":  "Nâng đầu gối nhẹ nhàng, giữ tốc độ ổn định, không bật nhảy."
+                                                                              }
+                                                           }
+                                                       ]
+                                     }
+                     },
+                     {
+                         "workout":  {
+                                         "exercises":  [
+                                                           {
+                                                               "name":  "Ngồi đứng từ ghế (không dùng ghế)",
+                                                               "sets":  3,
+                                                               "reps_or_duration":  "8 lần",
+                                                               "muscle_group":  "legs",
+                                                               "tags":  [
+                                                                            "kneeling"
+                                                                        ],
+                                                               "assessment":  {
+                                                                                  "difficulty_level":  1,
+                                                                                  "equipment":  "none",
+                                                                                  "impact":  "low",
+                                                                                  "instructions":  "Ngồi sàn, dùng lực chân đứng lên, giữ lưng thẳng, lặp lại."
+                                                                              }
+                                                           },
+                                                           {
+                                                               "name":  "Chống đẩy tường (wall push‑up)",
+                                                               "sets":  3,
+                                                               "reps_or_duration":  "8 lần",
+                                                               "muscle_group":  "chest",
+                                                               "tags":  [
+
+                                                                        ],
+                                                               "assessment":  {
+                                                                                  "difficulty_level":  1,
+                                                                                  "equipment":  "none",
+                                                                                  "impact":  "low",
+                                                                                  "instructions":  "Đặt tay lên tường, nghiêng người, đẩy người ra lại, không gây áp lực cổ."
+                                                                              }
+                                                           },
+                                                           {
+                                                               "name":  "Bài tập thở sâu + giãn cơ tay (arm stretch)",
+                                                               "sets":  2,
+                                                               "reps_or_duration":  "1 phút",
+                                                               "muscle_group":  "arms",
+                                                               "tags":  [
+
+                                                                        ],
+                                                               "assessment":  {
+                                                                                  "difficulty_level":  1,
+                                                                                  "equipment":  "none",
+                                                                                  "impact":  "low",
+                                                                                  "instructions":  "Giơ tay lên cao, hít sâu, thở ra, kéo nhẹ mỗi bên, giữ tư thế."
+                                                                              }
+                                                           }
+                                                       ]
+                                     }
+                     }
+                 ]
+    },
+    {
+        "days":  [
+                     {
+                         "workout":  {
+                                         "exercises":  [
+                                                           {
+                                                               "name":  "Đi bộ tại chỗ",
+                                                               "sets":  2,
+                                                               "reps_or_duration":  "1 phút",
+                                                               "muscle_group":  "cardio",
+                                                               "tags":  [
+
+                                                                        ],
+                                                               "assessment":  {
+                                                                                  "difficulty_level":  1,
+                                                                                  "equipment":  "none",
+                                                                                  "impact":  "low",
+                                                                                  "instructions":  "Đứng thẳng, bước chân luân phiên tại chỗ với tốc độ chậm, hít thở đều."
+                                                                              }
+                                                           },
+                                                           {
+                                                               "name":  "Squat tự hỗ trợ tường",
+                                                               "sets":  2,
+                                                               "reps_or_duration":  "12 lần",
+                                                               "muscle_group":  "legs",
+                                                               "tags":  [
+                                                                            "kneeling"
+                                                                        ],
+                                                               "assessment":  {
+                                                                                  "difficulty_level":  1,
+                                                                                  "equipment":  "none",
+                                                                                  "impact":  "low",
+                                                                                  "instructions":  "Dựa lưng vào tường, hạ người xuống như ngồi ghế, giữ lưng thẳng, đứng lên."
+                                                                              }
+                                                           },
+                                                           {
+                                                               "name":  "Plank khuỷu tay",
+                                                               "sets":  2,
+                                                               "reps_or_duration":  "30 giây",
+                                                               "muscle_group":  "core",
+                                                               "tags":  [
+                                                                            "kneeling"
+                                                                        ],
+                                                               "assessment":  {
+                                                                                  "difficulty_level":  1,
+                                                                                  "equipment":  "none",
+                                                                                  "impact":  "low",
+                                                                                  "instructions":  "Đặt khuỷu tay dưới vai, giữ thân người thẳng, hít thở đều."
+                                                                              }
+                                                           }
+                                                       ]
+                                     }
+                     },
+                     {
+                         "workout":  {
+                                         "exercises":  [
+                                                           {
+                                                               "name":  "Marching trên chỗ",
+                                                               "sets":  2,
+                                                               "reps_or_duration":  "1 phút",
+                                                               "muscle_group":  "cardio",
+                                                               "tags":  [
+
+                                                                        ],
+                                                               "assessment":  {
+                                                                                  "difficulty_level":  1,
+                                                                                  "equipment":  "none",
+                                                                                  "impact":  "low",
+                                                                                  "instructions":  "Đứng thẳng, nâng đầu gối luân phiên, duy trì nhịp thở đều."
+                                                                              }
+                                                           },
+                                                           {
+                                                               "name":  "Gập người đứng (Standing knee raise)",
+                                                               "sets":  2,
+                                                               "reps_or_duration":  "10 lần mỗi chân",
+                                                               "muscle_group":  "legs",
+                                                               "tags":  [
+                                                                            "kneeling"
+                                                                        ],
+                                                               "assessment":  {
+                                                                                  "difficulty_level":  1,
+                                                                                  "equipment":  "none",
+                                                                                  "impact":  "low",
+                                                                                  "instructions":  "Giữ thăng bằng, nâng đầu gối lên cao, hạ xuống nhẹ nhàng."
+                                                                              }
+                                                           },
+                                                           {
+                                                               "name":  "Side plank trên đầu gối",
+                                                               "sets":  2,
+                                                               "reps_or_duration":  "20 giây mỗi bên",
+                                                               "muscle_group":  "core",
+                                                               "tags":  [
+                                                                            "kneeling"
+                                                                        ],
+                                                               "assessment":  {
+                                                                                  "difficulty_level":  1,
+                                                                                  "equipment":  "none",
+                                                                                  "impact":  "low",
+                                                                                  "instructions":  "Nằm nghiêng, chống khuỷu tay, giữ cơ thể thẳng, giữ trong thời gian quy định."
+                                                                              }
+                                                           }
+                                                       ]
+                                     }
+                     },
+                     {
+                         "workout":  {
+                                         "exercises":  [
+                                                           {
+                                                               "name":  "Step touch tại chỗ",
+                                                               "sets":  2,
+                                                               "reps_or_duration":  "1 phút",
+                                                               "muscle_group":  "cardio",
+                                                               "tags":  [
+
+                                                                        ],
+                                                               "assessment":  {
+                                                                                  "difficulty_level":  1,
+                                                                                  "equipment":  "none",
+                                                                                  "impact":  "low",
+                                                                                  "instructions":  "Di chuyển chân sang một bên rồi quay lại, nhịp nhẹ, không nhảy."
+                                                                              }
+                                                           },
+                                                           {
+                                                               "name":  "Wall push‑up",
+                                                               "sets":  2,
+                                                               "reps_or_duration":  "10 lần",
+                                                               "muscle_group":  "chest",
+                                                               "tags":  [
+                                                                            "kneeling"
+                                                                        ],
+                                                               "assessment":  {
+                                                                                  "difficulty_level":  1,
+                                                                                  "equipment":  "none",
+                                                                                  "impact":  "low",
+                                                                                  "instructions":  "Đặt tay lên tường, nghiêng người về phía tường, đẩy lên lại."
+                                                                              }
+                                                           },
+                                                           {
+                                                               "name":  "Bird‑dog trên sàn",
+                                                               "sets":  2,
+                                                               "reps_or_duration":  "12 lần mỗi bên",
+                                                               "muscle_group":  "core",
+                                                               "tags":  [
+
+                                                                        ],
+                                                               "assessment":  {
+                                                                                  "difficulty_level":  1,
+                                                                                  "equipment":  "none",
+                                                                                  "impact":  "low",
+                                                                                  "instructions":  "Nằm sấp, nâng tay và chân đối diện lên, giữ lưng thẳng, hạ xuống."
+                                                                              }
+                                                           }
+                                                       ]
+                                     }
+                     }
+                 ]
+    }
+]

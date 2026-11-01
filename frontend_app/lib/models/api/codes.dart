@@ -27,6 +27,7 @@ enum Goal {
 }
 
 enum PlanSource {
+  groq('groq'),
   gemini('gemini'),
   sample('sample');
 

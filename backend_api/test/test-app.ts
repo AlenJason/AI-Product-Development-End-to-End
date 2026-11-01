@@ -14,7 +14,9 @@ export interface TestApp {
 // `configure` ghi đè provider khi cần kết quả tất định (ví dụ RandomSource khi xuất fixture hợp đồng).
 export async function createTestApp(
   env: Record<string, string> = {},
-  configure: (builder: TestingModuleBuilder) => TestingModuleBuilder = (builder) => builder,
+  configure: (builder: TestingModuleBuilder) => TestingModuleBuilder = (
+    builder,
+  ) => builder,
 ): Promise<TestApp> {
   const pinned: Record<string, string> = {
     DATABASE_PATH: ':memory:',
@@ -24,13 +26,18 @@ export async function createTestApp(
     JWT_EXPIRES_IN: '',
     ALLOW_MOCK_AUTH: '',
     GEMINI_API_KEY: '',
+    PLAN_AI_PROVIDER: 'gemini',
+    GROQ_API_KEY: '',
+    GROQ_DEBUG_RESPONSES: 'false',
     GEMINI_BASE_URL: '',
     GEMINI_THINKING: '',
     GEMINI_TOTAL_TIMEOUT_MS: '',
     CORS_ORIGINS: '',
     ...env,
   };
-  const saved = Object.fromEntries(Object.keys(pinned).map((key) => [key, process.env[key]]));
+  const saved = Object.fromEntries(
+    Object.keys(pinned).map((key) => [key, process.env[key]]),
+  );
   const restore = () => {
     for (const [key, value] of Object.entries(saved)) {
       if (value === undefined) delete process.env[key];
@@ -41,7 +48,9 @@ export async function createTestApp(
 
   try {
     const { AppModule } = await import('../src/app.module.js');
-    const moduleRef = await configure(Test.createTestingModule({ imports: [AppModule] })).compile();
+    const moduleRef = await configure(
+      Test.createTestingModule({ imports: [AppModule] }),
+    ).compile();
     const app = moduleRef.createNestApplication({ logger: false });
     configureApp(app);
     await app.init();
@@ -64,7 +73,10 @@ export interface LoginBody {
 }
 
 // Đăng nhập giả lập (AUTH_MODE=mock): id_token là "mock:<email>".
-export async function loginMock(testApp: TestApp, email: string): Promise<LoginBody> {
+export async function loginMock(
+  testApp: TestApp,
+  email: string,
+): Promise<LoginBody> {
   const res = await request(testApp.app.getHttpServer())
     .post('/api/v1/auth/google')
     .send({ id_token: `mock:${email}` })

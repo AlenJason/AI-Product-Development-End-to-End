@@ -33,6 +33,8 @@ const server = spawn(process.execPath, ['dist/main.js'], {
     JWT_EXPIRES_IN: '',
     ALLOW_MOCK_AUTH: '',
     GEMINI_API_KEY: '',
+    PLAN_AI_PROVIDER: 'groq',
+    GROQ_API_KEY: '',
     GEMINI_BASE_URL: '',
   },
   stdio: ['ignore', 'pipe', 'pipe'],

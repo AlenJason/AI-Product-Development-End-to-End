@@ -15,7 +15,7 @@ class ApiClient {
   ApiClient({
     required this.baseUrl,
     http.Client? httpClient,
-    this.planTimeout = const Duration(seconds: 60),
+    this.planTimeout = const Duration(seconds: 105),
     this.requestTimeout = const Duration(seconds: 15),
   }) : _http = httpClient ?? http.Client();
 
@@ -23,7 +23,7 @@ class ApiClient {
   final String baseUrl;
   final http.Client _http;
 
-  // Request có thể gọi Gemini: backend tự dừng Gemini sau GEMINI_TOTAL_TIMEOUT_MS (40 s) rồi dùng dữ liệu dự phòng.
+  // Groq defaults to a 90s total budget; leave time for validation, history and HTTP.
   final Duration planTimeout;
   final Duration requestTimeout;
 
