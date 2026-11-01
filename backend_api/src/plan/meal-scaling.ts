@@ -10,7 +10,10 @@ export function scaleMeal<T extends MealContentDto>(meal: T, factor: number): T 
   if (!(factor > 0)) throw new Error(`Hệ số khẩu phần phải dương (đang là ${factor})`);
   return {
     ...meal,
-    portion: Math.abs(factor - 1) >= PORTION_NOTE_THRESHOLD ? `${meal.portion} (khẩu phần ×${formatFactor(factor)})` : meal.portion,
+    portion:
+      Math.abs(factor - 1) >= PORTION_NOTE_THRESHOLD
+        ? `${meal.portion} (khẩu phần ×${formatFactor(factor)})`
+        : meal.portion,
     calories: Math.round(meal.calories * factor),
     protein_g: roundTenth(meal.protein_g * factor),
     carbs_g: roundTenth(meal.carbs_g * factor),
@@ -26,7 +29,16 @@ export function scaleMealToCalories<T extends MealContentDto>(meal: T, calories:
 // Nhân cả ngày theo một hệ số để tổng calo bằng mục tiêu; tỉ lệ giữa các bữa giữ nguyên.
 export function scaleMealsToTotal<T extends MealContentDto>(meals: T[], totalCalories: number): T[] {
   const current = meals.reduce((sum, meal) => sum + meal.calories, 0);
-  return meals.map((meal) => scaleMeal(meal, totalCalories / current));
+  const factor = totalCalories / current;
+  const exact = meals.map((meal) => meal.calories * factor);
+  const calories = exact.map(Math.floor);
+  // Làm tròn từng bữa riêng có thể thiếu 1 kcal khi mục tiêu nằm ngay sàn BMR.
+  // Phân bổ phần dư lớn nhất để tổng ngày đúng mục tiêu, không nới validation.
+  const remainder = Math.round(totalCalories) - calories.reduce((sum, value) => sum + value, 0);
+  const order = exact.map((value, index) => ({ index, fraction: value - calories[index] }));
+  order.sort((a, b) => b.fraction - a.fraction || a.index - b.index);
+  for (let i = 0; i < remainder; i++) calories[order[i].index]++;
+  return meals.map((meal, index) => ({ ...scaleMeal(meal, factor), calories: calories[index] }));
 }
 
 function scaleIngredient(ingredient: IngredientDto, factor: number): IngredientDto {

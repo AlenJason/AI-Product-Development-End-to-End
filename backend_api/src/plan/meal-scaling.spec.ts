@@ -1,4 +1,5 @@
-import type { MealContentDto } from './dto/plan-content.dto.js';
+import { readFileSync } from 'node:fs';
+import type { MealContentDto, PlanContentDto } from './dto/plan-content.dto.js';
 import { IngredientCategory, IngredientUnit } from './enums/ingredient.enum.js';
 import { MealType } from './enums/meal-type.enum.js';
 import { scaleMeal, scaleMealsToTotal, scaleMealToCalories } from './meal-scaling.js';
@@ -24,7 +25,9 @@ describe('scaleMeal', () => {
     const scaled = scaleMeal(meal, 1.5);
     expect(scaled).toMatchObject({ calories: 570, protein_g: 22.5, carbs_g: 67.5, fat_g: 22.5 });
     expect(scaled.ingredients.map((i) => i.amount)).toEqual([1.5, 3, 60, 1.5]);
-    expect(4 * scaled.protein_g + 4 * scaled.carbs_g + 9 * scaled.fat_g).toBeCloseTo(4 * 15 * 1.5 + 4 * 45 * 1.5 + 9 * 15 * 1.5);
+    expect(4 * scaled.protein_g + 4 * scaled.carbs_g + 9 * scaled.fat_g).toBeCloseTo(
+      4 * 15 * 1.5 + 4 * 45 * 1.5 + 9 * 15 * 1.5,
+    );
   });
 
   it('notes the factor in the portion only when it changes by 10% or more', () => {
@@ -60,5 +63,25 @@ describe('scaleMealToCalories / scaleMealsToTotal', () => {
     const [b, l] = scaleMealsToTotal([meal, lunch], 2000);
     expect(b.calories + l.calories).toBe(2000);
     expect(b.calories / l.calories).toBeCloseTo(380 / 620, 2);
+  });
+
+  it('keeps the exact BMR floor and meal proportions across sample days and calorie targets', () => {
+    const sample = JSON.parse(
+      readFileSync(new URL('./data/sample-plan.json', import.meta.url), 'utf8'),
+    ) as PlanContentDto;
+    for (const day of sample.days) {
+      const original = JSON.stringify(day.meals);
+      const current = day.meals.reduce((sum, item) => sum + item.calories, 0);
+      for (let target = 900; target <= 3500; target++) {
+        const scaled = scaleMealsToTotal(day.meals, target);
+        expect(scaled.reduce((sum, item) => sum + item.calories, 0)).toBe(target);
+        scaled.forEach((item, index) => {
+          expect(Math.abs(item.calories - (day.meals[index].calories * target) / current)).toBeLessThan(1);
+          const macro = 4 * item.protein_g + 4 * item.carbs_g + 9 * item.fat_g;
+          expect(Math.abs(macro - item.calories) / item.calories).toBeLessThan(0.15);
+        });
+      }
+      expect(JSON.stringify(day.meals)).toBe(original);
+    }
   });
 });
