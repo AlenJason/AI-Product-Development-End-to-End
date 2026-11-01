@@ -1,12 +1,14 @@
 # Hướng dẫn gắn khoá thật (Gemini API, Google Sign-In)
 
-Mặc định dự án chạy ở **chế độ giả lập**, không cần khoá nào: backend trả dữ liệu mẫu thay cho Gemini. Chỉ cần làm theo file này khi muốn dùng AI thật (hoặc đăng nhập Google thật).
+Hướng dẫn cấu hình hiện tại: [docs/SETUP_CREDENTIALS.md](../SETUP_CREDENTIALS.md). Groq là provider mặc định; phần Gemini dưới đây giữ cho cấu hình tương thích `PLAN_AI_PROVIDER=gemini`. `AUTH_MODE=mock` chỉ chọn đăng nhập demo, không quyết định provider AI.
+
+Khi provider chưa có khóa hoặc không trả kết quả hợp lệ, backend dùng dữ liệu dự phòng qua validation. Chỉ cần cấu hình khóa cho provider được chọn; không đưa khóa vào Flutter hoặc Git.
 
 | Dịch vụ | Trạng thái trong code | Hướng dẫn |
 |---|---|---|
 | Gemini API | Đã có | [Mục 1](#1-gemini-api-key) |
 | Google Sign-In — backend | Đã có | [Mục 2](#2-google-sign-in) |
-| Google Sign-In — Flutter | Chưa làm ([PLAN.md](PLAN.md) bước 8.4) | [Mục 2](#2-google-sign-in) |
+| Google Sign-In — Flutter | Chưa làm ([docs/PLAN.md](../PLAN.md) bước 8.4) | [Mục 2](#2-google-sign-in) |
 
 ---
 
@@ -133,7 +135,7 @@ Thử trên Swagger (`http://localhost:3000/docs`):
 
 Client ID không phải bí mật (nó nằm sẵn trong app). **Client secret** thì là bí mật — backend không cần nó, đừng copy vào `.env` hay vào app.
 
-Cấu hình phía Flutter (Client ID cho Android/iOS, SHA-1, thẻ meta cho bản web) làm ở [PLAN.md](PLAN.md) bước 8.4. Trên Android/iOS, app thường xin ID Token cho Web Client ID (tham số `serverClientId`), nên backend chỉ cần Web Client ID.
+Cấu hình phía Flutter (Client ID cho Android/iOS, SHA-1, thẻ meta cho bản web) làm ở [docs/PLAN.md](../PLAN.md) bước 8.4. Trên Android/iOS, app thường xin ID Token cho Web Client ID (tham số `serverClientId`), nên backend chỉ cần Web Client ID.
 
 ### 2.3. Điền vào backend
 
@@ -165,7 +167,7 @@ Khởi động lại backend. Thiếu `GOOGLE_CLIENT_ID`, hoặc `JWT_SECRET` ng
 
 1. `http://localhost:3000/health` phải có `"auth_mode":"google"`.
 2. Gửi `POST /api/v1/auth/google` với `{"id_token": "abc"}` → 401, và terminal backend có dòng `Từ chối Google ID Token: Wrong number of segments in token`. Nghĩa là backend đang xác minh bằng Google và không còn nhận `mock:`.
-3. Kiểm tra trọn vẹn (đăng nhập bằng tài khoản Google thật) cần nút đăng nhập trong app Flutter — [PLAN.md](PLAN.md) giai đoạn 8.
+3. Kiểm tra trọn vẹn (đăng nhập bằng tài khoản Google thật) cần nút đăng nhập trong app Flutter — [docs/PLAN.md](../PLAN.md) giai đoạn 8.
 
 ### 2.5. Lỗi thường gặp
 
@@ -177,7 +179,7 @@ Khởi động lại backend. Thiếu `GOOGLE_CLIENT_ID`, hoặc `JWT_SECRET` ng
 | 401, log: `Token used too late` | ID Token Google đã hết hạn (khoảng 1 giờ), hoặc đồng hồ máy chạy backend bị lệch | App lấy token mới rồi gửi ngay; kiểm tra giờ hệ thống |
 | 401 `Tài khoản Google chưa xác minh email` | Tài khoản Google chưa xác minh email | Dùng tài khoản khác |
 | Không đăng nhập được bằng một tài khoản cụ thể | App đang ở trạng thái *Testing*, tài khoản chưa có trong **Test users** | Thêm vào trang **Audience** |
-| Mọi API cần đăng nhập trả 401 sau khi khởi động lại hoặc deploy lại | Đã đổi `JWT_SECRET`; hoặc file DB bị xoá (host không có ổ lưu trữ bền) | Đăng nhập lại. Nếu mất cả lịch sử, xem lại nơi deploy ([PLAN.md](PLAN.md) bước 9.1) |
+| Mọi API cần đăng nhập trả 401 sau khi khởi động lại hoặc deploy lại | Đã đổi `JWT_SECRET`; hoặc file DB bị xoá (host không có ổ lưu trữ bền) | Đăng nhập lại. Nếu mất cả lịch sử, xem lại nơi deploy ([docs/PLAN.md](../PLAN.md) bước 9.1) |
 
 ### 2.6. Quay lại chế độ giả lập
 

@@ -1,5 +1,7 @@
 # Giai đoạn 4 — Backend: Đổi món, đổi bài tập, feedback (FR-4, FR-5) — Plan
 
+Roadmap chính thức: [docs/PLAN.md](../../../PLAN.md). Tài liệu này giữ thiết kế và kết quả lịch sử; trạng thái task hiện tại và nghiệm thu được quản lý ở roadmap.
+
 **Status:** ready
 **Brainstorm:** `docs/superpowers/brainstorms/phase-4-swap-feedback.md` (quyết định Q1–Q4 ở mục 8)
 **Executor:** thực thi trực tiếp theo spec (`/feature-build` bản hiện tại chỉ nhận cấu trúc Next.js).

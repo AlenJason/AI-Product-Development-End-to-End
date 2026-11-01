@@ -1,5 +1,7 @@
 # Mục lục Knowledge Base
 
+Roadmap chính thức duy nhất: [docs/PLAN.md](../../PLAN.md). Wiki lưu kiến thức kỹ thuật; trạng thái task và ưu tiên triển khai được quản lý tại roadmap.
+
 _Cập nhật lần cuối: 2026-09-24_
 
 ## Danh sách chủ đề

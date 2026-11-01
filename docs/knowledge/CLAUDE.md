@@ -1,8 +1,10 @@
 # Cấu trúc Knowledge Base
 
+Roadmap chính thức duy nhất: [docs/PLAN.md](../PLAN.md). Đọc trạng thái thực tế và acceptance criteria ở đó trước khi dùng wiki hoặc spec lịch sử để tiếp tục code.
+
 ## Đây là gì
 
-Knowledge base cho **SmartFit AI** — đồ án VKU: ứng dụng Flutter + NestJS + Gemini lên kế hoạch ăn uống món Việt và tập luyện tại nhà theo chu kỳ 3 ngày cuốn chiếu.
+Knowledge base cho **SmartFit AI** — đồ án VKU: ứng dụng Flutter + NestJS lên kế hoạch ăn uống món Việt và tập luyện tại nhà theo chu kỳ 3 ngày cuốn chiếu. AI runtime mặc định là Groq; Gemini giữ làm lựa chọn tương thích. Các bài wiki theo ngày có thể mô tả kiến trúc lịch sử.
 
 ## Cách tổ chức
 

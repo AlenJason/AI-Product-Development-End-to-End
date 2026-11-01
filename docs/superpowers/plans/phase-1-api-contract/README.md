@@ -1,5 +1,7 @@
 # Giai đoạn 1 — Chốt hợp đồng API — Plan
 
+Roadmap chính thức: [docs/PLAN.md](../../../PLAN.md). Tài liệu này giữ thiết kế và kết quả lịch sử; trạng thái task hiện tại và nghiệm thu được quản lý ở roadmap.
+
 **Status:** ready
 **Brainstorm:** `docs/superpowers/brainstorms/phase-1-api-contract.md` (hướng B, quyết định Q1–Q4 ở mục 10)
 **Executor:** thực thi trực tiếp theo spec. `/feature-build` bản hiện tại chỉ nhận cấu trúc Next.js, không dùng được cho `backend_api/` (NestJS).

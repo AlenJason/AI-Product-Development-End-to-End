@@ -1,5 +1,7 @@
 # CLAUDE.md
 
+The only official execution roadmap is [docs/PLAN.md](docs/PLAN.md). Read its actual statuses, acceptance criteria, evidence and N01–N10 priorities before implementation. Historical feature specs and the architecture descriptions below do not establish current completion. Only mark DONE when the task scope is verified; provider tests do not verify UI integration.
+
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## Project overview

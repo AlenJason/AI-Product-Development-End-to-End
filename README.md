@@ -1,5 +1,9 @@
 # SmartFit AI – Adaptive Meal & Workout Planner
 
+**Cập nhật 26/10/2026:** AI runtime mặc định chuyển sang **Groq** (`openai/gpt-oss-120b`) cho tạo kế hoạch, đổi món, đổi bài và feedback. Cấu hình `GROQ_API_KEY` tại backend; xem [hướng dẫn Groq](backend_api/GROQ_TRIAL.md). Các mục Gemini phía dưới là lịch sử và phương án tương thích, không phải nhà cung cấp mặc định. Tạo kế hoạch Groq đã được người dùng chạy thành công trên app; tiến độ UI còn lại vẫn theo [roadmap](docs/PLAN.md).
+
+Roadmap chính thức duy nhất: [docs/PLAN.md](docs/PLAN.md). Trạng thái task, bằng chứng và ưu tiên N01–N10 nằm ở đó; các changelog dưới đây là lịch sử, không thay kết quả audit hiện tại.
+
 Đồ án môn **AI Product Development End-to-End** — Trường Đại học Công nghệ Thông tin và Truyền thông Việt - Hàn (VKU).
 
 Ứng dụng di động gợi ý và tự động điều chỉnh thực đơn (món Việt) cùng lịch tập tại nhà theo chu kỳ **3 ngày cuốn chiếu**, dựa trên thể trạng và phản hồi hằng ngày của người dùng. Xem đầy đủ bài toán, kiến trúc hệ thống, JSON schema và roadmap tại **[BRD.md](BRD.md)**.
