@@ -1,267 +1,209 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
+import '../../core/constants/routes.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
-import '../../providers/onboarding_provider.dart';
+import '../../models/api/codes.dart';
+import '../../providers/auth_provider.dart';
+import '../../providers/plan_provider.dart';
+import '../../widgets/plan_content.dart';
+import '../../widgets/ui_kit.dart';
 import 'edit_profile_sheet.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
-
   @override
   Widget build(BuildContext context) {
-    final onboarding = context.watch<OnboardingProvider>();
-    final bmi = (onboarding.weightKg / ((onboarding.heightCm / 100) * (onboarding.heightCm / 100))).toStringAsFixed(1);
-
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Cá nhân', style: AppTextStyles.h1.copyWith(fontSize: 28)),
-              const SizedBox(height: 8),
-              Text('Thông tin và tùy chỉnh của bạn', style: AppTextStyles.bodyMedium.copyWith(color: AppColors.muted)),
-              const SizedBox(height: 24),
-              _buildUserCard(context),
-              const SizedBox(height: 24),
-              _buildBodyMetricsCard(onboarding, bmi),
-              const SizedBox(height: 24),
-              _buildGoalCard(onboarding),
-              const SizedBox(height: 24),
-              _buildRestrictionsCard(onboarding),
-              const SizedBox(height: 32),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () {
-                    showModalBottomSheet(
-                      context: context,
-                      isScrollControlled: true,
-                      backgroundColor: Colors.transparent,
-                      builder: (context) => const EditProfileSheet(),
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: AppColors.ink,
-                    elevation: 0,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      side: const BorderSide(color: AppColors.border),
-                    ),
-                  ),
-                  child: Text('Chỉnh sửa hồ sơ', style: AppTextStyles.h3),
-                ),
-              ),
-              const SizedBox(height: 32),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildUserCard(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Row(
+    final plans = context.watch<PlanProvider>(),
+        profile = plans.editableProfile;
+    final user = context.watch<AuthProvider?>()?.user;
+    if (profile == null) {
+      return const SafeArea(
+        child: PlanEmpty(message: 'Chưa có hồ sơ được lưu.'),
+      );
+    }
+    final bmi = profile.heightCm > 0
+        ? profile.weightKg /
+              ((profile.heightCm / 100) * (profile.heightCm / 100))
+        : null;
+    final goal = switch (profile.goal) {
+      Goal.cut => 'Giảm mỡ',
+      Goal.bulk => 'Tăng cơ',
+      Goal.maintain => 'Duy trì',
+    };
+    return SafeArea(
+      child: ListView(
+        padding: const EdgeInsets.fromLTRB(22, 24, 22, 24),
         children: [
-          Stack(
-            children: [
-              Container(
-                width: 64,
-                height: 64,
-                decoration: const BoxDecoration(
-                  color: AppColors.primarySoft,
-                  shape: BoxShape.circle,
-                ),
-                alignment: Alignment.center,
-                child: Text('MN', style: AppTextStyles.h2.copyWith(color: AppColors.primary)),
-              ),
-              Positioned(
-                right: 0,
-                bottom: 0,
-                child: Container(
-                  width: 20,
-                  height: 20,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF22C55E),
-                    shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white, width: 2),
-                  ),
-                  child: const Icon(Icons.check, color: Colors.white, size: 12),
-                ),
-              ),
-            ],
+          const ScreenHeading(
+            title: 'Cá nhân',
+            subtitle: 'Thông tin và tùy chỉnh của bạn',
           ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+          const SizedBox(height: 22),
+          SurfacePanel(
+            child: Row(
               children: [
-                Text('Minh Nguyễn', style: AppTextStyles.h3.copyWith(fontSize: 18)),
-                const SizedBox(height: 4),
-                Text('minh.nguyen@gmail.com', style: AppTextStyles.bodySmall.copyWith(color: AppColors.muted)),
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    const Icon(Icons.g_mobiledata, color: Color(0xFF22C55E), size: 16),
-                    const SizedBox(width: 4),
-                    Text('Đã kết nối Google', style: AppTextStyles.bodySmall.copyWith(color: const Color(0xFF22C55E))),
-                  ],
+                const ToneIcon(icon: Icons.person_outline, size: 52),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        user?.name ?? 'Hồ sơ trên thiết bị',
+                        style: AppTextStyles.h4,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        user?.email ?? 'Sử dụng SmartFit ở chế độ khách',
+                        style: AppTextStyles.bodySmall,
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  onPressed: () => Navigator.pushNamed(context, '/settings'),
+                  icon: const Icon(Icons.settings_outlined),
                 ),
               ],
             ),
           ),
-          IconButton(
-            icon: const Icon(Icons.settings_outlined, color: AppColors.ink),
-            onPressed: () => Navigator.pushNamed(context, '/settings'),
+          if (plans.restoreWarning != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 14),
+              child: NoticePanel(message: plans.restoreWarning!),
+            ),
+          if (plans.hasPendingProfile) ...[
+            const SizedBox(height: 14),
+            const NoticePanel(
+              message: 'Hồ sơ mới đang chờ áp dụng. Kế hoạch và các thao tác đổi món/bài vẫn dùng hồ sơ cũ.',
+            ),
+            const SizedBox(height: 10),
+            GradientButton(
+              label: 'Tạo lại theo hồ sơ đã lưu',
+              icon: Icons.auto_awesome,
+              onPressed: plans.busy
+                  ? null
+                  : () => Navigator.pushNamed(
+                      context,
+                      AppRoutes.generatingPlan,
+                      arguments: profile,
+                    ),
+            ),
+          ],
+          const SectionTitle(title: 'Chỉ số cơ thể'),
+          SurfacePanel(
+            child: Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: [
+                for (final metric in [
+                  ('${profile.age}', 'Tuổi'),
+                  (profile.gender == Gender.female ? 'Nữ' : 'Nam', 'Giới tính'),
+                  ('${number(profile.heightCm)} cm', 'Chiều cao'),
+                  ('${number(profile.weightKg)} kg', 'Cân nặng'),
+                  (bmi == null ? '—' : number(bmi), 'BMI'),
+                ])
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: AppColors.panel,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(metric.$1, style: AppTextStyles.label),
+                        Text(metric.$2, style: AppTextStyles.bodySmall),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildBodyMetricsCard(OnboardingProvider data, String bmi) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('Chỉ số cơ thể', style: AppTextStyles.h2),
-          const SizedBox(height: 4),
-          Text('Cập nhật hôm nay', style: AppTextStyles.bodySmall.copyWith(color: AppColors.muted)),
-          const SizedBox(height: 20),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              _buildMetricBox('${data.age}', 'Tuổi'),
-              _buildMetricBox(data.gender, 'Giới tính'),
-              _buildMetricBox('${data.heightCm} cm', 'Chiều cao'),
-              _buildMetricBox('${data.weightKg} kg', 'Cân nặng'),
-              _buildMetricBox(bmi, 'BMI'),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMetricBox(String value, String label) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
-      decoration: BoxDecoration(
-        color: AppColors.background,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        children: [
-          Text(value, style: AppTextStyles.h3.copyWith(fontSize: 14)),
-          const SizedBox(height: 4),
-          Text(label, style: AppTextStyles.bodySmall.copyWith(color: AppColors.muted, fontSize: 10)),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildGoalCard(OnboardingProvider data) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('Mục tiêu', style: AppTextStyles.h2),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: AppColors.background,
-                  borderRadius: BorderRadius.circular(12),
+          const SectionTitle(title: 'Mục tiêu'),
+          SurfacePanel(
+            child: Row(
+              children: [
+                ToneIcon(
+                  icon: profile.goal == Goal.cut
+                      ? Icons.trending_down
+                      : Icons.trending_up,
                 ),
-                alignment: Alignment.center,
-                child: const Icon(Icons.trending_down, color: AppColors.primary),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(data.goal, style: AppTextStyles.h3),
-                    const SizedBox(height: 4),
-                    Text('Tiến độ bền vững · 0,3 kg/tuần', style: AppTextStyles.bodySmall.copyWith(color: AppColors.muted)),
-                  ],
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(goal, style: AppTextStyles.h4),
+                      Text(switch (profile.activityLevel) {
+                        ActivityLevel.sedentary => 'Ít vận động',
+                        ActivityLevel.light => 'Vận động nhẹ',
+                        ActivityLevel.active => 'Vận động nhiều',
+                      }, style: AppTextStyles.bodySmall),
+                      if (!plans.hasPendingProfile && plans.plan != null)
+                        Text(
+                          '${number(plans.plan!.dailyTarget.targetCalories)} kcal/ngày',
+                          style: AppTextStyles.bodySmall.copyWith(
+                            color: AppColors.primaryDark,
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: AppColors.primarySoft,
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Text('Đang theo', style: AppTextStyles.label.copyWith(color: AppColors.primary)),
-              ),
-            ],
+              ],
+            ),
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildRestrictionsCard(OnboardingProvider data) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(20),
-            child: Text('SmartFit cần lưu ý', style: AppTextStyles.h2),
+          const SectionTitle(title: 'SmartFit cần lưu ý'),
+          SurfacePanel(
+            child: Column(
+              children: [
+                for (final entry in [
+                  ('Dị ứng', profile.restrictions.allergies),
+                  ('Chấn thương', profile.restrictions.injuries),
+                  ('Sức khoẻ', profile.restrictions.healthConditions),
+                  (
+                    'Mang thai / cho con bú',
+                    profile.pregnantOrBreastfeeding ? 'Có' : 'Không',
+                  ),
+                ])
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Text(entry.$1, style: AppTextStyles.bodySmall),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            entry.$2.isEmpty ? 'Không có' : entry.$2,
+                            style: AppTextStyles.label,
+                            textAlign: TextAlign.right,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
           ),
-          const Divider(height: 1, color: AppColors.border),
-          _buildRestrictionRow('Dị ứng', data.allergies.isEmpty ? 'Không có' : data.allergies),
-          const Divider(height: 1, color: AppColors.background, indent: 20, endIndent: 20),
-          _buildRestrictionRow('Chấn thương', data.injuries.isEmpty ? 'Đau gối' : data.injuries),
-          const Divider(height: 1, color: AppColors.background, indent: 20, endIndent: 20),
-          _buildRestrictionRow('Sức khoẻ', data.healthConditions.isEmpty ? 'Không có' : data.healthConditions),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildRestrictionRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(label, style: AppTextStyles.bodyMedium.copyWith(color: AppColors.muted)),
-          Text(value, style: AppTextStyles.h3.copyWith(fontSize: 14)),
+          const SizedBox(height: 24),
+          GradientButton(
+            label: 'Chỉnh sửa hồ sơ',
+            icon: Icons.edit_outlined,
+            onPressed: plans.busy
+                ? null
+                : () => showModalBottomSheet<void>(
+                    context: context,
+                    useSafeArea: true,
+                    isScrollControlled: true,
+                    constraints: const BoxConstraints(maxWidth: 430),
+                    builder: (_) => const EditProfileSheet(),
+                  ),
+          ),
         ],
       ),
     );
