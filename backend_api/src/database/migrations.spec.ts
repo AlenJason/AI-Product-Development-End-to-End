@@ -19,10 +19,18 @@ describe('database migrations', () => {
   });
 
   it('enforces foreign keys, so deleting a user deletes their plans', async () => {
-    expect(await dataSource.query('PRAGMA foreign_keys')).toEqual([{ foreign_keys: 1 }]);
+    expect(await dataSource.query('PRAGMA foreign_keys')).toEqual([
+      { foreign_keys: 1 },
+    ]);
   });
 
   it('reverts cleanly', async () => {
+    await dataSource.undoLastMigration();
+    expect(
+      await dataSource.query(
+        "SELECT name FROM sqlite_master WHERE name = 'feedback_receipts'",
+      ),
+    ).toEqual([]);
     await dataSource.undoLastMigration();
     const tables = await dataSource.query(
       "SELECT name FROM sqlite_master WHERE type = 'table' AND name IN ('users', 'plan_records')",

@@ -2,6 +2,8 @@ import type { DataSourceOptions } from 'typeorm';
 import { PlanRecord } from './entities/plan-record.entity.js';
 import { User } from './entities/user.entity.js';
 import { InitialSchema1790208000000 } from './migrations/1790208000000-initial-schema.js';
+import { FeedbackReceipt } from './entities/feedback-receipt.entity.js';
+import { FeedbackReceipts1793498400000 } from './migrations/1793498400000-feedback-receipts.js';
 
 export const DEFAULT_DATABASE_PATH = 'database.sqlite';
 
@@ -11,8 +13,8 @@ export function dataSourceOptions(database: string): DataSourceOptions {
   return {
     type: 'better-sqlite3',
     database,
-    entities: [User, PlanRecord],
-    migrations: [InitialSchema1790208000000],
+    entities: [User, PlanRecord, FeedbackReceipt],
+    migrations: [InitialSchema1790208000000, FeedbackReceipts1793498400000],
     migrationsRun: true,
     synchronize: false,
   };
