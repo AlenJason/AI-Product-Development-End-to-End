@@ -1,147 +1,207 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
 import '../../core/constants/routes.dart';
-import '../../core/theme/app_colors.dart';
-import '../../core/theme/app_text_styles.dart';
+import '../../models/profile_rules.dart';
+import '../../models/api/profile.dart';
 import '../../providers/onboarding_provider.dart';
-import '../../widgets/common/primary_button.dart';
 import '../../widgets/common/custom_text_field.dart';
+import '../../widgets/common/primary_button.dart';
 import '../../widgets/common/progress_header.dart';
+import '../../widgets/ui_kit.dart';
 
 class BasicInfoScreen extends StatefulWidget {
-  const BasicInfoScreen({super.key});
-
+  const BasicInfoScreen({super.key, this.initialProfile});
+  final Profile? initialProfile;
   @override
   State<BasicInfoScreen> createState() => _BasicInfoScreenState();
 }
 
 class _BasicInfoScreenState extends State<BasicInfoScreen> {
-  final TextEditingController _ageController = TextEditingController(text: '22');
-  final TextEditingController _heightController = TextEditingController(text: '168');
-  final TextEditingController _weightController = TextEditingController(text: '62');
-  String _gender = 'Nam';
+  late final TextEditingController _age;
+  late final TextEditingController _height;
+  late final TextEditingController _weight;
+  final _edited = <String>{};
+
+  @override
+  void initState() {
+    super.initState();
+    final form = context.read<OnboardingProvider>();
+    if (widget.initialProfile != null) {
+      form.loadProfile(widget.initialProfile!, notify: false);
+    }
+    _age = TextEditingController(text: form.ageText);
+    _height = TextEditingController(text: form.heightText);
+    _weight = TextEditingController(text: form.weightText);
+  }
 
   @override
   void dispose() {
-    _ageController.dispose();
-    _heightController.dispose();
-    _weightController.dispose();
+    _age.dispose();
+    _height.dispose();
+    _weight.dispose();
     super.dispose();
   }
 
-  void _onContinue() {
-    final provider = context.read<OnboardingProvider>();
-    provider.updateBasicInfo(
-      newAge: int.tryParse(_ageController.text) ?? 22,
-      newGender: _gender,
-      newHeight: num.tryParse(_heightController.text) ?? 168,
-      newWeight: num.tryParse(_weightController.text) ?? 62,
+  void _change(String field) {
+    _edited.add(field);
+    context.read<OnboardingProvider>().updateBodyText(
+      newAge: _age.text,
+      newHeight: _height.text,
+      newWeight: _weight.text,
     );
-    Navigator.pushNamed(context, AppRoutes.onboardingActivity);
   }
+
+  String? _error(String field, String text, String? Function(String) check) =>
+      text.isNotEmpty || _edited.contains(field) ? check(text) : null;
 
   @override
   Widget build(BuildContext context) {
+    final form = context.watch<OnboardingProvider>();
+    final age = CustomTextField(
+      label: 'Tuổi',
+      controller: _age,
+      fieldKey: const Key('age-input'),
+      keyboardType: TextInputType.number,
+      onChanged: (_) => _change('age'),
+      errorText: _error('age', form.ageText, ageError),
+    );
+    final height = CustomTextField(
+      label: 'Chiều cao (cm)',
+      controller: _height,
+      fieldKey: const Key('height-input'),
+      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+      onChanged: (_) => _change('height'),
+      errorText: _error('height', form.heightText, heightError),
+    );
+    final weight = CustomTextField(
+      label: 'Cân nặng (kg)',
+      controller: _weight,
+      fieldKey: const Key('weight-input'),
+      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+      onChanged: (_) => _change('weight'),
+      errorText: _error('weight', form.weightText, weightError),
+    );
+    final gender = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Giới tính', style: Theme.of(context).textTheme.labelLarge),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 6,
+          runSpacing: 4,
+          children: [
+            for (final value in ['Nam', 'Nữ'])
+              ChoiceChip(
+                showCheckmark: false,
+                label: Text(value),
+                selected: form.gender == value,
+                onSelected: (_) => form.updateGender(value),
+              ),
+          ],
+        ),
+      ],
+    );
     return Scaffold(
+      backgroundColor: Colors.white,
       body: SafeArea(
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             ProgressHeader(
               currentStep: 1,
-              totalSteps: 4,
-              onBack: () => Navigator.pop(context),
+              totalSteps: 3,
+              onBack: () => Navigator.maybePop(context),
             ),
             Expanded(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.all(24),
+                padding: const EdgeInsets.all(22),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: AppColors.primarySoft,
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: const Icon(Icons.person_outline, color: AppColors.primary, size: 32),
+                    const ScreenHeading(
+                      title: 'Chỉ số cơ thể',
+                      subtitle: 'Cho SmartFit biết một chút về bạn để tính toán kế hoạch phù hợp.',
+                      icon: Icons.person_outline,
                     ),
-                    const SizedBox(height: 24),
-                    Text('Cho SmartFit biết một chút về bạn', style: AppTextStyles.h1),
-                    const SizedBox(height: 8),
-                    Text('Thông tin giúp chúng tôi tính toán kế hoạch phù hợp.', style: AppTextStyles.bodyLarge.copyWith(color: AppColors.muted)),
-                    const SizedBox(height: 32),
-                    
-                    Row(
-                      children: [
-                        Expanded(
-                          child: CustomTextField(
-                            label: 'Tuổi',
-                            controller: _ageController,
-                            keyboardType: TextInputType.number,
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                    const SizedBox(height: 28),
+                    LayoutBuilder(
+                      builder: (context, constraints) {
+                        final twoColumns =
+                            constraints.maxWidth >= 310 &&
+                            MediaQuery.textScalerOf(context).scale(14) <= 18;
+                        if (!twoColumns) {
+                          return Column(
                             children: [
-                              Text('Giới tính', style: AppTextStyles.label),
-                              const SizedBox(height: 8),
-                              Container(
-                                decoration: BoxDecoration(
-                                  color: AppColors.panel,
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Row(
-                                  children: [
-                                    _buildGenderToggle('Nam'),
-                                    _buildGenderToggle('Nữ'),
-                                  ],
-                                ),
-                              ),
+                              age,
+                              const SizedBox(height: 16),
+                              gender,
+                              const SizedBox(height: 16),
+                              height,
+                              const SizedBox(height: 16),
+                              weight,
                             ],
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 24),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: CustomTextField(
-                            label: 'Chiều cao',
-                            controller: _heightController,
-                            keyboardType: TextInputType.number,
-                            suffixIcon: Padding(
-                              padding: const EdgeInsets.all(14.0),
-                              child: Text('cm', style: AppTextStyles.bodyMedium.copyWith(color: AppColors.faint, fontWeight: FontWeight.w700)),
+                          );
+                        }
+                        return Column(
+                          children: [
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Expanded(child: age),
+                                const SizedBox(width: 12),
+                                Expanded(child: gender),
+                              ],
                             ),
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: CustomTextField(
-                            label: 'Cân nặng',
-                            controller: _weightController,
-                            keyboardType: TextInputType.number,
-                            suffixIcon: Padding(
-                              padding: const EdgeInsets.all(14.0),
-                              child: Text('kg', style: AppTextStyles.bodyMedium.copyWith(color: AppColors.faint, fontWeight: FontWeight.w700)),
+                            const SizedBox(height: 20),
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Expanded(child: height),
+                                const SizedBox(width: 12),
+                                Expanded(child: weight),
+                              ],
                             ),
-                          ),
-                        ),
-                      ],
+                          ],
+                        );
+                      },
                     ),
+                    if (form.gender == 'Nữ' ||
+                        form.pregnantOrBreastfeeding) ...[
+                      const SizedBox(height: 18),
+                      Material(
+                        color: Colors.transparent,
+                        child: CheckboxListTile(
+                          contentPadding: EdgeInsets.zero,
+                          title: const Text('Đang mang thai hoặc cho con bú'),
+                          value: form.pregnantOrBreastfeeding,
+                          onChanged: (value) =>
+                              form.updatePregnancy(value ?? false),
+                          subtitle: form.gender != 'Nữ'
+                              ? const Text(
+                                  'Chỉ nữ mới khai báo mang thai / cho con bú',
+                                )
+                              : null,
+                        ),
+                      ),
+                    ],
+                    if (form.pregnantOrBreastfeeding)
+                      const NoticePanel(
+                        message: 'Hãy hỏi ý kiến bác sĩ trước khi áp dụng kế hoạch ăn uống hoặc tập luyện.',
+                      ),
                   ],
                 ),
               ),
             ),
             Padding(
-              padding: const EdgeInsets.all(24),
+              padding: const EdgeInsets.all(22),
               child: PrimaryButton(
                 text: 'Tiếp tục',
-                onPressed: _onContinue,
+                onPressed: form.bodyValid
+                    ? () => Navigator.pushNamed(
+                        context,
+                        AppRoutes.onboardingActivity,
+                      )
+                    : null,
               ),
             ),
           ],
@@ -149,38 +209,4 @@ class _BasicInfoScreenState extends State<BasicInfoScreen> {
       ),
     );
   }
-
-  Widget _buildGenderToggle(String text) {
-    final isSelected = _gender == text;
-    return Expanded(
-      child: GestureDetector(
-        onTap: () => setState(() => _gender = text),
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 14),
-          decoration: BoxDecoration(
-            color: isSelected ? AppColors.surface : Colors.transparent,
-            borderRadius: BorderRadius.circular(10),
-            boxShadow: isSelected
-                ? [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 4, offset: const Offset(0, 2))]
-                : null,
-          ),
-          alignment: Alignment.center,
-          child: Text(
-            text,
-            style: AppTextStyles.bodyMedium.copyWith(
-              fontWeight: FontWeight.w600,
-              color: isSelected ? AppColors.primary : AppColors.muted,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
 }
-
-
-
-
-
-
-

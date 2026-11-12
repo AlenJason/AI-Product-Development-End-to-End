@@ -1,17 +1,25 @@
-import type { ExerciseContentDto, WorkoutContentDto } from '../dto/plan-content.dto.js';
+import type {
+  ExerciseContentDto,
+  WorkoutContentDto,
+} from '../dto/plan-content.dto.js';
 import { ExerciseTag, type MuscleGroup } from '../enums/exercise.enum.js';
 import { BodyState, Eating, Intensity } from '../enums/feedback.enum.js';
-import { REST_WORKOUT, STRETCH_EXERCISE, WALK_EXERCISE } from '../exercise-presets.js';
-import { exerciseCandidates, exerciseLevel, type ExerciseLevel, toPlanExercise } from '../swap-pools.js';
+import {
+  REST_WORKOUT,
+  STRETCH_EXERCISE,
+  WALK_EXERCISE,
+} from '../exercise-presets.js';
+import {
+  exerciseCandidates,
+  exerciseLevel,
+  toPlanExercise,
+} from '../swap-pools.js';
 import { normalizeKey } from '../text.util.js';
-
-// Quy tắc cố định cho buổi tập ngày kế tiếp sau feedback (BRD FR-5.2, D2) — không cần Gemini.
 
 export const MAX_SETS = 6;
 export const MAX_EXERCISES = 8;
 const MIN_DURATION_MINUTES = 10;
 const TIRED_DURATION_FACTOR = 0.75;
-// Đau khớp → bỏ bật nhảy và chống quỳ (BRD FR-5.2).
 const JOINT_PAIN_TAGS = [ExerciseTag.JUMPING, ExerciseTag.KNEELING];
 
 export interface NormalizedFeedback {
@@ -20,8 +28,11 @@ export interface NormalizedFeedback {
   eating: Eating;
 }
 
-// Bỏ trùng; `normal` đi cùng trạng thái khác thì bị bỏ qua (BRD 6.4).
-export function normalizeFeedback(input: { intensity: Intensity; body_states: BodyState[]; eating: Eating }): NormalizedFeedback {
+export function normalizeFeedback(input: {
+  intensity: Intensity;
+  body_states: BodyState[];
+  eating: Eating;
+}): NormalizedFeedback {
   const states = new Set(input.body_states);
   if (states.size > 1) states.delete(BodyState.NORMAL);
   return { intensity: input.intensity, states, eating: input.eating };
@@ -31,43 +42,62 @@ export function hasDangerSign(feedback: NormalizedFeedback): boolean {
   return feedback.states.has(BodyState.DANGER_SIGN);
 }
 
-// Thứ tự ưu tiên: dấu hiệu nguy hiểm (thay cả buổi, bỏ qua mọi quy tắc khác — #14) → đau khớp → rất mệt/uể oải
-// → căng mỏi cơ → nhẹ nhàng. Giảm không cộng dồn: một động tác giảm tối đa 1 hiệp.
 export function adjustWorkout(
   workout: WorkoutContentDto,
   feedback: NormalizedFeedback,
   trainedMuscles: Set<MuscleGroup>,
   profileAvoidTags: ExerciseTag[],
-  maxLevel: ExerciseLevel,
 ): WorkoutContentDto {
   if (hasDangerSign(feedback)) return structuredClone(REST_WORKOUT);
 
-  let exercises = workout.exercises.map((exercise) => ({ ...exercise, tags: [...exercise.tags] }));
+  let exercises = workout.exercises.map((exercise) => ({
+    ...exercise,
+    tags: [...exercise.tags],
+  }));
   let durationMinutes = workout.duration_minutes;
 
   if (feedback.states.has(BodyState.JOINT_PAIN)) {
-    exercises = replaceJointLoading(exercises, profileAvoidTags, maxLevel);
+    exercises = replaceJointLoading(exercises, profileAvoidTags);
   }
 
-  const tired = feedback.intensity === Intensity.HARD || feedback.states.has(BodyState.FATIGUED);
+  const tired =
+    feedback.intensity === Intensity.HARD ||
+    feedback.states.has(BodyState.FATIGUED);
   if (tired) {
-    exercises = exercises.map((exercise) => ({ ...exercise, sets: Math.max(1, exercise.sets - 1) }));
-    durationMinutes = Math.max(MIN_DURATION_MINUTES, Math.round(durationMinutes * TIRED_DURATION_FACTOR));
+    exercises = exercises.map((exercise) => ({
+      ...exercise,
+      sets: Math.max(1, exercise.sets - 1),
+    }));
+    durationMinutes = Math.max(
+      MIN_DURATION_MINUTES,
+      Math.round(durationMinutes * TIRED_DURATION_FACTOR),
+    );
   }
 
   if (feedback.states.has(BodyState.SORE)) {
     if (!tired) {
       exercises = exercises.map((exercise) =>
-        trainedMuscles.has(exercise.muscle_group) ? { ...exercise, sets: Math.max(1, exercise.sets - 1) } : exercise,
+        trainedMuscles.has(exercise.muscle_group)
+          ? { ...exercise, sets: Math.max(1, exercise.sets - 1) }
+          : exercise,
       );
     }
-    const hasStretch = exercises.some((exercise) => normalizeKey(exercise.name) === normalizeKey(STRETCH_EXERCISE.name));
-    if (!hasStretch && exercises.length < MAX_EXERCISES) exercises.push({ ...STRETCH_EXERCISE, tags: [] });
+    const hasStretch = exercises.some(
+      (exercise) =>
+        normalizeKey(exercise.name) === normalizeKey(STRETCH_EXERCISE.name),
+    );
+    if (!hasStretch && exercises.length < MAX_EXERCISES)
+      exercises.push({ ...STRETCH_EXERCISE, tags: [] });
   }
 
-  const allNormal = [...feedback.states].every((state) => state === BodyState.NORMAL);
+  const allNormal = [...feedback.states].every(
+    (state) => state === BodyState.NORMAL,
+  );
   if (feedback.intensity === Intensity.EASY && allNormal) {
-    exercises = exercises.map((exercise) => ({ ...exercise, sets: Math.min(MAX_SETS, exercise.sets + 1) }));
+    exercises = exercises.map((exercise) => ({
+      ...exercise,
+      sets: Math.min(MAX_SETS, exercise.sets + 1),
+    }));
   }
 
   if (exercises.length === 0) exercises = [{ ...WALK_EXERCISE, tags: [] }];
@@ -77,15 +107,17 @@ export function adjustWorkout(
 function replaceJointLoading(
   exercises: ExerciseContentDto[],
   profileAvoidTags: ExerciseTag[],
-  maxLevel: ExerciseLevel,
 ): ExerciseContentDto[] {
-  const names = new Set(exercises.map((exercise) => normalizeKey(exercise.name)));
+  const names = new Set(
+    exercises.map((exercise) => normalizeKey(exercise.name)),
+  );
   return exercises.flatMap((exercise): ExerciseContentDto[] => {
-    if (!exercise.tags.some((tag) => JOINT_PAIN_TAGS.includes(tag))) return [exercise];
+    if (!exercise.tags.some((tag) => JOINT_PAIN_TAGS.includes(tag)))
+      return [exercise];
     const [candidate] = exerciseCandidates(exercise.muscle_group, {
       avoidTags: [...JOINT_PAIN_TAGS, ...profileAvoidTags],
       excludeNames: names,
-      maxLevel: Math.min(exerciseLevel(exercise.name) ?? maxLevel, maxLevel),
+      maxLevel: exerciseLevel(exercise.name) ?? 3,
     });
     if (!candidate) return [];
     names.add(normalizeKey(candidate.name));
@@ -111,7 +143,10 @@ const EATING_NOTE: Record<Eating, string> = {
   [Eating.UNDER]: 'ăn ít hơn thực đơn hoặc bỏ bữa',
 };
 
-// Câu tóm tắt feedback cho prompt tạo plan mới (FR-5.3). Chỉ dựng từ mã cố định, không có chữ người dùng nhập.
 export function describeFeedback(feedback: NormalizedFeedback): string {
-  return [INTENSITY_NOTE[feedback.intensity], ...[...feedback.states].map((state) => STATE_NOTE[state]), EATING_NOTE[feedback.eating]].join('; ');
+  return [
+    INTENSITY_NOTE[feedback.intensity],
+    ...[...feedback.states].map((state) => STATE_NOTE[state]),
+    EATING_NOTE[feedback.eating],
+  ].join('; ');
 }

@@ -23,7 +23,7 @@ String readString(Json json, String field) {
 // Giữ nguyên int hay double như server gửi, để gửi lại plan đúng từng con số (đổi món, feedback — BRD 6.4).
 num readNum(Json json, String field) {
   final value = json[field];
-  if (value is num) return value;
+  if (value is num && value.isFinite) return value;
   throw FormatException('"$field" phải là số');
 }
 
@@ -36,16 +36,22 @@ bool readBool(Json json, String field) {
 int readInt(Json json, String field) {
   final value = json[field];
   if (value is int) return value;
-  if (value is double && value == value.roundToDouble()) return value.toInt();
+  if (value is double && value.isFinite && value == value.roundToDouble()) {
+    return value.toInt();
+  }
   throw FormatException('"$field" phải là số nguyên');
 }
 
 // Mã cố định (meal_type, unit, muscle_group…): mã lạ → FormatException, không đoán.
-T readCode<T extends Enum>(Json json, String field, List<T> values, String Function(T value) code) {
+T readCode<T extends Enum>(
+  Json json,
+  String field,
+  List<T> values,
+  String Function(T value) code,
+) {
   final value = readString(json, field);
   for (final candidate in values) {
     if (code(candidate) == value) return candidate;
   }
   throw FormatException('"$field" có mã không hợp lệ: $value');
 }
-

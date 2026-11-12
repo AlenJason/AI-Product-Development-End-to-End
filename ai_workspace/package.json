@@ -3,9 +3,10 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "Thử nghiệm prompt & Structured Output JSON với Gemini trước khi tích hợp vào backend_api (BRD.md tuần 1).",
+  "description": "Thử nghiệm Groq qua pipeline và prompt dùng thật của backend SmartFit.",
   "scripts": {
-    "experiment": "tsx generate-plan-experiment.ts"
+    "experiment": "node --env-file=../backend_api/.env ../backend_api/scripts/test-groq-plan.mjs",
+    "experiment:gemini:legacy": "tsx generate-plan-experiment.ts"
   },
   "dependencies": {
     "@google/genai": "^2.24.0",

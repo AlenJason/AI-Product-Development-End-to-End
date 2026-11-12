@@ -15,7 +15,7 @@ class ApiClient {
   ApiClient({
     required this.baseUrl,
     http.Client? httpClient,
-    this.planTimeout = const Duration(seconds: 60),
+    this.planTimeout = const Duration(seconds: 105),
     this.requestTimeout = const Duration(seconds: 15),
   }) : _http = httpClient ?? http.Client();
 
@@ -23,7 +23,7 @@ class ApiClient {
   final String baseUrl;
   final http.Client _http;
 
-  // Request có thể gọi Gemini: backend tự dừng Gemini sau GEMINI_TOTAL_TIMEOUT_MS (40 s) rồi dùng dữ liệu dự phòng.
+  // Groq defaults to a 90s total budget; leave time for validation, history and HTTP.
   final Duration planTimeout;
   final Duration requestTimeout;
 
@@ -65,6 +65,42 @@ class ApiClient {
   // `idToken`: Google ID token, hoặc "mock:<email>" khi backend chạy AUTH_MODE=mock.
   Future<AuthResult> loginWithGoogle(String idToken) =>
       _send('POST', '/api/v1/auth/google', AuthResult.fromJson, body: {'id_token': idToken}, authorize: false);
+
+  Future<AuthResult> register({
+    required String email,
+    required String name,
+    required String password,
+  }) => _send(
+    'POST',
+    '/api/v1/auth/register',
+    AuthResult.fromJson,
+    body: {'email': email, 'name': name, 'password': password},
+    authorize: false,
+  );
+
+  Future<AuthResult> login({
+    required String email,
+    required String password,
+  }) => _send(
+    'POST',
+    '/api/v1/auth/login',
+    AuthResult.fromJson,
+    body: {'email': email, 'password': password},
+    authorize: false,
+  );
+
+  Future<void> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) => _send(
+    'POST',
+    '/api/v1/auth/change-password',
+    (_) {},
+    body: {
+      'current_password': currentPassword,
+      'new_password': newPassword,
+    },
+  );
 
   Future<void> deleteAccount() => _send('DELETE', '/api/v1/me', (_) {});
 

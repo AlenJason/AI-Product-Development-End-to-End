@@ -1,73 +1,26 @@
----
-last_updated: 2026-09-24
-tags: [gemini, sdk, kiem-thu]
----
+# Tích hợp Gemini (Hợp đồng, Lỗi & SDK Hành vi)
 
-# Tích hợp Gemini
+Backend kết nối Gemini (mặc định `gemini-3.5-flash`) bằng SDK chính thức `@google/genai`. Các luồng tạo plan, đổi món, đổi bài và cân đối món ăn dùng `GeminiService.generateJson()`; kiểm tra hợp đồng và fallback thuộc service gọi nó.
 
-Backend gọi Gemini qua SDK `@google/genai` ở đúng một chỗ: `GeminiService` (`backend_api/src/plan/gemini.service.ts`). `generateJson(prompt)` dùng chung cho tạo plan, đổi món, đổi bài tập, cân đối món ăn; vòng gọi lại chung là `generateWithRetry()` (`gemini-retry.ts`). Bài này ghi hành vi thật của SDK — đã kiểm ngày 2026-09-24 bằng SDK 2.24 chạy với server Gemini giả cục bộ, không cần khoá — và cách test phần này mà không bao giờ gọi Google. Ràng buộc liên quan: [[critical-constraints]] #8, #9, #12, #15, #17. Hợp đồng dữ liệu: [[plan-data-contract]].
+## Hành vi thật của SDK (đã kiểm chứng)
 
-## Hành vi SDK đã kiểm chứng
+- **Gọi lại**: SDK có cơ chế tự gọi lại (mặc định 5 lần, chờ tới 60 giây) nếu bật `retryOptions`. **KHÔNG BẬT** tuỳ chọn này. Các service đi qua `generateWithRetry()` (`src/plan/gemini-retry.ts`): gọi lại tối đa một lần khi lỗi hoặc đầu ra sai hợp đồng, chỉ khi còn ít nhất 5 giây trong ngân sách tổng.
+- **Hết giờ**: Ngân sách mặc định là 20 giây mỗi lần gọi và 40 giây tổng. SDK có thể ném `AbortError`; Google cũng có thể trả `ApiError` 504 `DEADLINE_EXCEEDED` trước khi SDK tự ngắt. Cả hai được nhận diện là timeout và không gọi lại; caller dùng kho dự phòng hoặc giữ nguyên món, tuỳ luồng.
+- **Lỗi khoá / hạn mức**: Trả về `ApiError` 400 (khoá sai) hoặc 429 (hết token).
+- **JSON rác**: Nếu người dùng chèn câu lệnh độc hại khiến Gemini lờ `responseMimeType: application/json` và trả về chuỗi văn bản thường (có thể lặp lại dữ liệu sức khoẻ), lỗi sẽ văng ở `JSON.parse`. Trình xử lý chỉ báo "không phải JSON hợp lệ", **tuyệt đối không trích xuất văn bản đó ra ngoài** (NFR-7, #12).
 
-| Tình huống | SDK làm gì | `GeminiService` xử lý |
-|---|---|---|
-| Thành công | `POST {baseUrl}/v1beta/models/{model}:generateContent`, body có prompt và `generationConfig.responseMimeType`; đọc `candidates[0].content.parts[].text` thành `response.text` | `JSON.parse` → trả JSON thô cho `PlanService` kiểm hợp đồng |
-| Hết `httpOptions.timeout` | Gửi kèm header `X-Server-Timeout` (giây, làm tròn lên). Google thường cắt trước và trả `ApiError` 504 `DEADLINE_EXCEEDED`; nếu không, SDK ném `DOMException` tên `AbortError` (là `instanceof Error`) đúng lúc hết giờ | Cả hai đổi thành `GeminiTimeoutError` (`isTimeout()`) → không gọi lại. Trước 2026-09-27 chỉ bắt `AbortError`: lần đo qua backend thật hết giờ bằng 504, bị gọi lại, người dùng chờ 34 s |
-| HTTP 4xx/5xx (ví dụ khoá sai: 400) | Ném `ApiError`, có `status`; `message` là nguyên văn JSON lỗi của Google | Ném tiếp → `PlanService` log thông báo, gọi lại 1 lần, rồi dùng thực đơn mẫu |
-| HTTP 500 khi **không** truyền `retryOptions` | Gửi đúng **1** request, không tự gọi lại | — |
-| HTTP 500 khi **có** `retryOptions` | Tự gọi lại tới 5 lần, chờ tới 60 giây giữa các lần | Cấm dùng (#15) |
-| `response.text` không phải JSON | — | Ném lỗi chung "không phải JSON hợp lệ", không đính kèm lỗi gốc của `JSON.parse` vì nó trích nội dung (#12) |
+## Môi trường test không tốn token
 
-## Cấu hình
+Vì test tự động (nhất là CI) không có khoá thật, và nếu chạy thật sẽ tốn thời gian + dễ bị flaky:
 
-`GEMINI_API_KEY` (bắt buộc để dùng AI thật), `GEMINI_MODEL` (mặc định `gemini-3.5-flash`), `GEMINI_THINKING` (`off` | `low` | `default`, mặc định `off`), `GEMINI_TIMEOUT_MS` (mỗi lần gọi, mặc định 20 000), `GEMINI_TOTAL_TIMEOUT_MS` (cả lần gọi lại, mặc định 40 000), `GEMINI_BASE_URL` (chỉ dùng khi test — để trống là gọi Google thật). `GEMINI_THINKING` sai giá trị → backend không khởi động. Khoá tạo trên AI Studio trước 28/05/2026 là loại Standard và bị từ chối từ tháng 9/2026 — xem [[reference-materials]] mục 1.4.
+- E2E và test `GeminiService` dùng **server Gemini giả cục bộ** (`backend_api/test/fake-gemini-server.ts`).
+- Server này lập lên một máy chủ HTTP đơn giản, lắng nghe trên `127.0.0.1`.
+- SDK thật được trỏ về máy chủ này qua `GEMINI_BASE_URL`. Trả lời như Google thật: `candidates[0].content.parts[0].text`.
+- Có thể ép server giả treo (timeout), trả rác, lỗi 500, lỗi 400 để test các đường rẽ nhánh của `PlanService`.
+- Khi deploy thật, chỉ cần để trống `GEMINI_BASE_URL` trong `.env`.
 
-## Đo với Gemini thật (2026-09-24)
-
-`npm run build && npm run measure:gemini` (`backend_api/scripts/measure-gemini.mjs`) chạy bản build với **đúng** prompt và bước kiểm của backend, ghi thời gian, số token suy nghĩ, kết quả kiểm. Tốn hạn mức — chỉ chạy tay (#17). Kết quả với khoá gói miễn phí, 3 hồ sơ (dị ứng hải sản + đau gối; nam 2806 kcal; đậu phộng + sữa + đau lưng + tiểu đường) và 1 lần đổi món mỗi cấu hình:
-
-| `gemini-3.5-flash` | Tạo plan | Đạt | Đổi món |
-|---|---|---|---|
-| suy nghĩ mặc định (~7000 token suy nghĩ) | 37–42 s | 3/3 | 13 s |
-| `GEMINI_THINKING=low` | 18–27 s | 2/3 | 8 s |
-| `GEMINI_THINKING=off` | 8–13 s | 2/3 (1 JSON bị cắt giữa chừng) | 3 s |
-
-Qua backend thật (`off`, HTTP): `generate-plan` 14,3 s, `source: gemini`; đổi món 2,8 s.
-
-| Điều đã thấy | Hệ quả |
-|---|---|
-| Phần lớn thời gian là "suy nghĩ" trước khi trả lời, không phải do project hay mạng | Mặc định `GEMINI_THINKING=off`, timeout 20 s/lần, tổng 40 s (#15) |
-| Tắt suy nghĩ mà prompt chỉ có chữ người dùng nhập → Gemini cho cá nước ngọt khi dị ứng "hải sản", chống đẩy quỳ gối khi đau gối | Prompt ghi rõ danh sách backend sẽ kiểm (`ingredientAvoidRule()`, `exerciseAvoidRule()`, #23) |
-| `gemini-3.8-flash` liên tục 503 "high demand"; không nhận `thinkingLevel: MINIMAL` (400) | Mặc định đổi sang `gemini-3.5-flash` (#9) |
-| Gói miễn phí: **20 lần gọi/ngày cho mỗi model** (429 `GenerateRequestsPerDayPerProjectPerModel-FreeTier`); cũng có giới hạn theo phút | Hết thì backend dùng dữ liệu soạn sẵn; đổi `GEMINI_MODEL` để có hạn mức riêng của model khác |
-| Lỗi của SDK chứa nguyên khối JSON của Google (dài, có mảng `details`) | `describeGeminiError()` chỉ log mã lỗi + thông báo chính |
-
-## Đo lại sau giai đoạn 6 (2026-09-27)
-
-Cùng lệnh, cùng 3 hồ sơ, prompt có thêm luật mức động tác và mang thai. `measure-gemini.mjs` nay ghi thêm tỉ lệ năng lượng đạm/tinh bột/béo trung bình 3 ngày của plan Gemini trả về và số động tác vượt mức cho phép của hồ sơ (trước khi backend hạ mức).
-
-| `gemini-3.5-flash` | Tạo plan | Đạt | Đạm/tinh bột/béo (TB) | Động tác vượt mức | Đổi món |
-|---|---|---|---|---|---|
-| suy nghĩ mặc định (7500–8500 token suy nghĩ) | 56–63 s | 3/3 | 26/44/31 | 0/36 | 32 s |
-| `GEMINI_THINKING=low` (1300–4700 token) | 34–47 s | 3/3 | 26/44/30 | 0/33 | 25 s |
-| `GEMINI_THINKING=off` | 28–30 s | 2/3 (1 lần dùng đơn vị ngoài g/ml/piece/tbsp/tsp) | 26/46/27 | 0/33 | 17 s |
-
-| Điều đã thấy | Hệ quả |
-|---|---|
-| Mọi mức chậm gấp 2–3 lần hôm 24/09, kể cả đổi món (prompt không đổi): 3 s → 17 s. Tốc độ sinh chữ khi tắt suy nghĩ ~125 token/s, một plan ~3600–4200 token | Chậm do phía Google hôm đó, không do prompt dài thêm. Với `GEMINI_TIMEOUT_MS=20000`, hôm như vậy mọi lần tạo plan đều hết giờ → thực đơn mẫu. Chưa đổi giới hạn — cần quyết giữa chờ lâu hơn và nhận thực đơn mẫu |
-| Qua backend thật (`off`, HTTP): 2 lần 504 `DEADLINE_EXCEEDED` rồi thực đơn mẫu sau 34 s | 504 phải tính là hết giờ (#15) — đã sửa |
-| Bật suy nghĩ: 6/6 plan đạt hợp đồng, macro sát 25/45/30 hơn (béo 30–31 %). Tắt: 2/3, béo 26–27 % | Suy nghĩ giúp đúng định dạng và cân macro, nhưng tốn gấp đôi thời gian; backend đã kiểm mọi kết quả và gọi lại 1 lần nên vẫn giữ `off` |
-| Không mức nào chọn động tác vượt mức cho phép — luật `exerciseLevelRule()` trong prompt có tác dụng | `capWorkoutLevel()` vẫn chạy cho mọi kết quả (#31) |
-
-## Test không cần khoá
-
-`backend_api/test/fake-gemini-server.ts` dựng server HTTP cục bộ trả phản hồi đúng định dạng Gemini, đếm và lưu request, có chế độ trả JSON / văn bản / lỗi HTTP / không trả lời. SDK thật được trỏ vào đó qua `GEMINI_BASE_URL`:
-
-- `src/plan/gemini.service.spec.ts` — hành vi bảng trên, gồm cả đếm request khi lỗi 500.
-- `test/generate-plan.e2e-spec.ts`, `test/adjust.e2e-spec.ts` — trọn đường HTTP → service → `GeminiService` → SDK → server giả. App tạo bằng `createTestApp()` (`test/test-app.ts`), hàm này ghim `GEMINI_*` (cùng DB và chế độ đăng nhập) **trước** khi nạp `AppModule`, vì máy dev có thể có khoá thật trong `.env`.
-
-Tầng `PlanService` (`src/plan/plan.service.spec.ts`) dùng object `GeminiService` giả bằng `vi.fn()` để test logic gọi lại cho nhanh. Các service của giai đoạn 4 dùng `geminiAnswering()` trong `test/plan-fixtures.ts` (giả `generateJson()`).
+Unit test dùng `GeminiService` giả hoặc `geminiAnswering()` trong `backend_api/test/plan-fixtures.ts`; E2E có luồng qua SDK thật tới server giả. `createTestApp()` ghim các biến môi trường test trước khi nạp `AppModule`, nên test không dùng key hoặc DB thật của máy phát triển.
 
 ## Thử prompt với Gemini thật
 
-`ai_workspace/` (`npm run experiment`) chép y nguyên prompt của `buildPlanPrompt()` và in thời gian phản hồi. Khi sửa prompt ở backend, sửa cả bản trong `ai_workspace/generate-plan-experiment.ts`. Prompt của đổi món, đổi bài tập, cân đối món ăn (`src/plan/adjust/adjust-prompts.ts`) chưa có bản trong `ai_workspace/`.
+`ai_workspace/` (`npm run experiment`) thử prompt tạo plan; các prompt đổi món, đổi bài tập và cân đối món ăn hiện nằm trong `backend_api/src/plan/adjust/adjust-prompts.ts` và chưa có bản tương ứng trong `ai_workspace/`. `npm run measure:gemini` gọi API thật, tốn quota và chỉ chạy thủ công, không chạy trong test/CI.

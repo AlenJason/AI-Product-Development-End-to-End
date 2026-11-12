@@ -23,6 +23,8 @@ class FakeBackend {
     '/api/v1/exercises/swap': 'exercises_swap',
     '/api/v1/feedback': 'feedback',
     '/api/v1/auth/google': 'auth_login',
+    '/api/v1/auth/register': 'auth_login',
+    '/api/v1/auth/login': 'auth_login',
     '/api/v1/plans/history': 'history',
   };
 
@@ -32,18 +34,55 @@ class FakeBackend {
       requests.add(request);
       await hold?.future;
       final status = failWith;
+      if (status == 500) {
+        return _json({
+          'statusCode': 500,
+          'message': 'Internal server error',
+        }, 500);
+      }
       if (status != null) return _json(loadFixture('error_$status'), status);
       if (request.method == 'DELETE') return http.Response('', 204);
       final custom = responses[request.url.path];
       if (custom != null) return _json(custom, 200);
+      if (request.url.path == '/api/v1/auth/change-password') {
+        return _json({'message': 'Đổi mật khẩu thành công.'}, 200);
+      }
       final name = _fixtureFor[request.url.path];
-      if (name == null) return _json({'statusCode': 404, 'message': 'Cannot ${request.method} ${request.url.path}'}, 404);
+      if (name == null) {
+        return _json({
+          'statusCode': 404,
+          'message': 'Cannot ${request.method} ${request.url.path}',
+        }, 404);
+      }
+      if (name == 'feedback') {
+        // The real endpoint changes only the following day. Keep earlier swaps
+        // from the submitted plan; a static fixture alone would incorrectly undo them.
+        final body = jsonDecode(request.body) as Map<String, dynamic>;
+        final response = loadFixture(name);
+        final plan = response['plan'] as Map<String, dynamic>;
+        final original = body['plan'] as Map<String, dynamic>;
+        final day = body['day_number'] as int;
+        if (day < 3) {
+          plan['plan_id'] = original['plan_id'];
+          plan['days'] = [
+            for (var i = 0; i < 3; i++)
+              i == day ? plan['days'][i] : original['days'][i],
+          ];
+        } else {
+          plan['plan_id'] = '00000000-0000-4000-8000-0000000000ff';
+        }
+        return _json(response, 200);
+      }
       return _json(loadFixture(name), 200);
     }),
   );
 
-  List<String> get paths => requests.map((request) => request.url.path).toList();
+  List<String> get paths =>
+      requests.map((request) => request.url.path).toList();
 
-  static http.Response _json(Object body, int status) =>
-      http.Response.bytes(utf8.encode(jsonEncode(body)), status, headers: {'content-type': 'application/json; charset=utf-8'});
+  static http.Response _json(Object body, int status) => http.Response.bytes(
+    utf8.encode(jsonEncode(body)),
+    status,
+    headers: {'content-type': 'application/json; charset=utf-8'},
+  );
 }

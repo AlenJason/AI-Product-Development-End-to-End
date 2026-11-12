@@ -1,6 +1,8 @@
-# Hướng dẫn gắn khoá thật (Gemini API, Google Sign-In)
+# Hướng dẫn gắn khoá thật (Groq, Google Sign-In, Gemini tương thích)
 
-Mặc định dự án chạy ở **chế độ giả lập**, không cần khoá nào: backend trả dữ liệu mẫu thay cho Gemini. Chỉ cần làm theo file này khi muốn dùng AI thật (hoặc đăng nhập Google thật).
+**Cập nhật 26/10/2026:** AI mặc định chuyển sang Groq. Tạo khóa tại https://console.groq.com/keys, lưu `GROQ_API_KEY` trong backend_api/.env, đặt `PLAN_AI_PROVIDER=groq`, `GROQ_MODEL=openai/gpt-oss-120b`. Không đưa khóa vào Flutter. Restart backend sau khi đổi env. Hướng dẫn thử thật và timeout tại [GROQ_TRIAL.md](../backend_api/GROQ_TRIAL.md). Mục Gemini bên dưới chỉ áp dụng khi chủ đích chọn lại provider Gemini; Google Sign-In không thay đổi.
+
+Provider AI mặc định là **Groq**. Khi chưa cấu hình khóa hoặc không nhận được kết quả hợp lệ, backend dùng dữ liệu dự phòng theo validation; chế độ đăng nhập demo `AUTH_MODE=mock` là cấu hình riêng. Mục Gemini bên dưới là hướng dẫn tương thích khi chọn `PLAN_AI_PROVIDER=gemini`, không mô tả provider mặc định.
 
 | Dịch vụ | Trạng thái trong code | Hướng dẫn |
 |---|---|---|

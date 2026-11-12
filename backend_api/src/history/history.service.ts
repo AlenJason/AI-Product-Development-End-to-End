@@ -11,7 +11,10 @@ export const HISTORY_LIMIT = 50;
 export class HistoryService {
   private readonly logger = new Logger(HistoryService.name);
 
-  constructor(@InjectRepository(PlanRecord) private readonly plans: Repository<PlanRecord>) {}
+  constructor(
+    @InjectRepository(PlanRecord)
+    private readonly plans: Repository<PlanRecord>,
+  ) {}
 
   // Trả false thay vì ném lỗi: lịch sử lỗi không được làm mất plan vừa tạo xong.
   async save(userId: string, plan: MealPlanResponseDto): Promise<boolean> {
@@ -24,10 +27,16 @@ export class HistoryService {
         created_at: new Date(),
       });
       return true;
-    } catch (error) {
-      // Chỉ ghi thông báo lỗi của DB, không ghi nội dung plan (NFR-7).
-      const message = error instanceof Error ? error.message : String(error);
-      this.logger.error(`Không lưu được kế hoạch vào lịch sử: ${message}`);
+    } catch {
+      // A completed day-3 receipt can be replayed after a lost HTTP response.
+      // Never overwrite an existing cycle (it may already contain later swaps).
+      try {
+        if (await this.plans.existsBy({ id: plan.plan_id, user_id: userId }))
+          return true;
+      } catch {
+        /* DB unavailable */
+      }
+      this.logger.error('Không lưu được kế hoạch vào lịch sử.');
       return false;
     }
   }
@@ -41,9 +50,8 @@ export class HistoryService {
         { plan_json: plan, target_calories: plan.daily_target.target_calories },
       );
       return true;
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      this.logger.error(`Không cập nhật được kế hoạch trong lịch sử: ${message}`);
+    } catch {
+      this.logger.error('Không cập nhật được kế hoạch trong lịch sử.');
       return false;
     }
   }
@@ -70,7 +78,10 @@ export class HistoryService {
       select: { id: true, plan_json: true },
       where: { id: planId, user_id: userId },
     });
-    if (!record) throw new NotFoundException('Không tìm thấy kế hoạch này trong lịch sử của bạn.');
+    if (!record)
+      throw new NotFoundException(
+        'Không tìm thấy kế hoạch này trong lịch sử của bạn.',
+      );
     return record.plan_json;
   }
 }
