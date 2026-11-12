@@ -23,6 +23,8 @@ class FakeBackend {
     '/api/v1/exercises/swap': 'exercises_swap',
     '/api/v1/feedback': 'feedback',
     '/api/v1/auth/google': 'auth_login',
+    '/api/v1/auth/register': 'auth_login',
+    '/api/v1/auth/login': 'auth_login',
     '/api/v1/plans/history': 'history',
   };
 
@@ -42,6 +44,9 @@ class FakeBackend {
       if (request.method == 'DELETE') return http.Response('', 204);
       final custom = responses[request.url.path];
       if (custom != null) return _json(custom, 200);
+      if (request.url.path == '/api/v1/auth/change-password') {
+        return _json({'message': 'Đổi mật khẩu thành công.'}, 200);
+      }
       final name = _fixtureFor[request.url.path];
       if (name == null) {
         return _json({

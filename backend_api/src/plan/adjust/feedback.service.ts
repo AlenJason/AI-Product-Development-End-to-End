@@ -149,9 +149,10 @@ export class FeedbackService {
     if (savedPlan && savedPlan.user_id !== owner)
       throw new ForbiddenException('Kế hoạch thuộc tài khoản khác.');
     // Atomic primary-key claim, no DB transaction held across an AI call.
+    const insertIgnore = db.options.type === 'mysql' ? 'INSERT IGNORE INTO' : 'INSERT OR IGNORE INTO';
     try {
       await db.query(
-        'INSERT OR IGNORE INTO feedback_receipts (plan_id,day_number,owner_id,request_hash,status,token,lease_until,result_json) VALUES (?,?,?,?,?,?,?,NULL)',
+        `${insertIgnore} feedback_receipts (plan_id,day_number,owner_id,request_hash,status,token,lease_until,result_json) VALUES (?,?,?,?,?,?,?,NULL)`,
         [
           dto.plan.plan_id,
           dto.day_number,
@@ -176,7 +177,7 @@ export class FeedbackService {
     if (row.status === 'completed' && row.result_json)
       return { ...structuredClone(row.result_json), replayed: true };
     if (row.token !== token) {
-      if (row.lease_until > now)
+      if (Number(row.lease_until) > now)
         throw new ConflictException(
           'Phản hồi đang được xử lý. Vui lòng giữ nội dung và thử lại sau.',
         );

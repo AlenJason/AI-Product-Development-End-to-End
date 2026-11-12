@@ -1,4 +1,5 @@
 import 'screens/feedback/daily_feedback_screen.dart';
+import 'screens/history/history_screen.dart';
 import 'screens/settings/system_states_screen.dart';
 import 'screens/settings/settings_screen.dart';
 
@@ -79,6 +80,8 @@ Route<dynamic> appGenerateRoute(RouteSettings settings) {
       );
     case '/system_states':
       return MaterialPageRoute(builder: (_) => const SystemStatesScreen());
+    case AppRoutes.history:
+      return MaterialPageRoute(builder: (_) => const HistoryScreen());
     case '/settings':
       return MaterialPageRoute(builder: (_) => const SettingsScreen());
     default:

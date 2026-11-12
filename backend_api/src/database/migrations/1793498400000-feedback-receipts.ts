@@ -12,7 +12,7 @@ export class FeedbackReceipts1793498400000 implements MigrationInterface {
           { name: 'request_hash', type: 'varchar' },
           { name: 'status', type: 'varchar' },
           { name: 'token', type: 'varchar' },
-          { name: 'lease_until', type: 'integer' },
+          { name: 'lease_until', type: 'bigint' },
           { name: 'result_json', type: 'text', isNullable: true },
         ],
       }),

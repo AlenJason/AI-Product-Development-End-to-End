@@ -1,119 +1,200 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../providers/auth_provider.dart';
 import '../../providers/plan_provider.dart';
 
 import '../../core/constants/routes.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
+import '../../widgets/auth_sheet.dart';
 import '../../widgets/ui_kit.dart';
 
 class WelcomeScreen extends StatelessWidget {
   const WelcomeScreen({super.key});
+
+  Future<void> _handleSignIn(BuildContext context) async {
+    final ok = await startAuthSignIn(context);
+    if (!ok || !context.mounted) return;
+    final hasPlan = context.read<PlanProvider?>()?.hasPlan ?? false;
+    Navigator.pushNamed(
+      context,
+      hasPlan ? AppRoutes.home : AppRoutes.onboardingBasicInfo,
+    );
+  }
+
   @override
-  Widget build(BuildContext context) => Scaffold(
-    body: Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [Color(0xFFEFFBF3), AppColors.background],
+  Widget build(BuildContext context) {
+    final auth = context.watch<AuthProvider?>();
+    final plans = context.watch<PlanProvider?>();
+    final isBusy = auth?.busy ?? false;
+    final user = auth?.user;
+
+    return Scaffold(
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0xFFEFFBF3), AppColors.background],
+          ),
+        ),
+        child: SafeArea(
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(24, 24, 24, 28),
+            children: [
+              if (plans?.restoreWarning case final String warning)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: NoticePanel(message: warning),
+                ),
+              const SessionExpiredBanner(),
+              if (auth?.error case final String authError)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: NoticePanel(message: authError, error: true),
+                ),
+              const BrandLogo(),
+              const SizedBox(height: 16),
+              AspectRatio(
+                aspectRatio: 1.08,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    Positioned.fill(
+                      child: CustomPaint(painter: _WelcomeIllustration()),
+                    ),
+                    Positioned(
+                      left: 0,
+                      top: 70,
+                      child: _floating(
+                        Icons.favorite_border,
+                        'Bền bỉ',
+                        'Mỗi ngày',
+                      ),
+                    ),
+                    Positioned(
+                      right: 0,
+                      bottom: 34,
+                      child: _floating(
+                        Icons.local_fire_department_outlined,
+                        'Cân bằng',
+                        'Dinh dưỡng',
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Text.rich(
+                TextSpan(
+                  text: 'Khoẻ hơn mỗi ngày,\n',
+                  style: AppTextStyles.h1.copyWith(fontSize: 34),
+                  children: [
+                    const TextSpan(
+                      text: 'theo cách của bạn.',
+                      style: TextStyle(color: AppColors.primary),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 14),
+              Text(
+                'Kế hoạch ăn uống và tập luyện thích ứng, vừa túi tiền và dành riêng cho bạn.',
+                style: AppTextStyles.bodyLarge.copyWith(color: AppColors.muted),
+              ),
+              const SizedBox(height: 20),
+              if (user != null) ...[
+                SurfacePanel(
+                  child: Row(
+                    children: [
+                      const ToneIcon(icon: Icons.verified_user_outlined),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(user.name, style: AppTextStyles.h4),
+                            Text(user.email, style: AppTextStyles.bodySmall),
+                          ],
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: isBusy ? null : () => auth?.signOut(),
+                        child: const Text('Đăng xuất'),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 14),
+                GradientButton(
+                  label: (plans?.hasPlan ?? false)
+                      ? 'Mở Dashboard'
+                      : 'Tiếp tục thiết lập hồ sơ',
+                  icon: Icons.arrow_forward,
+                  onPressed: () => Navigator.pushNamed(
+                    context,
+                    (plans?.hasPlan ?? false)
+                        ? AppRoutes.home
+                        : AppRoutes.onboardingBasicInfo,
+                  ),
+                ),
+              ] else ...[
+                GradientButton(
+                  key: const Key('welcome-start-button'),
+                  label: 'Bắt đầu ngay',
+                  icon: Icons.arrow_forward,
+                  onPressed: isBusy
+                      ? null
+                      : () => Navigator.pushNamed(
+                          context,
+                          AppRoutes.onboardingBasicInfo,
+                        ),
+                ),
+                const SizedBox(height: 12),
+                OutlinedButton(
+                  key: const Key('welcome-signin-button'),
+                  onPressed: isBusy ? null : () => _handleSignIn(context),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      if (isBusy) ...[
+                        const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                        const SizedBox(width: 10),
+                      ] else ...[
+                        const Icon(Icons.login),
+                        const SizedBox(width: 8),
+                      ],
+                      Flexible(
+                        child: Text(
+                          isBusy ? 'Đang đăng nhập…' : 'Đăng nhập',
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 8),
+                TextButton(
+                  key: const Key('welcome-skip-button'),
+                  onPressed: isBusy
+                      ? null
+                      : () => Navigator.pushNamed(
+                          context,
+                          AppRoutes.onboardingBasicInfo,
+                        ),
+                  child: const Text('Bỏ qua đăng nhập, dùng chế độ khách'),
+                ),
+              ],
+            ],
+          ),
         ),
       ),
-      child: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(24, 24, 24, 28),
-          children: [
-            if (context.watch<PlanProvider?>()?.restoreWarning
-                case final String warning)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: NoticePanel(message: warning),
-              ),
-            const BrandLogo(),
-            const SizedBox(height: 16),
-            AspectRatio(
-              aspectRatio: 1.08,
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  Positioned.fill(
-                    child: CustomPaint(painter: _WelcomeIllustration()),
-                  ),
-                  Positioned(
-                    left: 0,
-                    top: 70,
-                    child: _floating(
-                      Icons.favorite_border,
-                      'Bền bỉ',
-                      'Mỗi ngày',
-                    ),
-                  ),
-                  Positioned(
-                    right: 0,
-                    bottom: 34,
-                    child: _floating(
-                      Icons.local_fire_department_outlined,
-                      'Cân bằng',
-                      'Dinh dưỡng',
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Text.rich(
-              TextSpan(
-                text: 'Khoẻ hơn mỗi ngày,\n',
-                style: AppTextStyles.h1.copyWith(fontSize: 34),
-                children: [
-                  const TextSpan(
-                    text: 'theo cách của bạn.',
-                    style: TextStyle(color: AppColors.primary),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 14),
-            Text(
-              'Kế hoạch ăn uống và tập luyện thích ứng, vừa túi tiền và dành riêng cho bạn.',
-              style: AppTextStyles.bodyLarge.copyWith(color: AppColors.muted),
-            ),
-            const SizedBox(height: 20),
-            GradientButton(
-              label: 'Bắt đầu ngay',
-              icon: Icons.arrow_forward,
-              onPressed: () =>
-                  Navigator.pushNamed(context, AppRoutes.onboardingBasicInfo),
-            ),
-            const SizedBox(height: 12),
-            OutlinedButton(
-              onPressed: () =>
-                  Navigator.pushNamed(context, AppRoutes.onboardingBasicInfo),
-              child: const Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.g_mobiledata),
-                  SizedBox(width: 8),
-                  Flexible(
-                    child: Text(
-                      'Đăng nhập với Google',
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Bạn có thể sử dụng SmartFit mà không cần đăng nhập.',
-              textAlign: TextAlign.center,
-              style: AppTextStyles.bodySmall,
-            ),
-          ],
-        ),
-      ),
-    ),
-  );
+    );
+  }
   Widget _floating(IconData icon, String title, String subtitle) => Container(
     padding: const EdgeInsets.all(12),
     decoration: BoxDecoration(

@@ -48,7 +48,7 @@ describe('AuthService', () => {
     });
 
     it('survives two first logins racing on the same account', async () => {
-      const existing = await users.save(users.create({ google_sub: 'mock:an@vku.edu.vn', email: 'an@vku.edu.vn', name: 'an' }));
+      const existing = await users.save(users.create({ email: 'an@vku.edu.vn', name: 'an' }));
       // Lần tra đầu không thấy (request kia chưa ghi xong) → insert đụng khoá duy nhất → đọc lại.
       vi.spyOn(users, 'findOneBy').mockResolvedValueOnce(null);
       const { user } = await service.loginWithGoogle('mock:an@vku.edu.vn');

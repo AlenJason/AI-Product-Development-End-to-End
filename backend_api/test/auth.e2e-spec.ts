@@ -51,8 +51,66 @@ describe('Đăng nhập & tài khoản (e2e, AUTH_MODE=mock, DB trong RAM)', () 
 
   it('documents login and account deletion in Swagger with bearer auth', async () => {
     const { body } = await http().get('/docs-json').expect(200);
-    expect(Object.keys(body.paths)).toEqual(expect.arrayContaining(['/api/v1/auth/google', '/api/v1/me']));
+    expect(Object.keys(body.paths)).toEqual(
+      expect.arrayContaining([
+        '/api/v1/auth/google',
+        '/api/v1/auth/register',
+        '/api/v1/auth/login',
+        '/api/v1/auth/change-password',
+        '/api/v1/me',
+      ]),
+    );
     expect(body.components.securitySchemes).toHaveProperty('bearer');
+  });
+
+  it('registers, logs in with password, rejects wrong password, and changes password', async () => {
+    const reg = await http()
+      .post('/api/v1/auth/register')
+      .send({ email: 'Minh@VKU.edu.vn', name: 'Công Minh', password: 'secret123' })
+      .expect(200);
+    expect(reg.body.user).toEqual({
+      id: expect.stringMatching(UUID),
+      email: 'minh@vku.edu.vn',
+      name: 'Công Minh',
+    });
+
+    await http()
+      .post('/api/v1/auth/register')
+      .send({ email: 'minh@vku.edu.vn', name: 'Trùng', password: 'secret123' })
+      .expect(409);
+
+    await http()
+      .post('/api/v1/auth/login')
+      .send({ email: 'minh@vku.edu.vn', password: 'wrong' })
+      .expect(401);
+
+    const logged = await http()
+      .post('/api/v1/auth/login')
+      .send({ email: 'minh@vku.edu.vn', password: 'secret123' })
+      .expect(200);
+    expect(logged.body.user.id).toBe(reg.body.user.id);
+
+    await http()
+      .post('/api/v1/auth/change-password')
+      .set('Authorization', `Bearer ${logged.body.access_token}`)
+      .send({ current_password: 'wrong', new_password: 'newpassword99' })
+      .expect(401);
+
+    await http()
+      .post('/api/v1/auth/change-password')
+      .set('Authorization', `Bearer ${logged.body.access_token}`)
+      .send({ current_password: 'secret123', new_password: 'newpassword99' })
+      .expect(200);
+
+    await http()
+      .post('/api/v1/auth/login')
+      .send({ email: 'minh@vku.edu.vn', password: 'secret123' })
+      .expect(401);
+
+    await http()
+      .post('/api/v1/auth/login')
+      .send({ email: 'minh@vku.edu.vn', password: 'newpassword99' })
+      .expect(200);
   });
 });
 

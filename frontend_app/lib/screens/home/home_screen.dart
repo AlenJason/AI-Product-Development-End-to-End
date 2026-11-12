@@ -6,6 +6,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../models/plan_schedule.dart';
 import '../../providers/plan_provider.dart';
+import '../../widgets/auth_sheet.dart';
 import '../../widgets/plan_content.dart';
 import '../../widgets/ui_kit.dart';
 import '../../widgets/plan_status.dart';
@@ -75,6 +76,7 @@ class HomeScreen extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 24),
+          const SessionExpiredBanner(),
           const PlanStatus(),
           if (day == null)
             OutlinedButton(

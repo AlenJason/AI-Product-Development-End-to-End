@@ -22,8 +22,8 @@ describe('HistoryService', () => {
     plans = dataSource.getRepository(PlanRecord);
     service = new HistoryService(plans);
     const users = dataSource.getRepository(User);
-    an = await users.save(users.create({ google_sub: 'mock:an@vku.edu.vn', email: 'an@vku.edu.vn', name: 'an' }));
-    binh = await users.save(users.create({ google_sub: 'mock:binh@vku.edu.vn', email: 'binh@vku.edu.vn', name: 'binh' }));
+    an = await users.save(users.create({ email: 'an@vku.edu.vn', name: 'an' }));
+    binh = await users.save(users.create({ email: 'binh@vku.edu.vn', name: 'binh' }));
   });
 
   afterEach(async () => {

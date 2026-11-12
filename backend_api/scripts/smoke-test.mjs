@@ -26,6 +26,7 @@ const server = spawn(process.execPath, ['dist/main.js'], {
     ...process.env,
     PORT,
     NODE_ENV: 'test',
+    DB_TYPE: 'sqlite',
     DATABASE_PATH: ':memory:',
     AUTH_MODE: 'mock',
     GOOGLE_CLIENT_ID: '',

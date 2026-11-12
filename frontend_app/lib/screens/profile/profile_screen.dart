@@ -7,6 +7,7 @@ import '../../core/theme/app_text_styles.dart';
 import '../../models/api/codes.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/plan_provider.dart';
+import '../../widgets/auth_sheet.dart';
 import '../../widgets/plan_content.dart';
 import '../../widgets/ui_kit.dart';
 import 'edit_profile_sheet.dart';
@@ -17,7 +18,8 @@ class ProfileScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final plans = context.watch<PlanProvider>(),
         profile = plans.editableProfile;
-    final user = context.watch<AuthProvider?>()?.user;
+    final auth = context.watch<AuthProvider?>();
+    final user = auth?.user;
     if (profile == null) {
       return const SafeArea(
         child: PlanEmpty(message: 'Chưa có hồ sơ được lưu.'),
@@ -41,32 +43,80 @@ class ProfileScreen extends StatelessWidget {
             subtitle: 'Thông tin và tùy chỉnh của bạn',
           ),
           const SizedBox(height: 22),
+          const SessionExpiredBanner(),
+          if (auth?.error case final String authError)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 14),
+              child: NoticePanel(message: authError, error: true),
+            ),
           SurfacePanel(
-            child: Row(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const ToneIcon(icon: Icons.person_outline, size: 52),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        user?.name ?? 'Hồ sơ trên thiết bị',
-                        style: AppTextStyles.h4,
+                Row(
+                  children: [
+                    const ToneIcon(icon: Icons.person_outline, size: 52),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            user?.name ?? 'Hồ sơ trên thiết bị',
+                            style: AppTextStyles.h4,
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            user?.email ?? 'Sử dụng SmartFit ở chế độ khách',
+                            style: AppTextStyles.bodySmall,
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        user?.email ?? 'Sử dụng SmartFit ở chế độ khách',
-                        style: AppTextStyles.bodySmall,
-                      ),
-                    ],
+                    ),
+                    IconButton(
+                      onPressed: () => Navigator.pushNamed(context, '/settings'),
+                      icon: const Icon(Icons.settings_outlined),
+                    ),
+                  ],
+                ),
+                if (auth != null && user == null) ...[
+                  const SizedBox(height: 12),
+                  OutlinedButton.icon(
+                    key: const Key('profile-signin-button'),
+                    onPressed: auth.busy
+                        ? null
+                        : () => startAuthSignIn(context),
+                    icon: const Icon(Icons.login),
+                    label: Text(
+                      auth.busy
+                          ? 'Đang đăng nhập…'
+                          : 'Đăng nhập để lưu lịch sử',
+                    ),
                   ),
-                ),
-                IconButton(
-                  onPressed: () => Navigator.pushNamed(context, '/settings'),
-                  icon: const Icon(Icons.settings_outlined),
-                ),
+                ],
               ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          Material(
+            color: Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+              side: const BorderSide(color: AppColors.border),
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: ListTile(
+              key: const Key('profile-history-button'),
+              onTap: () => Navigator.pushNamed(context, AppRoutes.history),
+              leading: const ToneIcon(icon: Icons.history_outlined, size: 42),
+              title: Text('Lịch sử kế hoạch', style: AppTextStyles.h4),
+              subtitle: Text(
+                user != null
+                    ? 'Xem lại các kế hoạch đã lưu trên tài khoản'
+                    : 'Đăng nhập để đồng bộ và xem kế hoạch cũ',
+                style: AppTextStyles.bodySmall,
+              ),
+              trailing: const Icon(Icons.chevron_right, color: AppColors.muted),
             ),
           ),
           if (plans.restoreWarning != null)

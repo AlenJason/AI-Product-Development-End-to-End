@@ -19,6 +19,7 @@ export async function createTestApp(
   ) => builder,
 ): Promise<TestApp> {
   const pinned: Record<string, string> = {
+    DB_TYPE: 'sqlite',
     DATABASE_PATH: ':memory:',
     AUTH_MODE: 'mock',
     GOOGLE_CLIENT_ID: '',

@@ -9,7 +9,7 @@ export class FeedbackReceipt {
   @Column({ type: 'varchar' }) request_hash: string;
   @Column({ type: 'varchar' }) status: 'processing' | 'completed';
   @Column({ type: 'varchar' }) token: string;
-  @Column({ type: 'integer' }) lease_until: number;
+  @Column({ type: 'bigint' }) lease_until: number;
   @Column({ type: 'simple-json', nullable: true })
   result_json: FeedbackResult | null;
 }

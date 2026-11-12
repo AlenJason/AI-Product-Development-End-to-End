@@ -66,6 +66,42 @@ class ApiClient {
   Future<AuthResult> loginWithGoogle(String idToken) =>
       _send('POST', '/api/v1/auth/google', AuthResult.fromJson, body: {'id_token': idToken}, authorize: false);
 
+  Future<AuthResult> register({
+    required String email,
+    required String name,
+    required String password,
+  }) => _send(
+    'POST',
+    '/api/v1/auth/register',
+    AuthResult.fromJson,
+    body: {'email': email, 'name': name, 'password': password},
+    authorize: false,
+  );
+
+  Future<AuthResult> login({
+    required String email,
+    required String password,
+  }) => _send(
+    'POST',
+    '/api/v1/auth/login',
+    AuthResult.fromJson,
+    body: {'email': email, 'password': password},
+    authorize: false,
+  );
+
+  Future<void> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) => _send(
+    'POST',
+    '/api/v1/auth/change-password',
+    (_) {},
+    body: {
+      'current_password': currentPassword,
+      'new_password': newPassword,
+    },
+  );
+
   Future<void> deleteAccount() => _send('DELETE', '/api/v1/me', (_) {});
 
   Future<List<PlanSummary>> history() => _send('GET', '/api/v1/plans/history', planSummariesFromJson);

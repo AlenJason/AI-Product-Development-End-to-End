@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../core/constants/routes.dart';
 import '../../core/theme/app_colors.dart';
 import '../../providers/plan_provider.dart';
 import '../../widgets/plan_content.dart';
@@ -127,6 +128,15 @@ class _PlanScreenState extends State<PlanScreen> {
                 ],
               ),
             ),
+          if (widget.archivedCycle == null) ...[
+            const SizedBox(height: 12),
+            OutlinedButton.icon(
+              key: const Key('plan-history-button'),
+              onPressed: () => Navigator.pushNamed(context, AppRoutes.history),
+              icon: const Icon(Icons.history_outlined),
+              label: const Text('Xem lịch sử kế hoạch đã lưu'),
+            ),
+          ],
         ],
       ),
     );
