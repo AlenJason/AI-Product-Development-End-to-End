@@ -1,13 +1,7 @@
 import type { CorsOptions } from '@nestjs/common/interfaces/external/cors-options.interface.js';
 
-// Khi phát triển, Flutter web chạy ở cổng ngẫu nhiên trên localhost (`flutter run -d chrome`),
-// hoặc deploy lên Vercel / Cloudflare Tunnel để test.
-const DEV_ORIGINS = [
-  /^http:\/\/localhost(:\d+)?$/,
-  /^http:\/\/127\.0\.0\.1(:\d+)?$/,
-  /^https:\/\/.*\.vercel\.app$/,
-  /^https:\/\/.*\.trycloudflare\.com$/,
-];
+// Khi phát triển, Flutter web chạy ở cổng ngẫu nhiên trên localhost (`flutter run -d chrome`).
+const DEV_ORIGINS = [/^http:\/\/localhost(:\d+)?$/, /^http:\/\/127\.0\.0\.1(:\d+)?$/];
 
 // CORS chỉ cần cho bản web của app — trình duyệt chặn request khác origin nếu backend không cho phép.
 // App mobile không gửi Origin nên không bị ảnh hưởng. Không dùng cookie (đăng nhập bằng header Authorization),

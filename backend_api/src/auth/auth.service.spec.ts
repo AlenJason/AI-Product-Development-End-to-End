@@ -35,7 +35,7 @@ describe('AuthService', () => {
     it('creates the user on first login and reuses it afterwards', async () => {
       const first = await service.loginWithGoogle('mock:an@vku.edu.vn');
       const second = await service.loginWithGoogle('mock:An@VKU.edu.vn');
-      expect(first.user).toMatchObject({ id: expect.any(String), email: 'an@vku.edu.vn', name: 'an' });
+      expect(first.user).toEqual({ id: expect.any(String), email: 'an@vku.edu.vn', name: 'an' });
       expect(second.user.id).toBe(first.user.id);
       expect(await users.count()).toBe(1);
     });

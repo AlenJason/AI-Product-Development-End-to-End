@@ -7,7 +7,6 @@ import 'package:my_ai_app/providers/auth_provider.dart';
 import 'package:my_ai_app/providers/grocery_provider.dart';
 import 'package:my_ai_app/providers/plan_provider.dart';
 import 'package:my_ai_app/screens/auth/welcome_screen.dart';
-import 'package:my_ai_app/screens/main_screen.dart';
 import 'package:my_ai_app/screens/onboarding/basic_info_screen.dart';
 import 'package:my_ai_app/screens/profile/profile_screen.dart';
 import 'package:my_ai_app/screens/settings/delete_account_sheet.dart';
@@ -57,7 +56,7 @@ void main() {
     final sent = jsonDecode(backend.requests.single.body) as Map;
     expect(sent, {'email': 'minh@vku.edu.vn', 'password': 'secret123'});
     expect(prefs.getString(AuthProvider.tokenKey), isNotNull);
-    expect(find.byType(MainScreen), findsOneWidget);
+    expect(find.byType(BasicInfoScreen), findsOneWidget);
   });
 
   testWidgets('Welcome: chuyển sang tab Đăng ký, kiểm tra xác nhận mật khẩu và đăng ký', (tester) async {
@@ -95,7 +94,7 @@ void main() {
       'password': 'secret123',
     });
     expect(prefs.getString(AuthProvider.tokenKey), isNotNull);
-    expect(find.byType(MainScreen), findsOneWidget);
+    expect(find.byType(BasicInfoScreen), findsOneWidget);
   });
 
   testWidgets('Welcome: bỏ qua đăng nhập đi thẳng vào onboarding ở chế độ khách', (tester) async {

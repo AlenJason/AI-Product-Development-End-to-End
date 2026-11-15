@@ -29,19 +29,7 @@ class _EditProfileSheetState extends State<EditProfileSheet> {
     super.initState();
     _form = OnboardingProvider();
     final saved = context.read<PlanProvider>().editableProfile;
-    if (saved != null) {
-      _form.loadProfile(saved);
-    } else {
-      _form.ageText = '25';
-      _form.age = 25;
-      _form.heightText = '170';
-      _form.heightCm = 170;
-      _form.weightText = '65';
-      _form.weightKg = 65;
-      _form.gender = 'Nam';
-      _form.activityLevel = 'Vận động nhẹ';
-      _form.goal = 'Duy trì';
-    }
+    if (saved != null) _form.loadProfile(saved);
     _age = TextEditingController(text: _form.ageText);
     _height = TextEditingController(text: _form.heightText);
     _weight = TextEditingController(text: _form.weightText);

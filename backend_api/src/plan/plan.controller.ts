@@ -37,11 +37,8 @@ export class PlanController {
     @CurrentUser() user: User | undefined,
   ): Promise<MealPlanResponseDto> {
     const plan = await this.planService.generatePlan(dto);
-    if (user) {
-      await this.history.saveUserProfile(user.id, dto);
-      if (!(await this.history.save(user.id, plan))) {
-        plan.warnings.push(WARNINGS.historyNotSaved);
-      }
+    if (user && !(await this.history.save(user.id, plan))) {
+      plan.warnings.push(WARNINGS.historyNotSaved);
     }
     return plan;
   }

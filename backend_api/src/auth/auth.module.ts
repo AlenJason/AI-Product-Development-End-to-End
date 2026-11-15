@@ -2,7 +2,6 @@ import { Logger, Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { PlanRecord } from '../database/entities/plan-record.entity.js';
 import { User } from '../database/entities/user.entity.js';
 import { AUTH_CONFIG, type AuthConfig, AuthMode, resolveAuthConfig } from './auth-config.js';
 import { AuthController } from './auth.controller.js';
@@ -10,7 +9,7 @@ import { AuthService } from './auth.service.js';
 import { GoogleIdTokenVerifier, IdTokenVerifier, MockIdTokenVerifier } from './id-token-verifier.js';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([User, PlanRecord])],
+  imports: [TypeOrmModule.forFeature([User])],
   controllers: [AuthController],
   providers: [
     {

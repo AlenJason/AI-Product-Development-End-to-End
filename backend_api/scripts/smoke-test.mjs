@@ -34,7 +34,7 @@ const server = spawn(process.execPath, ['dist/main.js'], {
     JWT_EXPIRES_IN: '',
     ALLOW_MOCK_AUTH: '',
     GEMINI_API_KEY: '',
-    PLAN_AI_PROVIDER: 'groq',
+    PLAN_AI_PROVIDER: 'gemini',
     GROQ_API_KEY: '',
     GEMINI_BASE_URL: '',
   },
@@ -197,7 +197,7 @@ try {
     },
     otherToken,
   );
-  expect(foreignFeedback.status === 200, `Feedback plan khác chủ lỗi: ${foreignFeedback.status}`);
+  expect(foreignFeedback.status === 403, `Feedback plan khác chủ phải trả 403, nhận: ${foreignFeedback.status}`);
   detail = await historyDetail(initialPlanId, ownerToken);
   expect(
     detail.status === 200 && isDeepStrictEqual(detail.body, beforeOtherUser),
