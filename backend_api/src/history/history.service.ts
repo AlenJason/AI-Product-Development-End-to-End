@@ -72,6 +72,15 @@ export class HistoryService {
     };
   }
 
+  async saveUserProfile(userId: string, profile: object): Promise<boolean> {
+    try {
+      await this.plans.manager.getRepository('users').update({ id: userId }, { profile_json: JSON.stringify(profile) });
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
   // Plan của người khác trả 404 giống plan không tồn tại, để không lộ là id đó có thật.
   async findOne(userId: string, planId: string): Promise<MealPlanResponseDto> {
     const record = await this.plans.findOne({

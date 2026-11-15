@@ -20,20 +20,17 @@ class ProfileScreen extends StatelessWidget {
         profile = plans.editableProfile;
     final auth = context.watch<AuthProvider?>();
     final user = auth?.user;
-    if (profile == null) {
-      return const SafeArea(
-        child: PlanEmpty(message: 'Chưa có hồ sơ được lưu.'),
-      );
-    }
-    final bmi = profile.heightCm > 0
+    final bmi = profile != null && profile.heightCm > 0
         ? profile.weightKg /
               ((profile.heightCm / 100) * (profile.heightCm / 100))
         : null;
-    final goal = switch (profile.goal) {
-      Goal.cut => 'Giảm mỡ',
-      Goal.bulk => 'Tăng cơ',
-      Goal.maintain => 'Duy trì',
-    };
+    final goal = profile == null
+        ? 'Duy trì'
+        : switch (profile.goal) {
+            Goal.cut => 'Giảm mỡ',
+            Goal.bulk => 'Tăng cơ',
+            Goal.maintain => 'Duy trì',
+          };
     return SafeArea(
       child: ListView(
         padding: const EdgeInsets.fromLTRB(22, 24, 22, 24),
@@ -85,7 +82,15 @@ class ProfileScreen extends StatelessWidget {
                     key: const Key('profile-signin-button'),
                     onPressed: auth.busy
                         ? null
-                        : () => startAuthSignIn(context),
+                        : () async {
+                            final ok = await startAuthSignIn(context);
+                            if (ok && context.mounted) {
+                              final user = context.read<AuthProvider?>()?.user;
+                              if (user != null) {
+                                await context.read<PlanProvider>().syncFromAuth(user);
+                              }
+                            }
+                          },
                     icon: const Icon(Icons.login),
                     label: Text(
                       auth.busy
@@ -119,6 +124,38 @@ class ProfileScreen extends StatelessWidget {
               trailing: const Icon(Icons.chevron_right, color: AppColors.muted),
             ),
           ),
+          if (profile == null) ...[
+            const SizedBox(height: 16),
+            SurfacePanel(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const ToneIcon(icon: Icons.edit_note_outlined, size: 48),
+                  const SizedBox(height: 12),
+                  Text('Chưa có thông số thể trạng', style: AppTextStyles.h4),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Bạn có thể chỉnh sửa thông tin chiều cao, cân nặng, mục tiêu và dị ứng bất kỳ lúc nào.',
+                    textAlign: TextAlign.center,
+                    style: AppTextStyles.bodySmall,
+                  ),
+                  const SizedBox(height: 16),
+                  GradientButton(
+                    key: const Key('profile-empty-edit-button'),
+                    label: 'Chỉnh sửa hồ sơ thể trạng',
+                    icon: Icons.edit_outlined,
+                    onPressed: () => showModalBottomSheet<void>(
+                      context: context,
+                      useSafeArea: true,
+                      isScrollControlled: true,
+                      constraints: const BoxConstraints(maxWidth: 430),
+                      builder: (_) => const EditProfileSheet(),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ] else ...[
           if (plans.restoreWarning != null)
             Padding(
               padding: const EdgeInsets.only(top: 14),
@@ -254,6 +291,7 @@ class ProfileScreen extends StatelessWidget {
                     builder: (_) => const EditProfileSheet(),
                   ),
           ),
+          ],
         ],
       ),
     );

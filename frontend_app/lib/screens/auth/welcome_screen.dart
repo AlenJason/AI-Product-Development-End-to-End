@@ -16,11 +16,12 @@ class WelcomeScreen extends StatelessWidget {
   Future<void> _handleSignIn(BuildContext context) async {
     final ok = await startAuthSignIn(context);
     if (!ok || !context.mounted) return;
-    final hasPlan = context.read<PlanProvider?>()?.hasPlan ?? false;
-    Navigator.pushNamed(
-      context,
-      hasPlan ? AppRoutes.home : AppRoutes.onboardingBasicInfo,
-    );
+    final user = context.read<AuthProvider?>()?.user;
+    if (user != null) {
+      await context.read<PlanProvider>().syncFromAuth(user);
+    }
+    if (!context.mounted) return;
+    Navigator.pushReplacementNamed(context, AppRoutes.home);
   }
 
   @override

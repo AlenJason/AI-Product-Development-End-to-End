@@ -5,19 +5,35 @@ import 'meal_plan.dart';
 // Đăng nhập, lịch sử, feedback, /health (BRD 6.3, 6.4).
 
 class AuthUser {
-  const AuthUser({required this.id, required this.email, required this.name});
+  const AuthUser({
+    required this.id,
+    required this.email,
+    required this.name,
+    this.profile,
+    this.latestPlan,
+  });
 
   final String id;
   final String email;
   final String name;
+  final Json? profile;
+  final Json? latestPlan;
 
   factory AuthUser.fromJson(Json json) => AuthUser(
     id: readString(json, 'id'),
     email: readString(json, 'email'),
     name: readString(json, 'name'),
+    profile: json['profile'] is Map ? json['profile'] as Json : null,
+    latestPlan: json['latest_plan'] is Map ? json['latest_plan'] as Json : null,
   );
 
-  Json toJson() => {'id': id, 'email': email, 'name': name};
+  Json toJson() => {
+    'id': id,
+    'email': email,
+    'name': name,
+    if (profile != null) 'profile': profile,
+    if (latestPlan != null) 'latest_plan': latestPlan,
+  };
 }
 
 class AuthResult {

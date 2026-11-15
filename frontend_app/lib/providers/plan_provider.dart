@@ -291,14 +291,46 @@ class PlanProvider extends ChangeNotifier {
     }
   }
 
+  Future<void> syncFromAuth(AuthUser user) async {
+    Profile? newProfile = _profile;
+    MealPlan? newPlan = _plan;
+    PlanSchedule? newSchedule = _schedule;
+
+    if (user.profile != null) {
+      try {
+        newProfile = Profile.fromJson(user.profile!);
+      } catch (_) {}
+    }
+
+    if (_plan == null && user.latestPlan != null) {
+      try {
+        newPlan = MealPlan.fromJson(user.latestPlan!);
+        newSchedule = PlanSchedule.startingOn(newPlan.planId, _now());
+      } catch (_) {}
+    }
+
+    if (newProfile != _profile || newPlan != _plan) {
+      await _commit(
+        profile: newProfile,
+        plan: newPlan,
+        schedule: newSchedule,
+        draft: _draft,
+      );
+      notifyListeners();
+    }
+  }
+
   Future<void> saveDraft(Profile edited) => _run(() async {
     _validateProfile(edited);
     await _commit(
-      profile: _profile,
+      profile: _profile ?? edited,
       plan: _plan,
       schedule: _schedule,
       draft: _profile != null && edited.sameAs(_profile!) ? null : edited,
     );
+    try {
+      unawaited(_api.updateProfile(edited.toJson()));
+    } catch (_) {}
   });
   Future<void> clearPlan() => _run(() async {
     _requireMutable();

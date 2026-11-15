@@ -7,6 +7,7 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { QueryFailedError, type Repository } from 'typeorm';
+import { PlanRecord } from '../database/entities/plan-record.entity.js';
 import { User } from '../database/entities/user.entity.js';
 import type { AuthResponseDto } from './dto/auth-response.dto.js';
 import type { ChangePasswordDto } from './dto/change-password.dto.js';
@@ -26,6 +27,7 @@ export class AuthService {
     private readonly verifier: IdTokenVerifier,
     private readonly jwt: JwtService,
     @InjectRepository(User) private readonly users: Repository<User>,
+    @InjectRepository(PlanRecord) private readonly planRecords?: Repository<PlanRecord>,
   ) {}
 
   async register(dto: RegisterDto): Promise<AuthResponseDto> {
@@ -81,11 +83,40 @@ export class AuthService {
     return this.buildAuthResponse(user);
   }
 
+  async updateProfile(userId: string, profile: Record<string, unknown>): Promise<{ success: boolean }> {
+    await this.users.update({ id: userId }, { profile_json: JSON.stringify(profile) });
+    return { success: true };
+  }
+
   private async buildAuthResponse(user: User): Promise<AuthResponseDto> {
     const payload: AccessTokenPayload = { sub: user.id };
+    let profile: Record<string, unknown> | null = null;
+    if (user.profile_json) {
+      try {
+        profile = JSON.parse(user.profile_json) as Record<string, unknown>;
+      } catch {
+        profile = null;
+      }
+    }
+
+    let latestPlan: Record<string, unknown> | null = null;
+    if (this.planRecords) {
+      const record = await this.planRecords.findOne({
+        where: { user_id: user.id },
+        order: { created_at: 'DESC' },
+      });
+      latestPlan = (record?.plan_json as Record<string, unknown> | undefined) ?? null;
+    }
+
     return {
       access_token: await this.jwt.signAsync(payload),
-      user: { id: user.id, email: user.email, name: user.name },
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        profile,
+        latest_plan: latestPlan,
+      },
     };
   }
 

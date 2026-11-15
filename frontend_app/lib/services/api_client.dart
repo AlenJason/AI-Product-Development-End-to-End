@@ -102,6 +102,13 @@ class ApiClient {
     },
   );
 
+  Future<void> updateProfile(Json profile) => _send(
+    'PUT',
+    '/api/v1/me/profile',
+    (_) {},
+    body: profile,
+  );
+
   Future<void> deleteAccount() => _send('DELETE', '/api/v1/me', (_) {});
 
   Future<List<PlanSummary>> history() => _send('GET', '/api/v1/plans/history', planSummariesFromJson);

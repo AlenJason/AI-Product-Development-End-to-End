@@ -125,6 +125,9 @@ class _SmartFitBootstrapState extends State<SmartFitBootstrap> {
       await _plans!.finishRestore();
       if (!mounted) return;
       _auth = AuthProvider(api: _api!, prefs: prefs);
+      if (_auth!.user != null) {
+        await _plans!.syncFromAuth(_auth!.user!);
+      }
       _grocery = GroceryProvider(prefs: prefs, plans: _plans!);
     } catch (_) {
       _grocery?.dispose();

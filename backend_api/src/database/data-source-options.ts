@@ -6,6 +6,7 @@ import { InitialSchema1790208000000 } from './migrations/1790208000000-initial-s
 import { FeedbackReceipt } from './entities/feedback-receipt.entity.js';
 import { FeedbackReceipts1793498400000 } from './migrations/1793498400000-feedback-receipts.js';
 import { UserPasswords1794000000000 } from './migrations/1794000000000-user-passwords.js';
+import { UserProfile1794500000000 } from './migrations/1794500000000-user-profile.js';
 
 export const DEFAULT_DATABASE_PATH = 'database.sqlite';
 const ENTITIES = [User, PlanRecord, FeedbackReceipt];
@@ -21,6 +22,7 @@ export function dataSourceOptions(database: string): DataSourceOptions {
       InitialSchema1790208000000,
       FeedbackReceipts1793498400000,
       UserPasswords1794000000000,
+      UserProfile1794500000000,
     ],
     migrationsRun: true,
     synchronize: false,

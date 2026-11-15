@@ -9,6 +9,12 @@ export class AuthUserDto {
 
   @ApiProperty({ example: 'Nguyễn Văn A' })
   name: string;
+
+  @ApiProperty({ required: false })
+  profile?: Record<string, unknown> | null;
+
+  @ApiProperty({ required: false })
+  latest_plan?: Record<string, unknown> | null;
 }
 
 export class AuthResponseDto {
