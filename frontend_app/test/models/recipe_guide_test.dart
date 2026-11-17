@@ -23,10 +23,11 @@ void main() {
 
     final guide = RecipeGuide.forMeal(meal);
     expect(guide.steps.length, 4);
-    expect(guide.estimatedMinutes, 20);
+    expect(guide.totalMinutes, 19);
     expect(guide.steps.first.title, contains('Sơ chế'));
     expect(guide.steps.any((s) => s.instruction.contains('chảo')), isTrue);
     expect(guide.cookingTip, isNotEmpty);
+    expect(guide.nutritionNote, isNotEmpty);
   });
 
   test('RecipeGuide nhận diện món xào tổng quát', () {

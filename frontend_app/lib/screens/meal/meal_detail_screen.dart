@@ -181,7 +181,7 @@ class MealDetailScreen extends StatelessWidget {
                   color: AppColors.panel,
                   padding: const EdgeInsets.symmetric(
                     horizontal: 14,
-                    vertical: 11,
+                    vertical: 10,
                   ),
                   child: Wrap(
                     spacing: 12,
@@ -194,12 +194,12 @@ class MealDetailScreen extends StatelessWidget {
                         children: [
                           const Icon(
                             Icons.schedule,
-                            size: 18,
+                            size: 16,
                             color: AppColors.primaryDark,
                           ),
-                          const SizedBox(width: 6),
+                          const SizedBox(width: 5),
                           Text(
-                            'Thời gian: ~${recipe.estimatedMinutes} phút',
+                            'Chuẩn bị: ~${recipe.prepMinutes}p',
                             style: AppTextStyles.bodySmall.copyWith(
                               fontWeight: FontWeight.w700,
                               color: AppColors.primaryDark,
@@ -207,25 +207,43 @@ class MealDetailScreen extends StatelessWidget {
                           ),
                         ],
                       ),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.local_fire_department_outlined,
+                            size: 16,
+                            color: AppColors.fat,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Nấu: ~${recipe.cookMinutes}p',
+                            style: AppTextStyles.bodySmall.copyWith(
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.ink,
+                            ),
+                          ),
+                        ],
+                      ),
                       Container(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
+                          horizontal: 9,
                           vertical: 4,
                         ),
                         decoration: BoxDecoration(
                           color: Colors.white,
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(10),
                           border: Border.all(color: AppColors.border),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             const Icon(
-                              Icons.restaurant,
+                              Icons.restaurant_menu,
                               size: 13,
                               color: AppColors.primaryDark,
                             ),
-                            const SizedBox(width: 5),
+                            const SizedBox(width: 4),
                             Text(
                               'Độ khó: ${recipe.difficulty}',
                               style: AppTextStyles.bodySmall.copyWith(
@@ -250,8 +268,8 @@ class MealDetailScreen extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Container(
-                            width: 28,
-                            height: 28,
+                            width: 26,
+                            height: 26,
                             alignment: Alignment.center,
                             decoration: const BoxDecoration(
                               color: AppColors.primary,
@@ -262,29 +280,98 @@ class MealDetailScreen extends StatelessWidget {
                               style: AppTextStyles.bodySmall.copyWith(
                                 color: Colors.white,
                                 fontWeight: FontWeight.w800,
+                                fontSize: 12,
                               ),
                             ),
                           ),
-                          const SizedBox(width: 12),
+                          const SizedBox(width: 10),
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(
-                                  step.title,
-                                  style: AppTextStyles.label.copyWith(
-                                    fontWeight: FontWeight.w800,
-                                    color: AppColors.ink,
-                                  ),
+                                Wrap(
+                                  spacing: 8,
+                                  runSpacing: 4,
+                                  crossAxisAlignment:
+                                      WrapCrossAlignment.center,
+                                  children: [
+                                    Text(
+                                      step.title,
+                                      style: AppTextStyles.label.copyWith(
+                                        fontWeight: FontWeight.w800,
+                                        color: AppColors.ink,
+                                      ),
+                                    ),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 7,
+                                        vertical: 2,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: AppColors.panel,
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: Text(
+                                        '⏱ ${step.duration}',
+                                        style: AppTextStyles.bodySmall.copyWith(
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w600,
+                                          color: AppColors.muted,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                                const SizedBox(height: 4),
+                                const SizedBox(height: 10),
                                 Text(
                                   step.instruction,
                                   style: AppTextStyles.bodyMedium.copyWith(
-                                    color: AppColors.muted,
-                                    height: 1.45,
+                                    color: AppColors.ink.withValues(alpha: .88),
+                                    height: 1.5,
                                   ),
                                 ),
+                                if (step.tip != null) ...[
+                                  const SizedBox(height: 10),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 10,
+                                      vertical: 8,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.primarySoft,
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(
+                                        color: AppColors.primary.withValues(
+                                          alpha: .22,
+                                        ),
+                                      ),
+                                    ),
+                                    child: Row(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        const Icon(
+                                          Icons.tips_and_updates_outlined,
+                                          size: 15,
+                                          color: AppColors.primaryDark,
+                                        ),
+                                        const SizedBox(width: 7),
+                                        Expanded(
+                                          child: Text(
+                                            step.tip!,
+                                            style: AppTextStyles.bodySmall
+                                                .copyWith(
+                                                  color: AppColors.primaryDark,
+                                                  fontSize: 11,
+                                                  fontWeight: FontWeight.w600,
+                                                  height: 1.4,
+                                                ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
                               ],
                             ),
                           ),
@@ -295,9 +382,16 @@ class MealDetailScreen extends StatelessWidget {
                 if (recipe.cookingTip.isNotEmpty) ...[
                   const SizedBox(height: 4),
                   NoticePanel(
-                    message: recipe.cookingTip,
+                    message: 'Mẹo nấu ngon: ${recipe.cookingTip}',
                     icon: Icons.lightbulb_outline,
                     success: true,
+                  ),
+                ],
+                if (recipe.nutritionNote.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  NoticePanel(
+                    message: 'Lưu ý dinh dưỡng: ${recipe.nutritionNote}',
+                    icon: Icons.health_and_safety_outlined,
                   ),
                 ],
                 const SizedBox(height: 18),
