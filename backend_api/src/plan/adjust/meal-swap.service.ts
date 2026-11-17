@@ -88,9 +88,10 @@ export class MealSwapService {
       range,
       usedNames,
       violations,
+      dto.cost_tier,
     );
     const replacement =
-      fromAi ?? this.fromPool(context, original, usedNames, violations);
+      fromAi ?? this.fromPool(context, original, usedNames, violations, dto.cost_tier);
     if (!replacement) {
       throw new UnprocessableEntityException(
         'Không tìm được món thay thế phù hợp với bữa này và các hạn chế bạn đã nhập.',
@@ -111,6 +112,7 @@ export class MealSwapService {
     range: CalorieRange,
     usedNames: Set<string>,
     violations: (meal: MealContentDto) => string[],
+    costTier?: string,
   ): Promise<MealContentDto | null> {
     if (!this.ai.isConfigured) {
       this.logger.warn(
@@ -131,7 +133,7 @@ export class MealSwapService {
       this.ai.budget,
       (timeoutMs) =>
         this.ai.generateJson(
-          buildMealSwapPrompt(context.profile, original, range, names),
+          buildMealSwapPrompt(context.profile, original, range, names, costTier),
           timeoutMs,
         ),
       (raw) => {
@@ -150,6 +152,7 @@ export class MealSwapService {
     original: MealContentDto,
     usedNames: Set<string>,
     violations: (meal: MealContentDto) => string[],
+    costTier?: string,
   ): MealContentDto | null {
     const candidates = mealCandidates(original.meal_type, {
       avoidIngredients: context.match.avoidIngredients,
@@ -157,8 +160,26 @@ export class MealSwapService {
     })
       .map((meal) => scaleMealToCalories(meal, original.calories))
       .filter((meal) => violations(meal).length === 0);
+
+    if (costTier) {
+      const tierFiltered = candidates.filter((meal) => estimateMealCostTier(meal) === costTier);
+      if (tierFiltered.length > 0) {
+        return pickOne(tierFiltered, this.random) ?? null;
+      }
+    }
     return pickOne(candidates, this.random) ?? null;
   }
+}
+
+export function estimateMealCostTier(meal: MealContentDto): 'budget' | 'standard' | 'premium' {
+  const text = (meal.name + ' ' + meal.ingredients.map((i) => i.name).join(' ')).toLowerCase();
+  if (text.includes('bò') || text.includes('hồi') || text.includes('tôm sú') || text.includes('hải sản')) {
+    return 'premium';
+  }
+  if (text.includes('trứng') || text.includes('đậu') || text.includes('tàu hũ') || text.includes('cá nục') || text.includes('bánh mì')) {
+    return 'budget';
+  }
+  return 'standard';
 }
 
 export function swapCalorieRange(

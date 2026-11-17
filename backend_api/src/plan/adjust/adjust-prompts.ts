@@ -35,7 +35,16 @@ export function buildMealSwapPrompt(
   original: MealContentDto,
   range: CalorieRange,
   avoidNames: string[],
+  costTier?: string,
 ): string {
+  const costRule =
+    costTier === 'budget'
+      ? '- Phân khúc ngân sách: Món ăn tiết kiệm, bình dân (< 25.000 VNĐ, ưu tiên trứng, đậu phụ, cá nục, thịt heo nạc, rau củ theo mùa).'
+      : costTier === 'premium'
+      ? '- Phân khúc ngân sách: Món ăn cao cấp, giàu dinh dưỡng (> 45.000 VNĐ, có thể dùng thịt bò nạc, cá hồi, tôm tươi lớn).'
+      : costTier === 'standard'
+      ? '- Phân khúc ngân sách: Món ăn tiêu chuẩn, chi phí vừa phải (25.000 – 45.000 VNĐ, ức gà, thịt nạc, tôm đồng, cá basa).'
+      : '';
   return [
     PROMPT_ROLE,
     `Nhiệm vụ: đề xuất 1 món thay cho bữa ${original.meal_type} "${original.name}" trong kế hoạch ăn uống.`,
@@ -47,6 +56,7 @@ export function buildMealSwapPrompt(
     '- Không dùng nguyên liệu người dùng dị ứng; chọn món phù hợp tình trạng sức khoẻ đã khai.',
     `- meal_type là ${original.meal_type}; calories trong khoảng ${range.min}–${range.max}. ${MACRO_RULE}`,
     `- Không trùng các món đã có: ${avoidNames.join('; ')}.`,
+    ...(costRule ? [costRule] : []),
     ...ingredientCodeRules(),
     '',
     'Chỉ trả về JSON của 1 món, không kèm giải thích, đúng cấu trúc:',

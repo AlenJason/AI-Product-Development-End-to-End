@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../core/constants/routes.dart';
+import '../models/cost_estimator.dart';
 import '../providers/plan_provider.dart';
 import '../services/api_exception.dart';
 import '../core/theme/app_colors.dart';
@@ -21,6 +22,9 @@ class _SwapActionState extends State<SwapAction> {
   String? _error;
   bool _outdated = false;
   bool _pending = false;
+  MealCostTier _selectedTier = MealCostTier.standard;
+  bool _tierInitialized = false;
+
   Future<void> _swap() async {
     final plans = context.read<PlanProvider>();
     if (_pending || plans.busy) return;
@@ -31,7 +35,7 @@ class _SwapActionState extends State<SwapAction> {
     });
     try {
       if (widget.meal) {
-        await plans.swapMeal(widget.id);
+        await plans.swapMeal(widget.id, costTier: _selectedTier.code);
       } else {
         await plans.swapExercise(widget.id);
       }
@@ -40,7 +44,7 @@ class _SwapActionState extends State<SwapAction> {
         SnackBar(
           content: Text(
             widget.meal
-                ? 'Đã cập nhật món ăn và danh sách đi chợ.'
+                ? 'Đã đổi món (${_selectedTier.label}) và cập nhật danh sách đi chợ.'
                 : 'Đã cập nhật bài tập.',
           ),
         ),
@@ -73,6 +77,11 @@ class _SwapActionState extends State<SwapAction> {
         .expand((d) => d.workout.exercises)
         .where((e) => e.exerciseId == widget.id);
     final currentMeal = meals == null || meals.isEmpty ? null : meals.first;
+    final currentCost = currentMeal != null ? estimateMealCost(currentMeal) : null;
+    if (widget.meal && !_tierInitialized && currentCost != null) {
+      _selectedTier = currentCost.tier;
+      _tierInitialized = true;
+    }
     final currentExercise = exercises == null || exercises.isEmpty
         ? null
         : exercises.first;
@@ -86,7 +95,7 @@ class _SwapActionState extends State<SwapAction> {
           20,
           10,
           20,
-          22 + MediaQuery.viewInsetsOf(context).bottom,
+          16 + MediaQuery.viewInsetsOf(context).bottom,
         ),
         child: SafeArea(
           top: false,
@@ -104,7 +113,7 @@ class _SwapActionState extends State<SwapAction> {
                   ),
                 ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 14),
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -118,7 +127,7 @@ class _SwapActionState extends State<SwapAction> {
                           widget.meal ? 'Đổi món ăn' : 'Đổi bài tập',
                           style: AppTextStyles.h2,
                         ),
-                        const SizedBox(height: 6),
+                        const SizedBox(height: 4),
                         Text(
                           widget.meal
                               ? 'Món ăn phù hợp với hồ sơ và mục tiêu của bạn.'
@@ -132,7 +141,7 @@ class _SwapActionState extends State<SwapAction> {
                   ),
                 ],
               ),
-              const SizedBox(height: 22),
+              const SizedBox(height: 14),
               SurfacePanel(
                 color: AppColors.panel,
                 child: Column(
@@ -145,15 +154,30 @@ class _SwapActionState extends State<SwapAction> {
                         fontWeight: FontWeight.w800,
                       ),
                     ),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 4),
                     Text(
                       title ?? 'Không tìm thấy nội dung trong kế hoạch.',
                       style: AppTextStyles.label,
                     ),
                     if (currentMeal != null)
-                      Text(
-                        '${currentMeal.calories} kcal · ${currentMeal.portion}',
-                        style: AppTextStyles.bodySmall,
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 2,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        children: [
+                          Text(
+                            '${currentMeal.calories} kcal · ${currentMeal.portion}',
+                            style: AppTextStyles.bodySmall,
+                          ),
+                          if (currentCost != null)
+                            Text(
+                              '· 💰 ~${currentCost.formattedApprox}',
+                              style: AppTextStyles.bodySmall.copyWith(
+                                color: currentCost.tier.color,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                        ],
                       ),
                     if (currentExercise != null)
                       Text(
@@ -163,16 +187,70 @@ class _SwapActionState extends State<SwapAction> {
                   ],
                 ),
               ),
-              const SizedBox(height: 16),
-              NoticePanel(
-                message: 'Máy chủ chọn phương án phù hợp với hồ sơ của kế hoạch. Kết quả sẽ được cập nhật sau khi bạn xác nhận.',
-                success: true,
-                icon: Icons.swap_horiz,
-              ),
-              if (_error != null) ...[
+              if (widget.meal) ...[
                 const SizedBox(height: 12),
-                NoticePanel(message: _error!, error: !_outdated),
+                Text(
+                  'CHỌN TẦM GIÁ THAY THẾ',
+                  style: AppTextStyles.bodySmall.copyWith(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.muted,
+                    letterSpacing: .5,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: [
+                    for (final tier in MealCostTier.values)
+                      InkWell(
+                        borderRadius: BorderRadius.circular(8),
+                        onTap: busy
+                            ? null
+                            : () => setState(() => _selectedTier = tier),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 9,
+                            vertical: 5,
+                          ),
+                          decoration: BoxDecoration(
+                            color: _selectedTier == tier
+                                ? tier.color.withValues(alpha: .12)
+                                : AppColors.panel,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: _selectedTier == tier
+                                  ? tier.color
+                                  : AppColors.border,
+                            ),
+                          ),
+                          child: Text(
+                            '${tier.label} (${tier.rangeLabel})',
+                            style: AppTextStyles.bodySmall.copyWith(
+                              fontSize: 11,
+                              fontWeight: _selectedTier == tier
+                                  ? FontWeight.w700
+                                  : FontWeight.w500,
+                              color: _selectedTier == tier
+                                  ? tier.color
+                                  : AppColors.ink,
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
               ],
+              const SizedBox(height: 12),
+              if (_error != null)
+                NoticePanel(message: _error!, error: !_outdated)
+              else
+                const NoticePanel(
+                  message: 'Máy chủ chọn phương án phù hợp với hồ sơ của kế hoạch. Kết quả sẽ được cập nhật sau khi bạn xác nhận.',
+                  success: true,
+                  icon: Icons.swap_horiz,
+                ),
               if (busy)
                 const Padding(
                   padding: EdgeInsets.all(16),

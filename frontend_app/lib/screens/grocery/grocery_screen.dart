@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../models/api/codes.dart';
+import '../../models/cost_estimator.dart';
 import '../../providers/grocery_provider.dart';
 import '../../providers/plan_provider.dart';
 import '../../widgets/plan_content.dart';
@@ -149,6 +150,79 @@ class _GroceryScreenState extends State<GroceryScreen> {
                 ),
               ],
             ),
+          ),
+          Builder(
+            builder: (_) {
+              final groceryCost = estimateGroceryCost(plan.groceryList);
+              return Container(
+                margin: const EdgeInsets.only(top: 14),
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF0FDF4),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: const Color(0xFFBBF7D0)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.account_balance_wallet_outlined,
+                          size: 18,
+                          color: AppColors.primaryDark,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'DỰ TOÁN CHI PHÍ ĐI CHỢ',
+                            style: AppTextStyles.bodySmall.copyWith(
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.primaryDark,
+                              letterSpacing: .5,
+                            ),
+                          ),
+                        ),
+                        Text(
+                          groceryCost.formattedTotal,
+                          style: AppTextStyles.h4.copyWith(
+                            color: AppColors.primaryDark,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'Trung bình ${groceryCost.formattedPerDay} (chu kỳ 3 ngày)',
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color: AppColors.muted,
+                        fontSize: 11,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 6,
+                      children: [
+                        _BudgetPill(
+                          icon: Icons.kebab_dining_outlined,
+                          label: 'Đạm: ${groceryCost.formattedProtein}',
+                        ),
+                        _BudgetPill(
+                          icon: Icons.eco_outlined,
+                          label: 'Rau củ: ${groceryCost.formattedProduce}',
+                        ),
+                        _BudgetPill(
+                          icon: Icons.grain_outlined,
+                          label: 'Gia vị: ${groceryCost.formattedPantry}',
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              );
+            },
           ),
           const SizedBox(height: 18),
           ExpansionTile(
@@ -321,4 +395,35 @@ class _GroceryScreenState extends State<GroceryScreen> {
       ),
     );
   }
+}
+
+class _BudgetPill extends StatelessWidget {
+  const _BudgetPill({required this.icon, required this.label});
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: const Color(0xFFD1FAE5)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 13, color: AppColors.primaryDark),
+            const SizedBox(width: 4),
+            Text(
+              label,
+              style: AppTextStyles.bodySmall.copyWith(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: AppColors.ink,
+              ),
+            ),
+          ],
+        ),
+      );
 }
