@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
+import '../../models/recipe_guide.dart';
 import '../../providers/plan_provider.dart';
 import '../../widgets/plan_content.dart';
 import '../../widgets/ui_kit.dart';
@@ -25,6 +26,7 @@ class MealDetailScreen extends StatelessWidget {
         ),
       );
     }
+    final recipe = RecipeGuide.forMeal(meal);
     return Scaffold(
       backgroundColor: Colors.white,
       bottomNavigationBar: SafeArea(
@@ -171,6 +173,133 @@ class MealDetailScreen extends StatelessWidget {
                       ],
                     ),
                   ),
+                const SectionTitle(
+                  title: 'Hướng dẫn chế biến',
+                  subtitle: 'Cách nấu nhanh gọn và giữ chuẩn dinh dưỡng',
+                ),
+                SurfacePanel(
+                  color: AppColors.panel,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 11,
+                  ),
+                  child: Wrap(
+                    spacing: 12,
+                    runSpacing: 8,
+                    alignment: WrapAlignment.spaceBetween,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.schedule,
+                            size: 18,
+                            color: AppColors.primaryDark,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            'Thời gian: ~${recipe.estimatedMinutes} phút',
+                            style: AppTextStyles.bodySmall.copyWith(
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.primaryDark,
+                            ),
+                          ),
+                        ],
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: AppColors.border),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.restaurant,
+                              size: 13,
+                              color: AppColors.primaryDark,
+                            ),
+                            const SizedBox(width: 5),
+                            Text(
+                              'Độ khó: ${recipe.difficulty}',
+                              style: AppTextStyles.bodySmall.copyWith(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.ink,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 14),
+                for (final step in recipe.steps)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: SurfacePanel(
+                      padding: const EdgeInsets.all(14),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            width: 28,
+                            height: 28,
+                            alignment: Alignment.center,
+                            decoration: const BoxDecoration(
+                              color: AppColors.primary,
+                              shape: BoxShape.circle,
+                            ),
+                            child: Text(
+                              '${step.stepNumber}',
+                              style: AppTextStyles.bodySmall.copyWith(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  step.title,
+                                  style: AppTextStyles.label.copyWith(
+                                    fontWeight: FontWeight.w800,
+                                    color: AppColors.ink,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  step.instruction,
+                                  style: AppTextStyles.bodyMedium.copyWith(
+                                    color: AppColors.muted,
+                                    height: 1.45,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                if (recipe.cookingTip.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  NoticePanel(
+                    message: recipe.cookingTip,
+                    icon: Icons.lightbulb_outline,
+                    success: true,
+                  ),
+                ],
                 const SizedBox(height: 18),
                 Text(
                   'Hình minh họa chung · Chưa có ảnh món ăn từ máy chủ.',
