@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, HttpCode, HttpStatus, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Post, Put, UseGuards } from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiNoContentResponse,
@@ -58,6 +58,26 @@ export class AuthController {
   @ApiUnauthorizedResponse({ description: 'ID Token không xác minh được' })
   login(@Body() dto: GoogleLoginDto): Promise<AuthResponseDto> {
     return this.auth.loginWithGoogle(dto.id_token);
+  }
+
+  @Get('me/profile')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Lấy thông tin thể trạng đã lưu của tài khoản' })
+  getProfile(@CurrentUser() user: User): Promise<{ profile: Record<string, unknown> | null }> {
+    return this.auth.getProfile(user.id);
+  }
+
+  @Put('me/profile')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Lưu hoặc cập nhật thông tin thể trạng của tài khoản' })
+  updateProfile(
+    @CurrentUser() user: User,
+    @Body() profile: Record<string, unknown>,
+  ): Promise<{ success: boolean; profile: Record<string, unknown> }> {
+    return this.auth.updateProfile(user.id, profile);
   }
 
   @Delete('me')

@@ -300,6 +300,28 @@ class PlanProvider extends ChangeNotifier {
       draft: _profile != null && edited.sameAs(_profile!) ? null : edited,
     );
   });
+
+  Future<void> applyProfile(Profile newProfile) => _run(() async {
+    _validateProfile(newProfile);
+    await _commit(
+      profile: newProfile,
+      plan: _plan,
+      schedule: _schedule,
+      draft: newProfile,
+    );
+  });
+
+  Future<void> restoreFromHistoryPlan(MealPlan plan, Profile? profile) => _run(() async {
+    _validatePlan(plan);
+    final prof = profile ?? _profile;
+    if (prof == null) return;
+    await _commit(
+      profile: prof,
+      plan: plan,
+      schedule: _schedule ?? PlanSchedule.startingOn(plan.planId, _now()),
+      draft: prof,
+    );
+  });
   Future<void> clearPlan() => _run(() async {
     _requireMutable();
     await _commit(profile: _profile, plan: null, schedule: null, draft: _draft);

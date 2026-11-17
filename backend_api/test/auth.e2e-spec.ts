@@ -112,6 +112,46 @@ describe('Đăng nhập & tài khoản (e2e, AUTH_MODE=mock, DB trong RAM)', () 
       .send({ email: 'minh@vku.edu.vn', password: 'newpassword99' })
       .expect(200);
   });
+
+  it('saves and retrieves physical profile, stripping sensitive restrictions', async () => {
+    const { access_token } = await loginMock(testApp, 'profile-test@vku.edu.vn');
+    const initial = await http()
+      .get('/api/v1/me/profile')
+      .set('Authorization', `Bearer ${access_token}`)
+      .expect(200);
+    expect(initial.body).toEqual({ profile: null });
+
+    const update = await http()
+      .put('/api/v1/me/profile')
+      .set('Authorization', `Bearer ${access_token}`)
+      .send({
+        age: 25,
+        gender: 'male',
+        height_cm: 175,
+        weight_kg: 70,
+        activity_level: 'moderate',
+        goal: 'maintain',
+        restrictions: { allergies: 'Đậu phộng' }, // sensitive, should be stripped!
+      })
+      .expect(200);
+
+    expect(update.body.success).toBe(true);
+    expect(update.body.profile).toEqual({
+      age: 25,
+      gender: 'male',
+      height_cm: 175,
+      weight_kg: 70,
+      activity_level: 'moderate',
+      goal: 'maintain',
+    });
+    expect(update.body.profile.restrictions).toBeUndefined();
+
+    const retrieved = await http()
+      .get('/api/v1/me/profile')
+      .set('Authorization', `Bearer ${access_token}`)
+      .expect(200);
+    expect(retrieved.body.profile).toEqual(update.body.profile);
+  });
 });
 
 describe('Cấu hình đăng nhập lúc khởi động (e2e)', () => {

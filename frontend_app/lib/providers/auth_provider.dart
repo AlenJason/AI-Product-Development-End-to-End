@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/api/account.dart';
 import '../models/api/json_read.dart';
 import '../models/api/meal_plan.dart';
+import '../models/api/profile.dart';
 import '../services/api_client.dart';
 import '../services/api_exception.dart';
 
@@ -155,6 +156,22 @@ class AuthProvider extends ChangeNotifier {
   Future<List<PlanSummary>> fetchHistory() => _api.history();
 
   Future<MealPlan> fetchHistoryPlan(String id) => _api.historyPlan(id);
+
+  Future<Profile?> fetchProfile() async {
+    if (!isSignedIn) return null;
+    try {
+      return await _api.getProfile();
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> updateProfile(Profile profile) async {
+    if (!isSignedIn) return;
+    try {
+      await _api.updateProfile(profile);
+    } catch (_) {}
+  }
 
   Future<void> _runAuth(Future<AuthResult> Function() action) async {
     _busy = true;

@@ -4,7 +4,9 @@ import 'package:provider/provider.dart';
 import '../../core/constants/routes.dart';
 import '../../models/profile_rules.dart';
 import '../../models/api/profile.dart';
+import '../../providers/auth_provider.dart';
 import '../../providers/onboarding_provider.dart';
+import '../../providers/plan_provider.dart';
 import '../../widgets/common/custom_text_field.dart';
 import '../../widgets/common/primary_button.dart';
 import '../../widgets/common/progress_header.dart';
@@ -27,12 +29,35 @@ class _BasicInfoScreenState extends State<BasicInfoScreen> {
   void initState() {
     super.initState();
     final form = context.read<OnboardingProvider>();
-    if (widget.initialProfile != null) {
-      form.loadProfile(widget.initialProfile!, notify: false);
+    final plans = context.read<PlanProvider?>();
+    final savedProfile = widget.initialProfile ?? plans?.editableProfile;
+    if (savedProfile != null) {
+      form.loadProfile(savedProfile, notify: false);
     }
     _age = TextEditingController(text: form.ageText);
     _height = TextEditingController(text: form.heightText);
     _weight = TextEditingController(text: form.weightText);
+
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      final auth = context.read<AuthProvider?>();
+      if (auth?.isSignedIn == true &&
+          _age.text.isEmpty &&
+          _height.text.isEmpty &&
+          _weight.text.isEmpty) {
+        try {
+          final cloudProf = await auth!.fetchProfile();
+          if (cloudProf != null && mounted) {
+            plans?.applyProfile(cloudProf);
+            form.loadProfile(cloudProf);
+            _age.text = form.ageText;
+            _height.text = form.heightText;
+            _weight.text = form.weightText;
+            setState(() {});
+          }
+        } catch (_) {}
+      }
+    });
   }
 
   @override
