@@ -38,11 +38,16 @@ class ApiClient {
   Future<MealPlan> generatePlan(Profile profile) =>
       _send('POST', '/api/v1/generate-plan', MealPlan.fromJson, body: profile.toJson(), timeout: planTimeout);
 
-  Future<MealPlan> swapMeal(Profile profile, MealPlan plan, String mealId) => _send(
+  Future<MealPlan> swapMeal(Profile profile, MealPlan plan, String mealId, {String? costTier}) => _send(
         'POST',
         '/api/v1/meals/swap',
         _planIn,
-        body: {'profile': profile.toJson(), 'plan': plan.toJson(), 'meal_id': mealId},
+        body: {
+          'profile': profile.toJson(),
+          'plan': plan.toJson(),
+          'meal_id': mealId,
+          'cost_tier': ?costTier,
+        },
         timeout: planTimeout,
       );
 

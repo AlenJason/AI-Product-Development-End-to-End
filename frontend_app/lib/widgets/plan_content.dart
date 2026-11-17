@@ -6,6 +6,7 @@ import '../core/theme/app_colors.dart';
 import '../core/theme/app_text_styles.dart';
 import '../models/api/codes.dart';
 import '../models/api/meal_plan.dart';
+import '../models/cost_estimator.dart';
 import '../providers/plan_provider.dart';
 import '../screens/meal/meal_swap_sheet.dart';
 import '../screens/workout/workout_swap_sheet.dart';
@@ -431,12 +432,42 @@ class MealCard extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 4),
-                      Text(
-                        '${number(meal.calories)} kcal',
-                        style: AppTextStyles.bodySmall.copyWith(
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.primaryDark,
-                        ),
+                      Builder(
+                        builder: (_) {
+                          final cost = estimateMealCost(meal);
+                          return Wrap(
+                            spacing: 8,
+                            runSpacing: 4,
+                            crossAxisAlignment: WrapCrossAlignment.center,
+                            children: [
+                              Text(
+                                '${number(meal.calories)} kcal',
+                                style: AppTextStyles.bodySmall.copyWith(
+                                  fontWeight: FontWeight.w800,
+                                  color: AppColors.primaryDark,
+                                ),
+                              ),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                  vertical: 2,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: cost.tier.color.withValues(alpha: .12),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Text(
+                                  '💰 ${cost.formattedApprox}',
+                                  style: AppTextStyles.bodySmall.copyWith(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w700,
+                                    color: cost.tier.color,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          );
+                        },
                       ),
                       const SizedBox(height: 3),
                       Text(

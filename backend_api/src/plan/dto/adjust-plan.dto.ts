@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { ArrayMaxSize, ArrayMinSize, IsArray, IsDefined, IsEnum, IsInt, Matches, Max, Min, ValidateNested } from 'class-validator';
+import { ArrayMaxSize, ArrayMinSize, IsArray, IsDefined, IsEnum, IsInt, IsOptional, IsString, Matches, Max, Min, ValidateNested } from 'class-validator';
 import { BodyState, Eating, Intensity } from '../enums/feedback.enum.js';
 import { CreatePlanDto } from './create-plan.dto.js';
 import { MealPlanResponseDto } from './meal-plan-response.dto.js';
@@ -27,6 +27,11 @@ export class SwapMealDto extends AdjustPlanDto {
   @ApiProperty({ example: 'm1_2' })
   @Matches(/^m[1-3]_[1-3]$/, { message: 'meal_id phải có dạng m{ngày}_{bữa}, ví dụ m1_2' })
   meal_id: string;
+
+  @ApiProperty({ example: 'budget', required: false, description: 'Phân khúc ngân sách: budget, standard, premium' })
+  @IsOptional()
+  @IsString()
+  cost_tier?: string;
 }
 
 export class SwapExerciseDto extends AdjustPlanDto {

@@ -118,10 +118,10 @@ class PlanProvider extends ChangeNotifier {
       history: _archivedCurrent(),
     );
   });
-  Future<void> swapMeal(String mealId) => _run(() async {
+  Future<void> swapMeal(String mealId, {String? costTier}) => _run(() async {
     _requireMutable();
     final (profile, plan) = _current();
-    final changed = await _api.swapMeal(profile, plan, mealId);
+    final changed = await _api.swapMeal(profile, plan, mealId, costTier: costTier);
     _validatePlan(changed);
     await _commit(
       profile: profile,

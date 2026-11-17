@@ -4,7 +4,7 @@ import type { MealPlanResponseDto } from '../dto/meal-plan-response.dto.js';
 import { GeminiTimeoutError } from '../gemini.service.js';
 import { WARNINGS } from '../plan-warnings.js';
 import { findAvoidedIngredient, matchRestrictions } from '../restriction-matcher.js';
-import { MealSwapService } from './meal-swap.service.js';
+import { estimateMealCostTier, MealSwapService } from './meal-swap.service.js';
 
 const SECRET = 'DI-UNG-BI-MAT-555';
 const names = (plan: MealPlanResponseDto) => plan.days.flatMap((day) => day.meals.map((meal) => meal.name));
@@ -65,6 +65,17 @@ describe('MealSwapService', () => {
         const swapped = await swap(new MealSwapService(geminiOff, random), profile);
         expect(findAvoidedIngredient(swapped.days[0].meals[1], avoid)).toBeNull();
       }
+    });
+
+    it('prioritises pool dishes matching cost_tier when specified', async () => {
+      const budgetSwapped = await new MealSwapService(geminiOff, firstPick).swap({
+        profile: makeProfile(),
+        plan,
+        meal_id: 'm1_2',
+        cost_tier: 'budget',
+      });
+      const budgetDish = budgetSwapped.days[0].meals[1];
+      expect(estimateMealCostTier(budgetDish)).toBe('budget');
     });
 
     it('answers 422 when no pool dish fits the restrictions', async () => {

@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
+import '../../models/cost_estimator.dart';
 import '../../models/recipe_guide.dart';
 import '../../providers/plan_provider.dart';
 import '../../widgets/plan_content.dart';
@@ -27,6 +28,7 @@ class MealDetailScreen extends StatelessWidget {
       );
     }
     final recipe = RecipeGuide.forMeal(meal);
+    final cost = estimateMealCost(meal);
     return Scaffold(
       backgroundColor: Colors.white,
       bottomNavigationBar: SafeArea(
@@ -104,11 +106,41 @@ class MealDetailScreen extends StatelessWidget {
                 const SizedBox(height: 8),
                 Text(meal.name, style: AppTextStyles.h1.copyWith(fontSize: 26)),
                 const SizedBox(height: 12),
-                Text(
-                  '${number(meal.calories)} kcal',
-                  style: AppTextStyles.h2.copyWith(
-                    color: AppColors.primaryDark,
-                  ),
+                Wrap(
+                  spacing: 12,
+                  runSpacing: 8,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    Text(
+                      '${number(meal.calories)} kcal',
+                      style: AppTextStyles.h2.copyWith(
+                        color: AppColors.primaryDark,
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: cost.tier.color.withValues(alpha: .1),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: cost.tier.color.withValues(alpha: .3)),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.payments_outlined, size: 14, color: cost.tier.color),
+                          const SizedBox(width: 5),
+                          Text(
+                            '${cost.formattedApprox} · ${cost.tier.label}',
+                            style: AppTextStyles.bodySmall.copyWith(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: cost.tier.color,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 18),
                 SurfacePanel(
