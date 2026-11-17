@@ -16,6 +16,9 @@ export class User {
   @Column({ type: 'varchar', length: 255, nullable: true })
   password_hash: string | null;
 
+  @Column({ type: 'text', nullable: true })
+  profile_json: string | null;
+
   @CreateDateColumn()
   created_at: Date;
 

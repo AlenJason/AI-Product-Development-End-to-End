@@ -52,8 +52,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(auth.isSignedIn, isTrue);
-    expect(backend.paths, ['/api/v1/auth/login']);
-    final sent = jsonDecode(backend.requests.single.body) as Map;
+    expect(backend.paths.first, '/api/v1/auth/login');
+    final sent = jsonDecode(backend.requests.first.body) as Map;
     expect(sent, {'email': 'minh@vku.edu.vn', 'password': 'secret123'});
     expect(prefs.getString(AuthProvider.tokenKey), isNotNull);
     expect(find.byType(BasicInfoScreen), findsOneWidget);
@@ -86,8 +86,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(auth.isSignedIn, isTrue);
-    expect(backend.paths, ['/api/v1/auth/register']);
-    final sent = jsonDecode(backend.requests.single.body) as Map;
+    expect(backend.paths.first, '/api/v1/auth/register');
+    final sent = jsonDecode(backend.requests.first.body) as Map;
     expect(sent, {
       'email': 'minh@vku.edu.vn',
       'name': 'Công Minh',

@@ -47,6 +47,12 @@ class FakeBackend {
       if (request.url.path == '/api/v1/auth/change-password') {
         return _json({'message': 'Đổi mật khẩu thành công.'}, 200);
       }
+      if (request.url.path == '/api/v1/me/profile') {
+        if (request.method == 'PUT') {
+          return _json({'success': true, 'profile': jsonDecode(request.body)}, 200);
+        }
+        return _json({'profile': responses['/api/v1/me/profile'] ?? loadFixture('profile')}, 200);
+      }
       final name = _fixtureFor[request.url.path];
       if (name == null) {
         return _json({

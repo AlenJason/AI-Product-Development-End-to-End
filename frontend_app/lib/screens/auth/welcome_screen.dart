@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../providers/auth_provider.dart';
+import '../../providers/onboarding_provider.dart';
 import '../../providers/plan_provider.dart';
 
 import '../../core/constants/routes.dart';
@@ -16,6 +17,29 @@ class WelcomeScreen extends StatelessWidget {
   Future<void> _handleSignIn(BuildContext context) async {
     final ok = await startAuthSignIn(context);
     if (!ok || !context.mounted) return;
+
+    final auth = context.read<AuthProvider?>();
+    final plans = context.read<PlanProvider?>();
+    final onboarding = context.read<OnboardingProvider?>();
+
+    if (auth != null && auth.isSignedIn) {
+      try {
+        final cloudProfile = await auth.fetchProfile();
+        if (cloudProfile != null && context.mounted) {
+          if (plans != null) await plans.applyProfile(cloudProfile);
+          onboarding?.loadProfile(cloudProfile);
+        }
+        if (plans != null && !plans.hasPlan && context.mounted) {
+          final history = await auth.fetchHistory();
+          if (history.isNotEmpty && context.mounted) {
+            final latest = await auth.fetchHistoryPlan(history.first.id);
+            await plans.restoreFromHistoryPlan(latest, cloudProfile);
+          }
+        }
+      } catch (_) {}
+    }
+
+    if (!context.mounted) return;
     final hasPlan = context.read<PlanProvider?>()?.hasPlan ?? false;
     Navigator.pushNamed(
       context,

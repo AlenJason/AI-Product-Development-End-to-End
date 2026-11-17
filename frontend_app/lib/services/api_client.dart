@@ -104,6 +104,22 @@ class ApiClient {
 
   Future<void> deleteAccount() => _send('DELETE', '/api/v1/me', (_) {});
 
+  Future<Profile?> getProfile() => _send(
+        'GET',
+        '/api/v1/me/profile',
+        (json) {
+          final p = json['profile'];
+          return p is Map<String, dynamic> ? Profile.fromJson(p) : null;
+        },
+      );
+
+  Future<void> updateProfile(Profile profile) => _send(
+        'PUT',
+        '/api/v1/me/profile',
+        (_) {},
+        body: profile.toJson(),
+      );
+
   Future<List<PlanSummary>> history() => _send('GET', '/api/v1/plans/history', planSummariesFromJson);
 
   Future<MealPlan> historyPlan(String id) =>

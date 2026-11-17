@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -6,6 +8,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../models/profile_rules.dart';
 import '../../models/restriction_options.dart';
+import '../../providers/auth_provider.dart';
 import '../../providers/onboarding_provider.dart';
 import '../../providers/plan_provider.dart';
 import '../../widgets/common/custom_text_field.dart';
@@ -66,6 +69,10 @@ class _EditProfileSheetState extends State<EditProfileSheet> {
       });
       await plans.saveDraft(edited);
       if (!mounted) return;
+      final auth = context.read<AuthProvider?>();
+      if (auth?.isSignedIn == true) {
+        unawaited(auth!.updateProfile(edited));
+      }
       final navigator = Navigator.of(context);
       final messenger = ScaffoldMessenger.of(context);
       navigator.pop();

@@ -81,6 +81,34 @@ export class AuthService {
     return this.buildAuthResponse(user);
   }
 
+  async getProfile(userId: string): Promise<{ profile: Record<string, unknown> | null }> {
+    const user = await this.users.findOne({ where: { id: userId }, select: { id: true, profile_json: true } });
+    if (!user || !user.profile_json) return { profile: null };
+    try {
+      return { profile: JSON.parse(user.profile_json) as Record<string, unknown> };
+    } catch {
+      return { profile: null };
+    }
+  }
+
+  async updateProfile(
+    userId: string,
+    profile: Record<string, unknown>,
+  ): Promise<{ success: boolean; profile: Record<string, unknown> }> {
+    const sanitized = sanitizePhysicalProfile(profile);
+    await this.users.update({ id: userId }, { profile_json: JSON.stringify(sanitized) });
+    return { success: true, profile: sanitized };
+  }
+
+  async saveProfileFromPlan(userId: string, dto: Record<string, unknown>): Promise<void> {
+    try {
+      const sanitized = sanitizePhysicalProfile(dto);
+      await this.users.update({ id: userId }, { profile_json: JSON.stringify(sanitized) });
+    } catch {
+      // Ignored: failure to save profile does not fail plan generation
+    }
+  }
+
   private async buildAuthResponse(user: User): Promise<AuthResponseDto> {
     const payload: AccessTokenPayload = { sub: user.id };
     return {
@@ -134,4 +162,23 @@ function isUniqueViolation(error: unknown): boolean {
   if (!(error instanceof QueryFailedError)) return false;
   const code = (error.driverError as { code?: string } | undefined)?.code;
   return code === 'SQLITE_CONSTRAINT_UNIQUE' || code === 'ER_DUP_ENTRY' || code === '23505';
+}
+
+function sanitizePhysicalProfile(raw: Record<string, unknown>): Record<string, unknown> {
+  const allowed = [
+    'age',
+    'gender',
+    'height_cm',
+    'weight_kg',
+    'activity_level',
+    'goal',
+    'pregnant_or_breastfeeding',
+  ];
+  const result: Record<string, unknown> = {};
+  for (const key of allowed) {
+    if (raw[key] !== undefined && raw[key] !== null) {
+      result[key] = raw[key];
+    }
+  }
+  return result;
 }

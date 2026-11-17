@@ -41,6 +41,31 @@ export class HistoryService {
     }
   }
 
+  async saveUserProfile(userId: string, profile: object): Promise<boolean> {
+    try {
+      const allowed = [
+        'age',
+        'gender',
+        'height_cm',
+        'weight_kg',
+        'activity_level',
+        'goal',
+        'pregnant_or_breastfeeding',
+      ];
+      const raw = profile as Record<string, unknown>;
+      const sanitized: Record<string, unknown> = {};
+      for (const key of allowed) {
+        if (raw[key] !== undefined && raw[key] !== null) sanitized[key] = raw[key];
+      }
+      await this.plans.manager
+        .getRepository('users')
+        .update({ id: userId }, { profile_json: JSON.stringify(sanitized) });
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
   // Đổi món/đổi bài/feedback ngày 1–2 cập nhật plan đã lưu (BRD FR-7, v2.5.0). plan_id của người khác,
   // hoặc plan tạo lúc chưa đăng nhập → không có dòng nào khớp, bỏ qua. Chỉ trả false khi DB lỗi.
   async update(userId: string, plan: MealPlanResponseDto): Promise<boolean> {
