@@ -1,0 +1,21 @@
+# Private environment settings (examples are source documentation).
+.env
+.env.*
+!.env.example
+
+# Runtime databases, responses, logs and generated dependencies/builds.
+*.sqlite
+*.sqlite-*
+*.db
+*.db-*
+*.log
+*.apk
+*.aab
+node_modules/
+build/
+dist/
+/backend_api/debug/
+
+# Isolated output of the development extractor. UI PNG/reference evidence remains visible.
+/extracted/
+/backend_api/extracted/

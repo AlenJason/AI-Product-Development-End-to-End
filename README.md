@@ -1,5 +1,9 @@
 # SmartFit AI – Adaptive Meal & Workout Planner
 
+**Cập nhật 26/10/2026:** AI runtime mặc định chuyển sang **Groq** (`openai/gpt-oss-120b`) cho tạo kế hoạch, đổi món, đổi bài và feedback. Cấu hình `GROQ_API_KEY` tại backend; xem [hướng dẫn Groq](backend_api/GROQ_TRIAL.md). Các mục Gemini phía dưới là lịch sử và phương án tương thích, không phải nhà cung cấp mặc định. Tạo kế hoạch Groq đã được người dùng chạy thành công trên app; tiến độ UI còn lại vẫn theo [roadmap](docs/PLAN.md).
+
+Roadmap chính thức duy nhất: [docs/PLAN.md](docs/PLAN.md). Trạng thái task, bằng chứng và ưu tiên N01–N10 nằm ở đó; các changelog dưới đây là lịch sử, không thay kết quả audit hiện tại.
+
 Đồ án môn **AI Product Development End-to-End** — Trường Đại học Công nghệ Thông tin và Truyền thông Việt - Hàn (VKU).
 
 Ứng dụng di động gợi ý và tự động điều chỉnh thực đơn (món Việt) cùng lịch tập tại nhà theo chu kỳ **3 ngày cuốn chiếu**, dựa trên thể trạng và phản hồi hằng ngày của người dùng. Xem đầy đủ bài toán, kiến trúc hệ thống, JSON schema và roadmap tại **[BRD.md](BRD.md)**.
@@ -9,8 +13,22 @@
 | Thành phần | Công nghệ |
 |---|---|
 | Frontend | Flutter (mobile + web) |
-| Backend | NestJS (TypeScript) |
-| AI Engine | Google Gemini API (Structured Output JSON) |
+| Backend | NestJS (TypeScript, Node.js ESM, TypeORM + MySQL) |
+| AI Engine | Groq API (`openai/gpt-oss-120b`) / Gemini API kèm Fallback Engine |
+
+## 📚 Hệ thống Tài liệu Dự án (Documentation Index)
+
+Dự án trang bị đầy đủ 7 danh mục tài liệu tiêu chuẩn kỹ nghệ phần mềm:
+
+| # | Danh mục tài liệu | Đường dẫn chi tiết | Mục đích & Nội dung chính |
+|---|---|---|---|
+| 1 | **README.md** | [README.md](README.md) | Tổng quan dự án, hướng dẫn cài đặt và khởi chạy nhanh. |
+| 2 | **Architecture Documentation** | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Sơ đồ hệ thống, mô hình Monorepo, sơ đồ ERD MySQL, cơ chế AI Fallback. |
+| 3 | **Product Documentation** | [BRD.md](BRD.md) & [docs/PLAN.md](docs/PLAN.md) | Đặc tả yêu cầu nghiệp vụ v2.6.0, hồ sơ người dùng, roadmap và tiến độ thực tế. |
+| 4 | **API Documentation** | [docs/API_DOCUMENTATION.md](docs/API_DOCUMENTATION.md) | Đặc tả toàn bộ REST API, JSON request/response, mã lỗi (Swagger: `/docs`). |
+| 5 | **Code Documentation** | [AGENTS.md](AGENTS.md) & [.agents/skills/](.agents/skills) | Quy chuẩn code (ESM `.js`, Provider, TypeORM), hợp đồng kiểm thử, kỹ năng AI. |
+| 6 | **User Documentation** | [docs/USER_GUIDE.md](docs/USER_GUIDE.md) | Cẩm nang hướng dẫn sử dụng chi tiết cho người dùng cuối (Onboarding, Kế hoạch, Đổi món, Đi chợ, Feedback). |
+| 7 | **Knowledge Transfer & Communication** | [docs/KNOWLEDGE_TRANSFER.md](docs/KNOWLEDGE_TRANSFER.md) | Quy chuẩn Git, Onboarding dev mới trong 10 phút, ma trận xử lý sự cố, bàn giao đồ án. |
 
 ## Cấu trúc thư mục
 

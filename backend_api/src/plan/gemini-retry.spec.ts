@@ -55,7 +55,7 @@ describe('generateWithRetry', () => {
     await generateWithRetry(log as never, 'thử', { perCallMs: 1000, totalMs: 60_000 }, vi.fn().mockRejectedValue(apiError), invalid);
     const line = String(log.error.mock.calls[0][0]);
     expect(line).toBe(
-      'Lỗi khi gọi Gemini (lần 1, thử): 429 RESOURCE_EXHAUSTED — You exceeded your current quota, please check your plan and billing details. * Quota exceeded for metric: generate_content_free_tier_requests, limit: 20, model: gemini-3.5-flash Please retry in 39s.',
+      'Lỗi khi gọi AI (lần 1, thử): 429 RESOURCE_EXHAUSTED — You exceeded your current quota, please check your plan and billing details. * Quota exceeded for metric: generate_content_free_tier_requests, limit: 20, model: gemini-3.5-flash Please retry in 39s.',
     );
     expect(line).not.toContain('@type'); // mảng details của JSON không lọt vào log
   });

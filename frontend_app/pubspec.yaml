@@ -38,7 +38,6 @@ dependencies:
   provider: ^6.1.5
   shared_preferences: ^2.5.5
   google_fonts: ^8.2.1
-
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -62,6 +61,19 @@ flutter:
   # included with your application, so that you can use the icons in
   # the material Icons class.
   uses-material-design: true
+  fonts:
+    - family: Manrope
+      fonts:
+        - asset: assets/fonts/Manrope-400.ttf
+          weight: 400
+        - asset: assets/fonts/Manrope-500.ttf
+          weight: 500
+        - asset: assets/fonts/Manrope-600.ttf
+          weight: 600
+        - asset: assets/fonts/Manrope-700.ttf
+          weight: 700
+        - asset: assets/fonts/Manrope-800.ttf
+          weight: 800
 
   # To add assets to your application, add an assets section, like this:
   # assets:

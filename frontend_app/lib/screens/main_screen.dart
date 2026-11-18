@@ -1,7 +1,9 @@
 import 'profile/profile_screen.dart';
 import 'plan/plan_screen.dart';
 import 'grocery/grocery_screen.dart';
+
 import 'package:flutter/material.dart';
+
 import '../core/theme/app_colors.dart';
 import 'home/home_screen.dart';
 
@@ -37,8 +39,14 @@ class _MainScreenState extends State<MainScreen> {
           backgroundColor: Colors.white,
           selectedItemColor: AppColors.primary,
           unselectedItemColor: AppColors.faint,
-          selectedLabelStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700),
-          unselectedLabelStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500),
+          selectedLabelStyle: const TextStyle(
+            fontSize: 10,
+            fontWeight: FontWeight.w700,
+          ),
+          unselectedLabelStyle: const TextStyle(
+            fontSize: 10,
+            fontWeight: FontWeight.w500,
+          ),
           items: const [
             BottomNavigationBarItem(
               icon: Icon(Icons.home_outlined),
@@ -46,13 +54,13 @@ class _MainScreenState extends State<MainScreen> {
               label: 'Hôm nay',
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.assignment_outlined),
-              activeIcon: Icon(Icons.assignment),
+              icon: Icon(Icons.calendar_today_outlined),
+              activeIcon: Icon(Icons.calendar_month),
               label: 'Kế hoạch',
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.shopping_cart_outlined),
-              activeIcon: Icon(Icons.shopping_cart),
+              icon: Icon(Icons.shopping_basket_outlined),
+              activeIcon: Icon(Icons.shopping_basket),
               label: 'Đi chợ',
             ),
             BottomNavigationBarItem(
@@ -81,7 +89,3 @@ class _MainScreenState extends State<MainScreen> {
     }
   }
 }
-
-
-
-

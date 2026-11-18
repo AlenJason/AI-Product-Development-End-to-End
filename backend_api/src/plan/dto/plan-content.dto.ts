@@ -4,6 +4,7 @@ import {
   ArrayMaxSize,
   ArrayMinSize,
   IsArray,
+  IsDefined,
   IsEnum,
   IsInt,
   IsNotEmpty,
@@ -16,7 +17,10 @@ import {
   ValidateNested,
 } from 'class-validator';
 import { ExerciseTag, MuscleGroup } from '../enums/exercise.enum.js';
-import { IngredientCategory, IngredientUnit } from '../enums/ingredient.enum.js';
+import {
+  IngredientCategory,
+  IngredientUnit,
+} from '../enums/ingredient.enum.js';
 import { MealType } from '../enums/meal-type.enum.js';
 
 // Nội dung plan do Gemini hoặc thực đơn mẫu tạo ra (BRD mục 6.2), chưa có ID và danh sách đi chợ.
@@ -38,7 +42,10 @@ export class IngredientDto {
   @IsEnum(IngredientUnit)
   unit: IngredientUnit;
 
-  @ApiProperty({ enum: IngredientCategory, example: IngredientCategory.PROTEIN })
+  @ApiProperty({
+    enum: IngredientCategory,
+    example: IngredientCategory.PROTEIN,
+  })
   @IsEnum(IngredientCategory)
   category: IngredientCategory;
 }
@@ -150,6 +157,7 @@ export class DayContentDto {
   meals: MealContentDto[];
 
   @ApiProperty({ type: WorkoutContentDto })
+  @IsDefined()
   @ValidateNested()
   @Type(() => WorkoutContentDto)
   workout: WorkoutContentDto;

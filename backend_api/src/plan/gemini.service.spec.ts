@@ -8,7 +8,15 @@ import { Goal } from './enums/goal.enum.js';
 import { GeminiService, GeminiTimeoutError } from './gemini.service.js';
 import { generateWithRetry } from './gemini-retry.js';
 
-const target = { bmi: 22, bmr: 1399, tdee: 1924, target_calories: 1624, protein_g: 102, carbs_g: 183, fat_g: 54 };
+const target = {
+  bmi: 22,
+  bmr: 1399,
+  tdee: 1924,
+  target_calories: 1624,
+  protein_g: 102,
+  carbs_g: 183,
+  fat_g: 54,
+};
 const SECRET = 'BENH-NEN-BI-MAT-123';
 
 function profile(): CreatePlanDto {
@@ -19,12 +27,16 @@ function profile(): CreatePlanDto {
     weight_kg: 62,
     activity_level: ActivityLevel.LIGHT,
     goal: Goal.CUT,
-    restrictions: Object.assign(new RestrictionsDto(), { health_conditions: SECRET }),
+    restrictions: Object.assign(new RestrictionsDto(), {
+      health_conditions: SECRET,
+    }),
   });
 }
 
 function service(env: Record<string, string>): GeminiService {
-  return new GeminiService({ get: (key: string) => env[key] } as unknown as ConfigService);
+  return new GeminiService({
+    get: (key: string) => env[key],
+  } as unknown as ConfigService);
 }
 
 describe('GeminiService — SDK thật, server Gemini giả', () => {
@@ -33,13 +45,44 @@ describe('GeminiService — SDK thật, server Gemini giả', () => {
 
   beforeAll(async () => {
     fake = await startFakeGemini();
-    gemini = service({ GEMINI_API_KEY: 'test-key', GEMINI_BASE_URL: fake.url, GEMINI_TIMEOUT_MS: '200' });
+    gemini = service({
+      GEMINI_API_KEY: 'test-key',
+      GEMINI_BASE_URL: fake.url,
+      GEMINI_TIMEOUT_MS: '200',
+    });
   });
 
   afterAll(() => fake.close());
 
   it('is not configured without an API key', () => {
     expect(service({}).isConfigured).toBe(false);
+  });
+
+  it('refuses generation without a key before any HTTP request', async () => {
+    fake.reply({ kind: 'json', body: { days: [] } });
+    await expect(service({}).generateJson('synthetic test')).rejects.toThrow(/GEMINI_API_KEY/);
+    expect(fake.requests).toHaveLength(0);
+  });
+
+  it.each([
+    [403, 'Permission denied'],
+    [404, 'Model not found or unsupported for generateContent'],
+    [429, 'Resource exhausted'],
+  ])('preserves upstream status %s and does not retry inside the SDK', async (status, message) => {
+    fake.reply({ kind: 'error', status, message });
+    await expect(gemini.generateJson('synthetic test')).rejects.toMatchObject({ name: 'ApiError', status });
+    expect(fake.requests).toHaveLength(1);
+  });
+
+  it('rejects a dropped network connection without returning JSON', async () => {
+    fake.reply({ kind: 'disconnect' });
+    await expect(gemini.generateJson('synthetic test')).rejects.toBeInstanceOf(Error);
+    expect(fake.requests).toHaveLength(1);
+  });
+
+  it('rejects an empty model response', async () => {
+    fake.reply({ kind: 'text', text: '' });
+    await expect(gemini.generateJson('synthetic test')).rejects.toThrow('Gemini trả về response rỗng');
   });
 
   it('returns the parsed JSON and sends the prompt in JSON mode', async () => {
@@ -57,7 +100,11 @@ describe('GeminiService — SDK thật, server Gemini giả', () => {
 
   // Google tự cắt theo header X-Server-Timeout mà SDK gửi kèm timeout — thực tế hay gặp dạng này hơn AbortError.
   it('treats HTTP 504 DEADLINE_EXCEEDED as a timeout, so it is never retried (#15)', async () => {
-    fake.reply({ kind: 'error', status: 504, message: 'Deadline expired before operation could complete.' });
+    fake.reply({
+      kind: 'error',
+      status: 504,
+      message: 'Deadline expired before operation could complete.',
+    });
     await expect(gemini.generatePlanContent(profile(), target)).rejects.toBeInstanceOf(GeminiTimeoutError);
 
     const logger = { warn: vi.fn(), error: vi.fn() };
@@ -83,7 +130,11 @@ describe('GeminiService — SDK thật, server Gemini giả', () => {
   });
 
   it('passes a rejected API key through as ApiError 400', async () => {
-    fake.reply({ kind: 'error', status: 400, message: 'API key not valid. Please pass a valid API key.' });
+    fake.reply({
+      kind: 'error',
+      status: 400,
+      message: 'API key not valid. Please pass a valid API key.',
+    });
     await expect(gemini.generatePlanContent(profile(), target)).rejects.toMatchObject({ status: 400 });
   });
 
@@ -101,7 +152,11 @@ describe('GeminiService — SDK thật, server Gemini giả', () => {
   });
 
   it('sends no thinking config with GEMINI_THINKING=default, so the model decides', async () => {
-    const tuned = service({ GEMINI_API_KEY: 'test-key', GEMINI_BASE_URL: fake.url, GEMINI_THINKING: 'default' });
+    const tuned = service({
+      GEMINI_API_KEY: 'test-key',
+      GEMINI_BASE_URL: fake.url,
+      GEMINI_THINKING: 'default',
+    });
     fake.reply({ kind: 'json', body: { days: [] } });
     await tuned.generateJson('prompt');
     expect(fake.requests[0]).not.toContain('thinkingConfig');
@@ -110,16 +165,27 @@ describe('GeminiService — SDK thật, server Gemini giả', () => {
   it('uses gemini-3.5-flash unless GEMINI_MODEL says otherwise', async () => {
     fake.reply({ kind: 'json', body: { days: [] } });
     await gemini.generateJson('prompt');
-    const tuned = service({ GEMINI_API_KEY: 'test-key', GEMINI_BASE_URL: fake.url, GEMINI_MODEL: 'gemini-3.8-flash' });
+    const tuned = service({
+      GEMINI_API_KEY: 'test-key',
+      GEMINI_BASE_URL: fake.url,
+      GEMINI_MODEL: 'gemini-3.8-flash',
+    });
     await tuned.generateJson('prompt');
-    expect(fake.paths).toEqual(['/v1beta/models/gemini-3.5-flash:generateContent', '/v1beta/models/gemini-3.8-flash:generateContent']);
+    expect(fake.paths).toEqual([
+      '/v1beta/models/gemini-3.5-flash:generateContent',
+      '/v1beta/models/gemini-3.8-flash:generateContent',
+    ]);
   });
 
   it.each([
     ['low', '"thinkingConfig":{"thinkingLevel":"LOW"}'],
     ['off', '"thinkingConfig":{"thinkingBudget":0}'],
   ])('sends GEMINI_THINKING=%s to the API', async (level, expected) => {
-    const tuned = service({ GEMINI_API_KEY: 'test-key', GEMINI_BASE_URL: fake.url, GEMINI_THINKING: level });
+    const tuned = service({
+      GEMINI_API_KEY: 'test-key',
+      GEMINI_BASE_URL: fake.url,
+      GEMINI_THINKING: level,
+    });
     fake.reply({ kind: 'json', body: { days: [] } });
     await tuned.generateJson('prompt');
     expect(fake.requests[0]).toContain(expected);
@@ -161,4 +227,3 @@ describe('GeminiService — SDK thật, server Gemini giả', () => {
     expect(Date.now() - started).toBeLessThan(450);
   });
 });
-

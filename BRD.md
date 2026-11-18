@@ -1,4 +1,6 @@
 # BUSINESS REQUIREMENTS DOCUMENT (BRD)
+
+> Quyết định triển khai được người dùng duyệt ngày 26/10/2026: chuyển AI runtime sang **Groq**, model mặc định `openai/gpt-oss-120b`, cho tạo kế hoạch/đổi món/đổi bài/cân đối bữa ăn và chu kỳ mới sau feedback. Giữ nguyên yêu cầu nghiệp vụ, an toàn, validation, privacy và fallback. `source` bổ sung giá trị `groq`; các mô tả Gemini trong phiên bản 2.6.0 bên dưới là baseline lịch sử hoặc provider tương thích. Bằng chứng và giới hạn triển khai ở [hướng dẫn Groq](backend_api/GROQ_TRIAL.md) và [roadmap](docs/PLAN.md).
 ## Dự án: SmartFit AI – Adaptive Meal & Workout Planner
 **Tên sản phẩm:** Trợ lý AI Gợi ý & Điều chỉnh Thực đơn, Lịch tập Thông minh  
 **Môn học:** AI Product Development End-to-End (Đồ án Kỹ sư / Cử nhân Năm 4)  

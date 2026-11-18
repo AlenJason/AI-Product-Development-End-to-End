@@ -37,7 +37,7 @@ String? weightError(String text) => _rangeError(text, 'cân nặng', minWeightKg
 String? _rangeError(String text, String label, num min, num max, String unit) {
   if (text.trim().isEmpty) return 'Nhập $label';
   final value = parseNumber(text);
-  if (value == null) return '${label[0].toUpperCase()}${label.substring(1)} phải là số';
+  if (value == null || !value.isFinite) return '${label[0].toUpperCase()}${label.substring(1)} phải là số hữu hạn';
   if (value < min || value > max) return 'Trong khoảng $min–$max $unit';
   return null;
 }
@@ -74,4 +74,3 @@ List<String> profileProblems(Profile profile) => [
   ])
     if (text.length > restrictionMaxLength) 'Mỗi mục hạn chế tối đa $restrictionMaxLength ký tự',
 ];
-

@@ -15,7 +15,7 @@ class ApiClient {
   ApiClient({
     required this.baseUrl,
     http.Client? httpClient,
-    this.planTimeout = const Duration(seconds: 60),
+    this.planTimeout = const Duration(seconds: 105),
     this.requestTimeout = const Duration(seconds: 15),
   }) : _http = httpClient ?? http.Client();
 
@@ -23,7 +23,7 @@ class ApiClient {
   final String baseUrl;
   final http.Client _http;
 
-  // Request có thể gọi Gemini: backend tự dừng Gemini sau GEMINI_TOTAL_TIMEOUT_MS (40 s) rồi dùng dữ liệu dự phòng.
+  // Groq defaults to a 90s total budget; leave time for validation, history and HTTP.
   final Duration planTimeout;
   final Duration requestTimeout;
 
@@ -38,11 +38,16 @@ class ApiClient {
   Future<MealPlan> generatePlan(Profile profile) =>
       _send('POST', '/api/v1/generate-plan', MealPlan.fromJson, body: profile.toJson(), timeout: planTimeout);
 
-  Future<MealPlan> swapMeal(Profile profile, MealPlan plan, String mealId) => _send(
+  Future<MealPlan> swapMeal(Profile profile, MealPlan plan, String mealId, {String? costTier}) => _send(
         'POST',
         '/api/v1/meals/swap',
         _planIn,
-        body: {'profile': profile.toJson(), 'plan': plan.toJson(), 'meal_id': mealId},
+        body: {
+          'profile': profile.toJson(),
+          'plan': plan.toJson(),
+          'meal_id': mealId,
+          'cost_tier': ?costTier,
+        },
         timeout: planTimeout,
       );
 
@@ -66,7 +71,59 @@ class ApiClient {
   Future<AuthResult> loginWithGoogle(String idToken) =>
       _send('POST', '/api/v1/auth/google', AuthResult.fromJson, body: {'id_token': idToken}, authorize: false);
 
+  Future<AuthResult> register({
+    required String email,
+    required String name,
+    required String password,
+  }) => _send(
+    'POST',
+    '/api/v1/auth/register',
+    AuthResult.fromJson,
+    body: {'email': email, 'name': name, 'password': password},
+    authorize: false,
+  );
+
+  Future<AuthResult> login({
+    required String email,
+    required String password,
+  }) => _send(
+    'POST',
+    '/api/v1/auth/login',
+    AuthResult.fromJson,
+    body: {'email': email, 'password': password},
+    authorize: false,
+  );
+
+  Future<void> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) => _send(
+    'POST',
+    '/api/v1/auth/change-password',
+    (_) {},
+    body: {
+      'current_password': currentPassword,
+      'new_password': newPassword,
+    },
+  );
+
   Future<void> deleteAccount() => _send('DELETE', '/api/v1/me', (_) {});
+
+  Future<Profile?> getProfile() => _send(
+        'GET',
+        '/api/v1/me/profile',
+        (json) {
+          final p = json['profile'];
+          return p is Map<String, dynamic> ? Profile.fromJson(p) : null;
+        },
+      );
+
+  Future<void> updateProfile(Profile profile) => _send(
+        'PUT',
+        '/api/v1/me/profile',
+        (_) {},
+        body: profile.toJson(),
+      );
 
   Future<List<PlanSummary>> history() => _send('GET', '/api/v1/plans/history', planSummariesFromJson);
 

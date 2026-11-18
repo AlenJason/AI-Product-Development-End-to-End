@@ -1,11 +1,8 @@
 import 'package:flutter/material.dart';
 
-class PrimaryButton extends StatelessWidget {
-  final String text;
-  final VoidCallback? onPressed;
-  final bool isLoading;
-  final Widget? icon;
+import '../../core/theme/app_colors.dart';
 
+class PrimaryButton extends StatelessWidget {
   const PrimaryButton({
     super.key,
     required this.text,
@@ -13,32 +10,55 @@ class PrimaryButton extends StatelessWidget {
     this.isLoading = false,
     this.icon,
   });
-
+  final String text;
+  final VoidCallback? onPressed;
+  final bool isLoading;
+  final Widget? icon;
   @override
-  Widget build(BuildContext context) {
-    return SizedBox(
+  Widget build(BuildContext context) => DecoratedBox(
+    decoration: BoxDecoration(
+      borderRadius: BorderRadius.circular(16),
+      gradient: onPressed == null || isLoading
+          ? null
+          : const LinearGradient(
+              colors: [AppColors.greenLight, AppColors.primaryDark],
+            ),
+      boxShadow: onPressed == null
+          ? null
+          : [
+              BoxShadow(
+                color: AppColors.primary.withValues(alpha: .15),
+                blurRadius: 18,
+                offset: const Offset(0, 6),
+              ),
+            ],
+    ),
+    child: SizedBox(
       width: double.infinity,
       child: ElevatedButton(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.transparent,
+          shadowColor: Colors.transparent,
+          elevation: 0,
+        ),
         onPressed: isLoading ? null : onPressed,
         child: isLoading
             ? const SizedBox(
-                height: 24,
                 width: 24,
-                child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5),
+                height: 24,
+                child: CircularProgressIndicator(
+                  color: Colors.white,
+                  strokeWidth: 2.5,
+                ),
               )
             : Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  if (icon != null) ...[
-                    icon!,
-                    const SizedBox(width: 8),
-                  ],
-                  Text(text),
+                  if (icon != null) ...[icon!, const SizedBox(width: 8)],
+                  Flexible(child: Text(text, textAlign: TextAlign.center)),
                 ],
               ),
       ),
-    );
-  }
+    ),
+  );
 }
-
-

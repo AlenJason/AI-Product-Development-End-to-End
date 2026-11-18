@@ -1,5 +1,7 @@
 # Giai đoạn 6 — Frontend: nối MVP (FR-1 → FR-3) — Plan
 
+Roadmap chính thức: [docs/PLAN.md](../../../PLAN.md). Tài liệu này giữ thiết kế và kết quả lịch sử; trạng thái task hiện tại và nghiệm thu được quản lý ở roadmap.
+
 **Status:** ready
 **Brainstorm:** `docs/superpowers/brainstorms/phase-6-connect-mvp.md` (quyết định Q1–Q4 ở mục 8; đầu vào D5, D6 trong `docs/PLAN.md`)
 **Executor:** thực thi trực tiếp theo spec (`/feature-build` bản hiện tại chỉ nhận cấu trúc Next.js).

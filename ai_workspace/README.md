@@ -1,12 +1,13 @@
-# AI Workspace — thử nghiệm prompt Gemini
+# AI Workspace — thử nghiệm Groq
 
-Nơi thử nghiệm prompt & schema Structured Output JSON với Gemini API, độc lập với `backend_api/`, trước khi đưa prompt đã chốt vào `backend_api/src/plan/gemini.service.ts` (theo roadmap BRD.md tuần 1).
+Lệnh mặc định chạy Groq qua đúng prompt và validation backend; không duy trì một bản prompt sao chép. Khóa được đọc từ backend_api/.env. Các mô tả script Gemini bên dưới chỉ phục vụ lịch sử và lệnh `experiment:gemini:legacy`.
 
 ## Cài đặt & chạy
 
 ```bash
-npm install
-cp .env.example .env   # điền GEMINI_API_KEY
+cd ../backend_api
+npm run build
+cd ../ai_workspace
 npm run experiment
 ```
 

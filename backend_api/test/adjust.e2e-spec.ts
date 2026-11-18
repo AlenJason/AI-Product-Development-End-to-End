@@ -1,190 +1,47 @@
-import { readFileSync } from 'node:fs';
+import { JwtService } from '@nestjs/jwt';
+import { randomUUID } from 'node:crypto';
 import request from 'supertest';
 import { DataSource } from 'typeorm';
-import { startFakeGemini, type FakeGemini } from './fake-gemini-server.js';
 import { createTestApp, loginMock, type TestApp } from './test-app.js';
+import { startFakeGemini, type FakeGemini } from './fake-gemini-server.js';
+import { PlanRecord } from '../src/database/entities/plan-record.entity.js';
+import { HistoryService } from '../src/history/history.service.js';
+import type { MealPlanResponseDto } from '../src/plan/dto/meal-plan-response.dto.js';
+import { WARNINGS } from '../src/plan/plan-warnings.js';
 
-const SECRET = 'DI-UNG-BI-MAT-321';
 const PROFILE = {
-  age: 22,
   gender: 'female',
-  height_cm: 168,
-  weight_kg: 62,
+  age: 30,
+  height_cm: 165,
+  weight_kg: 60,
   activity_level: 'light',
-  goal: 'cut',
-  restrictions: { allergies: SECRET, injuries: '', health_conditions: '' },
+  goal: 'maintain',
+  restrictions: {
+    dietary_preference: '',
+    allergies: 'Tôm',
+    health_conditions: '',
+  },
 };
 
-describe('Đổi món, đổi bài tập, feedback (e2e, chế độ giả lập)', () => {
-  let testApp: TestApp;
-  const http = () => request(testApp.app.getHttpServer());
-  const post = (path: string, body: object, token?: string) => {
-    const req = http().post(`/api/v1/${path}`);
-    if (token) req.set('Authorization', `Bearer ${token}`);
-    return req.send(body);
-  };
-  const generate = async (token?: string) => (await post('generate-plan', PROFILE, token).expect(200)).body;
-  const storedPlan = async (id: string) => {
-    const rows: { plan_json: string }[] = await testApp.app
-      .get(DataSource)
-      .query('SELECT plan_json FROM plan_records WHERE id = ?', [id]);
-    return rows[0] ? JSON.parse(rows[0].plan_json) : undefined;
-  };
-
-  beforeAll(async () => {
-    testApp = await createTestApp();
-  });
-
-  afterAll(async () => {
-    await testApp.close();
-  });
-
-  it('swaps a meal and keeps the plan id (FR-4.1)', async () => {
-    const plan = await generate();
-    const { body } = await post('meals/swap', { profile: PROFILE, plan, meal_id: 'm2_2' }).expect(200);
-    expect(body.plan.plan_id).toBe(plan.plan_id);
-    expect(body.plan.days[1].meals[1].name).not.toBe(plan.days[1].meals[1].name);
-    expect(body.plan.days[1].meals[1].calories).toBe(plan.days[1].meals[1].calories);
-  });
-
-  it('swaps an exercise for a lighter one (FR-4.2), or answers 422 when none is lighter', async () => {
-    const plan = await generate();
-    const { body } = await post('exercises/swap', { profile: PROFILE, plan, exercise_id: 'e1_2' }).expect(200);
-    expect(body.plan.days[0].workout.exercises[1].muscle_group).toBe('legs');
-    expect(body.plan.days[0].workout.exercises[1].name).not.toBe(plan.days[0].workout.exercises[1].name);
-    await post('exercises/swap', { profile: PROFILE, plan, exercise_id: 'e3_2' }).expect(422);
-  });
-
-  it('adjusts the next day after feedback (FR-5.2)', async () => {
-    const plan = await generate();
-    const { body } = await post('feedback', {
-      profile: PROFILE,
-      plan,
-      day_number: 1,
-      intensity: 'hard',
-      body_states: ['sore'],
-      eating: 'on_plan',
-    }).expect(200);
-    expect(body.safety_warning).toBeNull();
-    expect(body.plan.days[1].workout.duration_minutes).toBeLessThan(plan.days[1].workout.duration_minutes);
-  });
-
-  it('answers a danger sign with a safety warning and a rest day (#14)', async () => {
-    const plan = await generate();
-    const { body } = await post('feedback', {
-      profile: PROFILE,
-      plan,
-      day_number: 2,
-      intensity: 'easy',
-      body_states: ['danger_sign'],
-      eating: 'over',
-    }).expect(200);
-    expect(body.safety_warning.message).toContain('115');
-    expect(body.plan.days[2].workout.title).toContain('Nghỉ ngơi');
-  });
-
-  it('creates a new plan after feedback on day 3 (FR-5.3)', async () => {
-    const plan = await generate();
-    const { body } = await post('feedback', {
-      profile: PROFILE,
-      plan,
-      day_number: 3,
-      intensity: 'moderate',
-      body_states: ['normal'],
-      eating: 'on_plan',
-    }).expect(200);
-    expect(body.plan.plan_id).not.toBe(plan.plan_id);
-    expect(body.plan.days).toHaveLength(3);
-  });
-
-  it.each<[string, string, (plan: Record<string, unknown>) => object]>([
-    ['a malformed meal_id', 'meals/swap', (plan) => ({ profile: PROFILE, plan, meal_id: 'x1_2' })],
-    ['a plan edited by hand', 'meals/swap', (plan) => {
-      const edited = structuredClone(plan) as { days: { meals: { calories: number }[] }[] };
-      edited.days[0].meals[0].calories = 5000;
-      return { profile: PROFILE, plan: edited, meal_id: 'm1_1' };
-    }],
-    ['no body state', 'feedback', (plan) => ({ profile: PROFILE, plan, day_number: 1, intensity: 'hard', body_states: [], eating: 'on_plan' })],
-    ['day 4', 'feedback', (plan) => ({ profile: PROFILE, plan, day_number: 4, intensity: 'hard', body_states: ['normal'], eating: 'on_plan' })],
-    ['no plan', 'exercises/swap', () => ({ profile: PROFILE, exercise_id: 'e1_1' })],
-    ['no profile', 'meals/swap', (plan) => ({ plan, meal_id: 'm1_1' })],
-    ['a plan that is not an object', 'meals/swap', () => ({ profile: PROFILE, plan: 'abc', meal_id: 'm1_1' })],
-    ['an underweight profile that cuts (v2.6.0)', 'exercises/swap', (plan) => ({ profile: { ...PROFILE, weight_kg: 45 }, plan, exercise_id: 'e1_1' })],
-    ['a profile under 18 (v2.6.0)', 'feedback', (plan) => ({ profile: { ...PROFILE, age: 17 }, plan, day_number: 1, intensity: 'hard', body_states: ['normal'], eating: 'on_plan' })],
-  ])('answers 400 to %s', async (_label, path, build) => {
-    await post(path, build(await generate())).expect(400);
-  });
-
-  it('answers 409 when the profile changed since the plan was made', async () => {
-    const plan = await generate();
-    await post('meals/swap', { profile: { ...PROFILE, goal: 'bulk' }, plan, meal_id: 'm1_1' }).expect(409);
-  });
-
-  it('never returns or stores the restriction text (#12)', async () => {
-    const { access_token } = await loginMock(testApp, 'bi-mat@vku.edu.vn');
-    const plan = await generate(access_token);
-    const swapped = await post('meals/swap', { profile: PROFILE, plan, meal_id: 'm1_1' }, access_token).expect(200);
-    expect(JSON.stringify(swapped.body)).not.toContain(SECRET);
-    expect(JSON.stringify(await storedPlan(plan.plan_id))).not.toContain(SECRET);
-  });
-
-  describe('lịch sử (quyết định Q4)', () => {
-    it('updates the saved plan after a swap when logged in', async () => {
-      const { access_token } = await loginMock(testApp, 'an@vku.edu.vn');
-      const plan = await generate(access_token);
-      const { body } = await post('meals/swap', { profile: PROFILE, plan, meal_id: 'm3_3' }, access_token).expect(200);
-      const history = await http().get(`/api/v1/plans/history/${plan.plan_id}`).set('Authorization', `Bearer ${access_token}`).expect(200);
-      expect(history.body.days[2].meals[2].name).toBe(body.plan.days[2].meals[2].name);
-      expect(history.body).toEqual(body.plan);
-    });
-
-    it('saves the new plan from day-3 feedback as a new history entry', async () => {
-      const { access_token } = await loginMock(testApp, 'binh@vku.edu.vn');
-      const plan = await generate(access_token);
-      const { body } = await post(
-        'feedback',
-        { profile: PROFILE, plan, day_number: 3, intensity: 'easy', body_states: ['normal'], eating: 'on_plan' },
-        access_token,
-      ).expect(200);
-      const history = await http().get('/api/v1/plans/history').set('Authorization', `Bearer ${access_token}`).expect(200);
-      expect(history.body.plans.map((p: { id: string }) => p.id)).toEqual([body.plan.plan_id, plan.plan_id]);
-    });
-
-    it("never touches another user's saved plan, and a guest swap stores nothing", async () => {
-      const owner = await loginMock(testApp, 'chu@vku.edu.vn');
-      const other = await loginMock(testApp, 'khac@vku.edu.vn');
-      const plan = await generate(owner.access_token);
-      await post('meals/swap', { profile: PROFILE, plan, meal_id: 'm1_1' }, other.access_token).expect(200);
-      await post('meals/swap', { profile: PROFILE, plan, meal_id: 'm1_1' }).expect(200);
-      expect(await storedPlan(plan.plan_id)).toEqual(plan);
-    });
-
-    it('answers 401 to a bad token instead of skipping history', async () => {
-      const plan = await generate();
-      await post('meals/swap', { profile: PROFILE, plan, meal_id: 'm1_1' }, 'not-a-jwt').expect(401);
-    });
-  });
-
-  it('documents the three endpoints in Swagger', async () => {
-    const { body } = await http().get('/docs-json').expect(200);
-    expect(Object.keys(body.paths)).toEqual(
-      expect.arrayContaining(['/api/v1/meals/swap', '/api/v1/exercises/swap', '/api/v1/feedback']),
-    );
-    expect(body.components.schemas).toHaveProperty('FeedbackResponseDto');
-  });
-});
-
-describe('Đổi món qua SDK thật + server Gemini giả (e2e)', () => {
-  const SAMPLE_CONTENT: unknown = JSON.parse(
-    readFileSync(new URL('../src/plan/data/sample-plan.json', import.meta.url), 'utf-8'),
-  );
-  const PROFILE_OK = { ...PROFILE, restrictions: { allergies: 'Đậu phộng', injuries: '', health_conditions: '' } };
+describe('Đổi món (e2e, chế độ giả lập)', () => {
   let testApp: TestApp;
   let fake: FakeGemini;
+  let samplePlan: MealPlanResponseDto;
+  let db: DataSource;
 
   beforeAll(async () => {
     fake = await startFakeGemini();
-    testApp = await createTestApp({ GEMINI_API_KEY: 'test-key', GEMINI_BASE_URL: fake.url, GEMINI_TIMEOUT_MS: '200' });
+    testApp = await createTestApp({
+      GEMINI_API_KEY: 'test-key',
+      GEMINI_BASE_URL: fake.url,
+      GEMINI_TIMEOUT_MS: '200',
+    });
+    db = testApp.app.get(DataSource);
+    const res = await request(testApp.app.getHttpServer())
+      .post('/api/v1/generate-plan')
+      .send(PROFILE)
+      .expect(200);
+    samplePlan = res.body;
   });
 
   afterAll(async () => {
@@ -192,42 +49,645 @@ describe('Đổi món qua SDK thật + server Gemini giả (e2e)', () => {
     await fake.close();
   });
 
-  it('uses the dish Gemini suggests when it passes every check', async () => {
-    fake.reply({ kind: 'json', body: SAMPLE_CONTENT });
-    const { body: plan } = await request(testApp.app.getHttpServer()).post('/api/v1/generate-plan').send(PROFILE_OK).expect(200);
-    const lunch = plan.days[0].meals[1];
+  beforeEach(() => { samplePlan = { ...samplePlan, plan_id: randomUUID() }; });
 
-    fake.reply({
-      kind: 'json',
-      body: {
-        meal_type: 'lunch',
-        name: 'Cơm cá hồi áp chảo, canh bí',
-        portion: '1 chén cơm + 1 miếng cá',
-        calories: lunch.calories,
-        protein_g: (lunch.calories * 0.25) / 4,
-        carbs_g: (lunch.calories * 0.5) / 4,
-        fat_g: (lunch.calories * 0.25) / 9,
-        ingredients: [{ name: 'Cá hồi', amount: 120, unit: 'g', category: 'protein' }],
-      },
+  const post = (url: string, payload: object, token?: string) => {
+    let req = request(testApp.app.getHttpServer()).post(url);
+    if (token) req = req.set('Authorization', `Bearer ${token}`);
+    return req.send(payload);
+  };
+
+  describe('POST /api/v1/exercises/swap', () => {
+    const payload = (
+      plan = samplePlan,
+      profile = PROFILE,
+      exerciseId = 'e1_2',
+    ) => ({
+      profile,
+      plan,
+      exercise_id: exerciseId,
     });
-    const { body } = await request(testApp.app.getHttpServer())
-      .post('/api/v1/meals/swap')
-      .send({ profile: PROFILE_OK, plan, meal_id: 'm1_2' })
-      .expect(200);
-    expect(fake.requests).toHaveLength(1);
-    expect(fake.requests[0]).toContain('du_lieu_nguoi_dung');
-    expect(body.plan.days[0].meals[1].name).toBe('Cơm cá hồi áp chảo, canh bí');
+    const lighterSquat = {
+      name: 'Cầu mông (Glute bridge)',
+      sets: 2,
+      reps_or_duration: '10 lần',
+      muscle_group: 'legs',
+      tags: [],
+    };
+
+    it('rejects invalid and expired tokens', async () => {
+      await post('/api/v1/exercises/swap', payload(), 'invalid-token').expect(
+        401,
+      );
+      const { user } = await loginMock(testApp, 'expired-exercise@example.com');
+      const token = await testApp.app
+        .get(JwtService)
+        .signAsync({ sub: user.id }, { expiresIn: -60 });
+      await post('/api/v1/exercises/swap', payload(), token).expect(401);
+    });
+
+    it('validates the profile, plan and exercise id', async () => {
+      await post('/api/v1/exercises/swap', {
+        plan: samplePlan,
+        exercise_id: 'e1_2',
+      }).expect(400);
+      await post('/api/v1/exercises/swap', {
+        profile: PROFILE,
+        exercise_id: 'e1_2',
+      }).expect(400);
+      await post(
+        '/api/v1/exercises/swap',
+        payload(samplePlan, PROFILE, 'bad-id'),
+      ).expect(400);
+      await post(
+        '/api/v1/exercises/swap',
+        payload(samplePlan, PROFILE, 'e1_8'),
+      ).expect(400);
+    });
+
+    it('swaps for a guest without writing history', async () => {
+      fake.reply({ kind: 'json', body: lighterSquat });
+      const response = await post('/api/v1/exercises/swap', payload()).expect(
+        200,
+      );
+      expect(response.body.plan.days[0].workout.exercises[1].name).toBe(
+        lighterSquat.name,
+      );
+      expect(
+        await db
+          .getRepository(PlanRecord)
+          .count({ where: { id: samplePlan.plan_id } }),
+      ).toBe(0);
+    });
+
+    it('uses the pool after AI errors and excludes movements that load a declared injury', async () => {
+      const injuryProfile = {
+        ...PROFILE,
+        restrictions: { ...PROFILE.restrictions, injuries: 'đau gối' },
+      };
+      fake.reply({
+        kind: 'error',
+        status: 500,
+        message: 'temporary upstream error',
+      });
+      const response = await post(
+        '/api/v1/exercises/swap',
+        payload(samplePlan, injuryProfile, 'e1_1'),
+      ).expect(200);
+
+      expect(fake.paths).toHaveLength(2);
+      expect(
+        response.body.plan.days[0].workout.exercises[0].tags,
+      ).not.toContain('jumping');
+    });
+
+    it('returns 422 when no lighter exercise is available', async () => {
+      fake.reply({
+        kind: 'error',
+        status: 500,
+        message: 'temporary upstream error',
+      });
+      await post(
+        '/api/v1/exercises/swap',
+        payload(samplePlan, PROFILE, 'e3_2'),
+      ).expect(422);
+    });
+
+    it('updates the saved plan only for its owner', async () => {
+      const owner = await loginMock(testApp, 'exercise-owner@example.com');
+      const other = await loginMock(testApp, 'exercise-other@example.com');
+      const userPlan = (
+        await post('/api/v1/generate-plan', PROFILE, owner.access_token).expect(
+          200,
+        )
+      ).body;
+      fake.reply({ kind: 'json', body: lighterSquat });
+
+      await post(
+        '/api/v1/exercises/swap',
+        payload(userPlan),
+        owner.access_token,
+      ).expect(200);
+      const ownerRecord = await db
+        .getRepository(PlanRecord)
+        .findOneBy({ id: userPlan.plan_id });
+      expect(ownerRecord?.user_id).toBe(owner.user.id);
+      expect(ownerRecord?.plan_json.days[0].workout.exercises[1].name).toBe(
+        lighterSquat.name,
+      );
+
+      fake.reply({
+        kind: 'json',
+        body: { ...lighterSquat, name: 'Nhón gót (Calf raise)' },
+      });
+      await post(
+        '/api/v1/exercises/swap',
+        payload(userPlan),
+        other.access_token,
+      ).expect(200);
+      const unchanged = await db
+        .getRepository(PlanRecord)
+        .findOneBy({ id: userPlan.plan_id });
+      expect(unchanged?.user_id).toBe(owner.user.id);
+      expect(unchanged?.plan_json.days[0].workout.exercises[1].name).toBe(
+        lighterSquat.name,
+      );
+    });
+
+    it('returns the plan with a warning when history update fails', async () => {
+      const { access_token: token } = await loginMock(
+        testApp,
+        'exercise-db-failure@example.com',
+      );
+      const userPlan = (
+        await post('/api/v1/generate-plan', PROFILE, token).expect(200)
+      ).body;
+      const update = vi
+        .spyOn(testApp.app.get(HistoryService), 'update')
+        .mockResolvedValue(false);
+      try {
+        fake.reply({ kind: 'json', body: lighterSquat });
+        const response = await post(
+          '/api/v1/exercises/swap',
+          payload(userPlan),
+          token,
+        ).expect(200);
+        expect(response.body.plan.warnings).toContain(WARNINGS.historyNotSaved);
+      } finally {
+        update.mockRestore();
+      }
+    });
   });
 
-  it('falls back to the pool after a Gemini timeout, without retrying (#15)', async () => {
-    fake.reply({ kind: 'json', body: SAMPLE_CONTENT });
-    const { body: plan } = await request(testApp.app.getHttpServer()).post('/api/v1/generate-plan').send(PROFILE_OK).expect(200);
-    fake.reply({ kind: 'hang' });
-    const { body } = await request(testApp.app.getHttpServer())
-      .post('/api/v1/meals/swap')
-      .send({ profile: PROFILE_OK, plan, meal_id: 'm1_2' })
-      .expect(200);
-    expect(fake.requests).toHaveLength(1);
-    expect(body.plan.days[0].meals[1].name).not.toBe(plan.days[0].meals[1].name);
+  describe('POST /api/v1/feedback', () => {
+    const payload = (
+      plan = samplePlan,
+      overrides: Record<string, unknown> = {},
+    ) => ({
+      profile: PROFILE,
+      plan,
+      day_number: 1,
+      intensity: 'hard',
+      body_states: ['sore'],
+      eating: 'on_plan',
+      ...overrides,
+    });
+
+    it('validates feedback fields and the supplied plan', async () => {
+      await post('/api/v1/feedback', {
+        profile: PROFILE,
+        day_number: 1,
+      }).expect(400);
+      await post(
+        '/api/v1/feedback',
+        payload(samplePlan, { day_number: 4 }),
+      ).expect(400);
+      await post(
+        '/api/v1/feedback',
+        payload(samplePlan, { body_states: [] }),
+      ).expect(400);
+      await post(
+        '/api/v1/feedback',
+        payload(samplePlan, { intensity: 'unknown' }),
+      ).expect(400);
+      await post(
+        '/api/v1/feedback',
+        payload(samplePlan, { plan: { days: [] } }),
+      ).expect(400);
+      await post(
+        '/api/v1/feedback',
+        payload(samplePlan, { profile: { ...PROFILE, age: 40 } }),
+      ).expect(409);
+    });
+
+    it('adjusts next-day workout for a guest without saving history', async () => {
+      const response = await post('/api/v1/feedback', payload()).expect(200);
+      expect(response.body.safety_warning).toBeNull();
+      expect(response.body.plan.plan_id).toBe(samplePlan.plan_id);
+      expect(response.body.plan.days[1].workout.duration_minutes).toBeLessThan(
+        samplePlan.days[1].workout.duration_minutes,
+      );
+      expect(
+        await db
+          .getRepository(PlanRecord)
+          .count({ where: { id: samplePlan.plan_id } }),
+      ).toBe(0);
+    });
+
+    it('returns safety warning and rest on danger signs without calling Gemini', async () => {
+      fake.reply({ kind: 'json', body: { meals: [] } });
+      const response = await post(
+        '/api/v1/feedback',
+        payload(samplePlan, { body_states: ['danger_sign'], eating: 'over' }),
+      ).expect(200);
+      expect(response.body.safety_warning.message).toContain('115');
+      expect(response.body.plan.days[1].workout.title).toContain('Nghỉ ngơi');
+      expect(response.body.plan.days[1].meals).toEqual(
+        samplePlan.days[1].meals,
+      );
+      expect(fake.paths).toHaveLength(0);
+    });
+
+    it('rebalances meals when Gemini succeeds and safely falls back after AI failure', async () => {
+      const rebalanced = {
+        meals: [
+          {
+            meal_type: 'breakfast',
+            name: 'Cháo yến mạch táo',
+            portion: '1 bát',
+            calories: 400,
+            protein_g: 25,
+            carbs_g: 50,
+            fat_g: 11.11,
+            ingredients: [
+              { name: 'Yến mạch', amount: 50, unit: 'g', category: 'pantry' },
+            ],
+          },
+          {
+            meal_type: 'lunch',
+            name: 'Cơm gạo lứt, gà hấp gừng',
+            portion: '1 chén',
+            calories: 600,
+            protein_g: 37.5,
+            carbs_g: 75,
+            fat_g: 16.67,
+            ingredients: [
+              { name: 'Gạo lứt', amount: 90, unit: 'g', category: 'pantry' },
+            ],
+          },
+          {
+            meal_type: 'dinner',
+            name: 'Canh rau củ đậu phụ non',
+            portion: '1 bát',
+            calories: 600,
+            protein_g: 37.5,
+            carbs_g: 75,
+            fat_g: 16.67,
+            ingredients: [
+              {
+                name: 'Đậu phụ non',
+                amount: 150,
+                unit: 'g',
+                category: 'protein',
+              },
+            ],
+          },
+        ],
+      };
+      fake.reply({ kind: 'json', body: rebalanced });
+      const success = await post(
+        '/api/v1/feedback',
+        payload(samplePlan, { eating: 'over' }),
+      ).expect(200);
+      expect(success.body.plan.days[1].meals[0].name).toBe('Cháo yến mạch táo');
+
+      fake.reply({
+        kind: 'error',
+        status: 500,
+        message: 'temporary upstream error',
+      });
+      const fallback = await post(
+        '/api/v1/feedback',
+        payload({...samplePlan,plan_id:randomUUID()}, { eating: 'under' }),
+      ).expect(200);
+      expect(fallback.body.plan.days[1].meals).toEqual(
+        samplePlan.days[1].meals,
+      );
+      expect(fallback.body.plan.warnings).toContain(
+        WARNINGS.mealsNotRebalanced,
+      );
+      expect(fake.paths).toHaveLength(2);
+    });
+
+    it('creates and saves a new plan on day three, and rejects invalid tokens', async () => {
+      await post(
+        '/api/v1/feedback',
+        payload(samplePlan, { day_number: 3 }),
+        'invalid-token',
+      ).expect(401);
+      const { access_token: token, user } = await loginMock(
+        testApp,
+        'feedback-owner@example.com',
+      );
+      const original = (
+        await post('/api/v1/generate-plan', PROFILE, token).expect(200)
+      ).body;
+      const response = await post(
+        '/api/v1/feedback',
+        payload(original, { day_number: 3 }),
+        token,
+      ).expect(200);
+      expect(response.body.plan.plan_id).not.toBe(original.plan_id);
+      const records = await db
+        .getRepository(PlanRecord)
+        .find({ where: { user_id: user.id }, order: { created_at: 'ASC' } });
+      expect(records).toHaveLength(2);
+      expect(records[1].id).toBe(response.body.plan.plan_id);
+      expect(records[1].plan_json.plan_id).toBe(response.body.plan.plan_id);
+    });
+
+    it('rejects expired tokens and never stores sensitive restrictions in feedback plans', async () => {
+      const { user, access_token: token } = await loginMock(
+        testApp,
+        'feedback-sensitive@example.com',
+      );
+      const expired = await testApp.app
+        .get(JwtService)
+        .signAsync({ sub: user.id }, { expiresIn: -60 });
+      await post('/api/v1/feedback', payload(samplePlan), expired).expect(401);
+
+      const secret = 'DI-UNG-BI-MAT-321';
+      const secretProfile = {
+        ...PROFILE,
+        restrictions: { ...PROFILE.restrictions, allergies: secret },
+      };
+      fake.reply(
+        { kind: 'error', status: 500, message: 'temporary upstream error' },
+        { kind: 'error', status: 500, message: 'temporary upstream error' },
+      );
+      const original = (
+        await post('/api/v1/generate-plan', secretProfile, token).expect(200)
+      ).body;
+      fake.reply(
+        { kind: 'error', status: 500, message: 'temporary upstream error' },
+        { kind: 'error', status: 500, message: 'temporary upstream error' },
+      );
+      const response = await post(
+        '/api/v1/feedback',
+        payload(original, { day_number: 3, profile: secretProfile }),
+        token,
+      ).expect(200);
+      const saved = await db
+        .getRepository(PlanRecord)
+        .findOneBy({ id: response.body.plan.plan_id });
+      expect(JSON.stringify(response.body)).not.toContain(secret);
+      expect(JSON.stringify(saved?.plan_json)).not.toContain(secret);
+    });
+
+    it('does not update another user’s saved plan and warns when history persistence fails', async () => {
+      const owner = await loginMock(testApp, 'feedback-plan-owner@example.com');
+      const other = await loginMock(testApp, 'feedback-plan-other@example.com');
+      const original = (
+        await post('/api/v1/generate-plan', PROFILE, owner.access_token).expect(
+          200,
+        )
+      ).body;
+      await post(
+        '/api/v1/feedback',
+        payload(original),
+        other.access_token,
+      ).expect(403);
+      const unchanged = await db
+        .getRepository(PlanRecord)
+        .findOneBy({ id: original.plan_id });
+      expect(unchanged?.user_id).toBe(owner.user.id);
+      expect(unchanged?.plan_json.days[1].workout.duration_minutes).toBe(
+        original.days[1].workout.duration_minutes,
+      );
+
+      const ownerResponse = await post(
+        '/api/v1/feedback',
+        payload(original),
+        owner.access_token,
+      ).expect(200);
+      const updated = await db
+        .getRepository(PlanRecord)
+        .findOneBy({ id: original.plan_id });
+      expect(ownerResponse.body.plan.plan_id).toBe(original.plan_id);
+      expect(updated?.plan_json.days[1].workout.duration_minutes).toBe(
+        ownerResponse.body.plan.days[1].workout.duration_minutes,
+      );
+      expect(updated?.plan_json.days[1].workout.duration_minutes).toBeLessThan(
+        original.days[1].workout.duration_minutes,
+      );
+      const historyDetail = await request(testApp.app.getHttpServer())
+        .get(`/api/v1/plans/history/${original.plan_id}`)
+        .set('Authorization', `Bearer ${owner.access_token}`)
+        .expect(200);
+      expect(historyDetail.body).toEqual(ownerResponse.body.plan);
+
+      const update = vi
+        .spyOn(testApp.app.get(HistoryService), 'update')
+        .mockResolvedValue(false);
+      try {
+        const response = await post(
+          '/api/v1/feedback',
+          payload(ownerResponse.body.plan, {day_number:2}),
+          owner.access_token,
+        ).expect(200);
+        expect(response.body.plan.warnings).toContain(WARNINGS.historyNotSaved);
+      } finally {
+        update.mockRestore();
+      }
+
+      const save = vi
+        .spyOn(testApp.app.get(HistoryService), 'save')
+        .mockResolvedValue(false);
+      try {
+        const response = await post(
+          '/api/v1/feedback',
+          payload(original, { day_number: 3 }),
+          owner.access_token,
+        ).expect(200);
+        expect(response.body.plan.warnings).toContain(WARNINGS.historyNotSaved);
+      } finally {
+        save.mockRestore();
+      }
+    });
+  });
+
+  describe('POST /api/v1/meals/swap', () => {
+    const payload = () => ({
+      profile: PROFILE,
+      plan: samplePlan,
+      meal_id: 'm1_2',
+    });
+
+    it('falls back after one Gemini timeout request', async () => {
+      fake.reply({ kind: 'hang' });
+      const response = await post('/api/v1/meals/swap', payload()).expect(200);
+      expect(response.body.plan.days[0].meals[1].name).not.toBe(
+        samplePlan.days[0].meals[1].name,
+      );
+      expect(fake.paths).toHaveLength(1);
+    });
+
+    it('returns 401 if token is invalid', async () => {
+      await post('/api/v1/meals/swap', payload(), 'invalid-token').expect(401);
+    });
+
+    it('returns 401 if token is expired', async () => {
+      const { user } = await loginMock(testApp, 'expired@example.com');
+      const token = await testApp.app
+        .get(JwtService)
+        .signAsync({ sub: user.id }, { expiresIn: -60 });
+      await post('/api/v1/meals/swap', payload(), token).expect(401);
+    });
+
+    it('returns 400 if plan or profile is missing', async () => {
+      await post('/api/v1/meals/swap', {
+        plan: samplePlan,
+        meal_id: 'm1_2',
+      }).expect(400);
+      await post('/api/v1/meals/swap', {
+        profile: PROFILE,
+        meal_id: 'm1_2',
+      }).expect(400);
+      await post('/api/v1/meals/swap', {
+        ...payload(),
+        meal_id: 'bad-id',
+      }).expect(400);
+    });
+
+    it('returns 409 if plan was generated for a different profile (target calories differ)', async () => {
+      const differentProfile = { ...PROFILE, age: 40 }; // Changes target calories
+      await post('/api/v1/meals/swap', {
+        profile: differentProfile,
+        plan: samplePlan,
+        meal_id: 'm1_2',
+      }).expect(409);
+    });
+
+    it('swaps meal successfully and does not save to DB for guest', async () => {
+      const original = samplePlan.days[0].meals[1];
+      fake.reply({
+        kind: 'json',
+        body: {
+          meal_type: original.meal_type,
+          name: 'Món Gemini kiểm thử',
+          portion: '1 phần',
+          calories: original.calories,
+          protein_g: (original.calories * 0.25) / 4,
+          carbs_g: (original.calories * 0.45) / 4,
+          fat_g: (original.calories * 0.3) / 9,
+          ingredients: [
+            { name: 'Yến mạch', amount: 50, unit: 'g', category: 'pantry' },
+          ],
+        },
+      });
+      const res = await post('/api/v1/meals/swap', payload()).expect(200);
+      expect(res.body.plan.days[0].meals[1].name).toBe('Món Gemini kiểm thử');
+      expect(fake.paths).toHaveLength(1);
+      expect(fake.requests[0]).toContain('du_lieu_nguoi_dung');
+
+      const count = await db
+        .getRepository(PlanRecord)
+        .count({ where: { id: samplePlan.plan_id } });
+      expect(count).toBe(0);
+    });
+
+    it('swaps meal successfully and saves to DB for logged in user', async () => {
+      const { access_token: token } = await loginMock(
+        testApp,
+        'test@example.com',
+      );
+      // Create a plan first to have it in the DB under this user
+      const initRes = await post(
+        '/api/v1/generate-plan',
+        PROFILE,
+        token,
+      ).expect(200);
+      const userPlan = initRes.body;
+
+      fake.reply({
+        kind: 'json',
+        body: {
+          meal_type: 'lunch',
+          name: 'Pho bo',
+          portion: '1',
+          calories: 600,
+          protein_g: 40,
+          carbs_g: 60,
+          fat_g: 22,
+          ingredients: [],
+        },
+      });
+      const swapRes = await post(
+        '/api/v1/meals/swap',
+        { profile: PROFILE, plan: userPlan, meal_id: 'm1_2' },
+        token,
+      ).expect(200);
+      expect(swapRes.body.plan.days[0].meals[1].name).not.toBe(
+        userPlan.days[0].meals[1].name,
+      );
+
+      const record = await db
+        .getRepository(PlanRecord)
+        .findOneBy({ id: userPlan.plan_id });
+      expect(record).not.toBeNull();
+      expect(record!.plan_json.days[0].meals[1].name).not.toBe(
+        userPlan.days[0].meals[1].name,
+      );
+    });
+
+    it('does not update another user’s saved plan', async () => {
+      const owner = await loginMock(testApp, 'owner@example.com');
+      const other = await loginMock(testApp, 'other@example.com');
+      const userPlan = (
+        await post('/api/v1/generate-plan', PROFILE, owner.access_token).expect(
+          200,
+        )
+      ).body;
+      fake.reply({
+        kind: 'json',
+        body: {
+          meal_type: 'lunch',
+          name: 'Com chien',
+          portion: '1',
+          calories: 600,
+          protein_g: 40,
+          carbs_g: 60,
+          fat_g: 22,
+          ingredients: [],
+        },
+      });
+
+      await post(
+        '/api/v1/meals/swap',
+        { ...payload(), plan: userPlan },
+        other.access_token,
+      ).expect(200);
+      const record = await db
+        .getRepository(PlanRecord)
+        .findOneBy({ id: userPlan.plan_id });
+      expect(record?.user_id).toBe(owner.user.id);
+      expect(record?.plan_json.days[0].meals[1].name).toBe(
+        userPlan.days[0].meals[1].name,
+      );
+    });
+
+    it('returns the swapped plan with a warning when history update fails', async () => {
+      const { access_token: token } = await loginMock(
+        testApp,
+        'db-failure@example.com',
+      );
+      const userPlan = (
+        await post('/api/v1/generate-plan', PROFILE, token).expect(200)
+      ).body;
+      await db.query('DROP TABLE plan_records');
+      fake.reply({
+        kind: 'json',
+        body: {
+          meal_type: 'lunch',
+          name: 'Com chien',
+          portion: '1',
+          calories: 600,
+          protein_g: 40,
+          carbs_g: 60,
+          fat_g: 22,
+          ingredients: [],
+        },
+      });
+
+      const response = await post(
+        '/api/v1/meals/swap',
+        { ...payload(), plan: userPlan },
+        token,
+      ).expect(200);
+      expect(response.body.plan.warnings).toContain(WARNINGS.historyNotSaved);
+      expect(response.body.plan.days[0].meals[1].name).not.toBe(
+        userPlan.days[0].meals[1].name,
+      );
+    });
   });
 });

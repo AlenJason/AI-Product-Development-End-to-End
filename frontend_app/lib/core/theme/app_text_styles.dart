@@ -1,70 +1,31 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+
 import 'app_colors.dart';
 
 class AppTextStyles {
-  // Headings
-  static TextStyle get h1 => GoogleFonts.inter(
-        fontSize: 32,
-        fontWeight: FontWeight.w800,
-        color: AppColors.ink,
-        height: 1.2,
-      );
-
-  static TextStyle get h2 => GoogleFonts.inter(
-        fontSize: 24,
-        fontWeight: FontWeight.w700,
-        color: AppColors.ink,
-        height: 1.3,
-      );
-
-  static TextStyle get h3 => GoogleFonts.inter(
-        fontSize: 20,
-        fontWeight: FontWeight.w700,
-        color: AppColors.ink,
-        height: 1.4,
-      );
-      
-  static TextStyle get h4 => GoogleFonts.inter(
-        fontSize: 18,
-        fontWeight: FontWeight.w700,
-        color: AppColors.ink,
-        height: 1.4,
-      );
-
-  // Body
-  static TextStyle get bodyLarge => GoogleFonts.inter(
-        fontSize: 16,
-        fontWeight: FontWeight.w400,
-        color: AppColors.ink,
-        height: 1.5,
-      );
-
-  static TextStyle get bodyMedium => GoogleFonts.inter(
-        fontSize: 14,
-        fontWeight: FontWeight.w400,
-        color: AppColors.ink,
-        height: 1.5,
-      );
-
-  static TextStyle get bodySmall => GoogleFonts.inter(
-        fontSize: 12,
-        fontWeight: FontWeight.w400,
-        color: AppColors.muted,
-        height: 1.5,
-      );
-
-  // Buttons/Action
-  static TextStyle get button => GoogleFonts.inter(
-        fontSize: 16,
-        fontWeight: FontWeight.w600,
-        color: Colors.white,
-      );
-      
-  static TextStyle get label => GoogleFonts.inter(
-        fontSize: 14,
-        fontWeight: FontWeight.w600,
-        color: AppColors.ink,
-      );
+  static TextStyle get h1 => const TextStyle(
+    fontFamily: 'Manrope',
+    fontSize: 30,
+    fontWeight: FontWeight.w800,
+    color: AppColors.ink,
+    height: 1.2,
+    letterSpacing: -.8,
+  );
+  static TextStyle get h2 => h1.copyWith(fontSize: 24);
+  static TextStyle get h3 => h1.copyWith(fontSize: 20);
+  static TextStyle get h4 => h1.copyWith(fontSize: 18);
+  static TextStyle get bodyLarge => const TextStyle(
+    fontFamily: 'Manrope',
+    fontSize: 15,
+    color: AppColors.ink,
+    height: 1.65,
+  );
+  static TextStyle get bodyMedium =>
+      bodyLarge.copyWith(fontSize: 14, height: 1.5);
+  static TextStyle get bodySmall =>
+      bodyLarge.copyWith(fontSize: 12, color: AppColors.muted, height: 1.5);
+  static TextStyle get button =>
+      bodyLarge.copyWith(fontWeight: FontWeight.w800, color: Colors.white);
+  static TextStyle get label =>
+      bodyMedium.copyWith(fontWeight: FontWeight.w700);
 }
-

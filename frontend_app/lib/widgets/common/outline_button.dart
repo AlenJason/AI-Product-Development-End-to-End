@@ -21,16 +21,11 @@ class OutlineButton extends StatelessWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            if (icon != null) ...[
-              icon!,
-              const SizedBox(width: 8),
-            ],
-            Text(text),
+            if (icon != null) ...[icon!, const SizedBox(width: 8)],
+            Flexible(child: Text(text, textAlign: TextAlign.center)),
           ],
         ),
       ),
     );
   }
 }
-
-

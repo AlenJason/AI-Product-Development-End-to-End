@@ -1,5 +1,7 @@
 # Giai đoạn 2 — Backend: kiểm thử nền — Plan
 
+Roadmap chính thức: [docs/PLAN.md](../../../PLAN.md). Tài liệu này giữ thiết kế và kết quả lịch sử; trạng thái task hiện tại và nghiệm thu được quản lý ở roadmap.
+
 **Status:** ready
 **Brainstorm:** `docs/superpowers/brainstorms/phase-2-backend-tests.md` (hướng C, quyết định Q1–Q2 ở mục 9)
 **Executor:** thực thi trực tiếp theo spec (`/feature-build` bản hiện tại chỉ nhận cấu trúc Next.js).

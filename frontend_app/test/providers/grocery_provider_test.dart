@@ -17,9 +17,13 @@ void main() {
   };
   final plan = MealPlan.fromJson(loadFixture('generate_plan'));
   final firstGroup = plan.groceryList.first;
-  final key = GroceryProvider.keyOf(firstGroup.category, firstGroup.items.first);
+  final key = GroceryProvider.keyOf(
+    firstGroup.category,
+    firstGroup.items.first,
+  );
 
-  Future<(GroceryProvider, PlanProvider, FakeBackend, SharedPreferences)> create(Map<String, Object> values) async {
+  Future<(GroceryProvider, PlanProvider, FakeBackend, SharedPreferences)>
+  create(Map<String, Object> values) async {
     SharedPreferences.setMockInitialValues(values);
     final prefs = await SharedPreferences.getInstance();
     final backend = FakeBackend();
@@ -33,7 +37,11 @@ void main() {
     expect(grocery.isBought(key), isTrue);
     await grocery.markHave(key);
     expect(grocery.isHave(key), isTrue);
-    expect(grocery.isBought(key), isFalse, reason: 'đã có sẵn thì không tính là đã mua');
+    expect(
+      grocery.isBought(key),
+      isFalse,
+      reason: 'đã có sẵn thì không tính là đã mua',
+    );
 
     final reopened = GroceryProvider(prefs: prefs, plans: plans);
     expect(reopened.isHave(key), isTrue);
@@ -41,19 +49,29 @@ void main() {
     expect(reopened.isHave(key), isFalse);
   });
 
-  test('khoá gồm cả lượng: đổi món làm lượng thay đổi thì dòng đó hết tích', () {
-    final entry = firstGroup.items.first;
-    final more = GroceryEntry(name: entry.name, quantity: '9999g', sourceMealIds: entry.sourceMealIds);
-    expect(GroceryProvider.keyOf(firstGroup.category, more), isNot(key));
-  });
+  test(
+    'khoá gồm cả lượng: đổi món làm lượng thay đổi thì dòng đó hết tích',
+    () {
+      final entry = firstGroup.items.first;
+      final more = GroceryEntry(
+        name: entry.name,
+        quantity: '9999g',
+        sourceMealIds: entry.sourceMealIds,
+      );
+      expect(GroceryProvider.keyOf(firstGroup.category, more), isNot(key));
+    },
+  );
 
   test('plan mới (plan_id khác) → bắt đầu lại từ đầu', () async {
     final (grocery, plans, backend, prefs) = await create(saved);
     await grocery.toggleBought(key);
-    backend.responses['/api/v1/generate-plan'] = loadFixture('generate_plan')..['plan_id'] = 'khac';
+    backend.responses['/api/v1/generate-plan'] = loadFixture('generate_plan')
+      ..['plan_id'] = 'khac';
     await plans.generate(Profile.fromJson(loadFixture('profile')));
     expect(grocery.isBought(key), isFalse);
-    expect(prefs.containsKey(GroceryProvider.stateKey), isFalse);
+    await pumpEventQueue();
+    expect(prefs.containsKey(GroceryProvider.stateKey), isTrue);
+    expect(grocery.checklistFor(plan.planId)!['bought'], contains(key));
   });
 
   test('trạng thái lưu của plan khác hoặc bị hỏng → bỏ qua', () async {
@@ -66,7 +84,10 @@ void main() {
       }),
     });
     expect(other.isBought(key), isFalse);
-    final (broken, _, _, _) = await create({...saved, GroceryProvider.stateKey: '{"plan_id": 1'});
+    final (broken, _, _, _) = await create({
+      ...saved,
+      GroceryProvider.stateKey: '{"plan_id": 1',
+    });
     expect(broken.isBought(key), isFalse);
   });
 }

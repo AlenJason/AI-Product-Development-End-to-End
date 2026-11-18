@@ -1,6 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+import '../../core/constants/routes.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
+import '../../providers/auth_provider.dart';
+import '../../widgets/auth_sheet.dart';
+import '../../widgets/ui_kit.dart';
 import 'delete_account_sheet.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -73,12 +79,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ),
           const SizedBox(width: 16),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Cài đặt', style: AppTextStyles.h1.copyWith(fontSize: 28)),
-              Text('Quản lý trải nghiệm SmartFit', style: AppTextStyles.bodyMedium.copyWith(color: AppColors.muted)),
-            ],
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Cài đặt', style: AppTextStyles.h1.copyWith(fontSize: 28)),
+                Text(
+                  'Quản lý trải nghiệm SmartFit',
+                  style: AppTextStyles.bodyMedium.copyWith(color: AppColors.muted),
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -93,45 +104,142 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Widget _buildAccountSection(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Column(
-        children: [
-          _buildListTile(
-            icon: Icons.g_mobiledata,
-            iconColor: const Color(0xFF22C55E),
-            title: 'Tài khoản Google',
-            subtitle: 'minh.nguyen@gmail.com',
-            trailing: Text('Đã kết nối', style: AppTextStyles.label.copyWith(color: const Color(0xFF22C55E))),
+    final auth = context.watch<AuthProvider?>();
+    final user = auth?.user;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const SessionExpiredBanner(),
+        if (auth?.error case final String err)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: NoticePanel(message: err, error: true),
           ),
-          const Divider(height: 1, color: AppColors.border, indent: 64),
-          _buildListTile(
-            icon: Icons.logout,
-            iconColor: AppColors.primary,
-            title: 'Đăng xuất',
-            subtitle: 'Đăng xuất khỏi thiết bị này',
-            trailing: const Icon(Icons.arrow_forward, color: AppColors.faint, size: 20),
-            onTap: () {
-              // Reset app flow to welcome
-              Navigator.pushNamedAndRemoveUntil(context, '/welcome', (route) => false);
-            },
+        Material(
+          color: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+            side: const BorderSide(color: AppColors.border),
           ),
-        ],
-      ),
+          clipBehavior: Clip.antiAlias,
+          child: Column(
+            children: [
+              if (user != null) ...[
+                _buildListTile(
+                  icon: Icons.person_outline,
+                  iconColor: const Color(0xFF22C55E),
+                  title: user.name,
+                  subtitle: user.email,
+                  trailing: Text(
+                    'Đã kết nối',
+                    style: AppTextStyles.label.copyWith(
+                      color: const Color(0xFF22C55E),
+                    ),
+                  ),
+                ),
+                const Divider(height: 1, color: AppColors.border, indent: 64),
+                _buildListTile(
+                  key: const Key('settings-history-tile'),
+                  icon: Icons.history_outlined,
+                  iconColor: AppColors.primary,
+                  title: 'Lịch sử kế hoạch',
+                  subtitle: 'Xem lại các kế hoạch đã tạo trước đây',
+                  trailing: const Icon(
+                    Icons.arrow_forward,
+                    color: AppColors.faint,
+                    size: 20,
+                  ),
+                  onTap: () => Navigator.pushNamed(context, AppRoutes.history),
+                ),
+                const Divider(height: 1, color: AppColors.border, indent: 64),
+                _buildListTile(
+                  key: const Key('settings-change-password-tile'),
+                  icon: Icons.lock_reset_outlined,
+                  iconColor: AppColors.primary,
+                  title: 'Đổi mật khẩu',
+                  subtitle: 'Cập nhật mật khẩu tài khoản của bạn',
+                  trailing: const Icon(
+                    Icons.arrow_forward,
+                    color: AppColors.faint,
+                    size: 20,
+                  ),
+                  onTap: auth?.busy == true
+                      ? null
+                      : () async {
+                          final changed = await showChangePasswordSheet(context);
+                          if (!changed || !context.mounted) return;
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Đổi mật khẩu thành công!'),
+                            ),
+                          );
+                        },
+                ),
+                const Divider(height: 1, color: AppColors.border, indent: 64),
+                _buildListTile(
+                  key: const Key('settings-signout-tile'),
+                  icon: Icons.logout,
+                  iconColor: AppColors.primary,
+                  title: 'Đăng xuất',
+                  subtitle: 'Đăng xuất khỏi thiết bị này',
+                  trailing: const Icon(
+                    Icons.arrow_forward,
+                    color: AppColors.faint,
+                    size: 20,
+                  ),
+                  onTap: auth?.busy == true
+                      ? null
+                      : () async {
+                          await auth?.signOut();
+                          if (!context.mounted) return;
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                'Đã đăng xuất. Kế hoạch trên máy vẫn được giữ nguyên.',
+                              ),
+                            ),
+                          );
+                        },
+                ),
+              ] else ...[
+                _buildListTile(
+                  key: const Key('settings-signin-tile'),
+                  icon: Icons.login,
+                  iconColor: AppColors.primary,
+                  title: 'Đăng nhập tài khoản',
+                  subtitle: 'Đang dùng chế độ khách — nhấn để đăng nhập',
+                  trailing: auth?.busy == true
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : Text(
+                          'Đăng nhập',
+                          style: AppTextStyles.label.copyWith(
+                            color: AppColors.primary,
+                          ),
+                        ),
+                  onTap: auth?.busy == true
+                      ? null
+                      : () => startAuthSignIn(context),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ],
     );
   }
 
   Widget _buildOptionsSection() {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
+    return Material(
+      color: Colors.white,
+      shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.border),
+        side: const BorderSide(color: AppColors.border),
       ),
+      clipBehavior: Clip.antiAlias,
       child: Column(
         children: [
           _buildListTile(
@@ -159,12 +267,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Widget _buildPrivacySection() {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
+    return Material(
+      color: Colors.white,
+      shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.border),
+        side: const BorderSide(color: AppColors.border),
       ),
+      clipBehavior: Clip.antiAlias,
       child: Column(
         children: [
           _buildListTile(
@@ -188,32 +297,56 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Widget _buildDangerSection(BuildContext context) {
+    final isSignedIn = context.watch<AuthProvider?>()?.isSignedIn ?? false;
     return Column(
       children: [
         SizedBox(
           width: double.infinity,
           child: OutlinedButton.icon(
-            onPressed: () {
-              showModalBottomSheet(
-                context: context,
-                backgroundColor: Colors.transparent,
-                builder: (context) => const DeleteAccountSheet(),
-              );
-            },
-            icon: const Icon(Icons.delete_outline, color: AppColors.danger),
-            label: Text('Xóa tài khoản', style: AppTextStyles.h3.copyWith(color: AppColors.danger, fontSize: 18)),
+            key: const Key('settings-delete-account-button'),
+            onPressed: !isSignedIn
+                ? null
+                : () {
+                    showModalBottomSheet(
+                      context: context,
+                      backgroundColor: Colors.transparent,
+                      constraints: const BoxConstraints(maxWidth: 430),
+                      builder: (context) => const DeleteAccountSheet(),
+                    );
+                  },
+            icon: Icon(
+              Icons.delete_outline,
+              color: isSignedIn ? AppColors.danger : AppColors.muted,
+            ),
+            label: Text(
+              'Xóa tài khoản',
+              style: AppTextStyles.h3.copyWith(
+                color: isSignedIn ? AppColors.danger : AppColors.muted,
+                fontSize: 18,
+              ),
+            ),
             style: OutlinedButton.styleFrom(
-              backgroundColor: const Color(0xFFFEF2F2),
+              backgroundColor: isSignedIn
+                  ? const Color(0xFFFEF2F2)
+                  : AppColors.panel,
               padding: const EdgeInsets.symmetric(vertical: 16),
-              side: const BorderSide(color: Color(0xFFFECACA)),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              side: BorderSide(
+                color: isSignedIn
+                    ? const Color(0xFFFECACA)
+                    : AppColors.border,
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
               elevation: 0,
             ),
           ),
         ),
         const SizedBox(height: 8),
         Text(
-          'Toàn bộ hồ sơ và lịch sử kế hoạch sẽ bị xóa vĩnh viễn.',
+          isSignedIn
+              ? 'Toàn bộ hồ sơ và lịch sử kế hoạch trên máy chủ sẽ bị xóa vĩnh viễn.'
+              : 'Bạn đang ở chế độ khách; cần đăng nhập để quản lý tài khoản máy chủ.',
           style: AppTextStyles.bodySmall.copyWith(color: AppColors.muted),
           textAlign: TextAlign.center,
         ),
@@ -222,6 +355,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Widget _buildListTile({
+    Key? key,
     required IconData icon,
     required Color iconColor,
     required String title,
@@ -230,6 +364,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     VoidCallback? onTap,
   }) {
     return ListTile(
+      key: key,
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       onTap: onTap,
       leading: Container(

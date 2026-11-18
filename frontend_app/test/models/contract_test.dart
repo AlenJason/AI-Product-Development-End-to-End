@@ -11,6 +11,12 @@ import '../fixture_loader.dart';
 // server kiểm từng ID và con số (BRD 6.4, #24). Fixture lệch với backend → test backend
 // contract-fixtures.e2e-spec.ts đỏ trước.
 void main() {
+  test('Groq source survives parsing and persistence', () {
+    final json = loadFixture('generate_plan')..['source'] = 'groq';
+    final plan = MealPlan.fromJson(json);
+    expect(plan.source, PlanSource.groq);
+    expect(plan.toJson(), equals(json));
+  });
   group('vòng tròn JSON với fixture của backend', () {
     for (final name in ['generate_plan', 'meals_swap', 'exercises_swap']) {
       test('$name giữ nguyên từng trường và từng con số', () {

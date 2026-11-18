@@ -51,8 +51,106 @@ describe('Đăng nhập & tài khoản (e2e, AUTH_MODE=mock, DB trong RAM)', () 
 
   it('documents login and account deletion in Swagger with bearer auth', async () => {
     const { body } = await http().get('/docs-json').expect(200);
-    expect(Object.keys(body.paths)).toEqual(expect.arrayContaining(['/api/v1/auth/google', '/api/v1/me']));
+    expect(Object.keys(body.paths)).toEqual(
+      expect.arrayContaining([
+        '/api/v1/auth/google',
+        '/api/v1/auth/register',
+        '/api/v1/auth/login',
+        '/api/v1/auth/change-password',
+        '/api/v1/me',
+      ]),
+    );
     expect(body.components.securitySchemes).toHaveProperty('bearer');
+  });
+
+  it('registers, logs in with password, rejects wrong password, and changes password', async () => {
+    const reg = await http()
+      .post('/api/v1/auth/register')
+      .send({ email: 'Minh@VKU.edu.vn', name: 'Công Minh', password: 'secret123' })
+      .expect(200);
+    expect(reg.body.user).toEqual({
+      id: expect.stringMatching(UUID),
+      email: 'minh@vku.edu.vn',
+      name: 'Công Minh',
+    });
+
+    await http()
+      .post('/api/v1/auth/register')
+      .send({ email: 'minh@vku.edu.vn', name: 'Trùng', password: 'secret123' })
+      .expect(409);
+
+    await http()
+      .post('/api/v1/auth/login')
+      .send({ email: 'minh@vku.edu.vn', password: 'wrong' })
+      .expect(401);
+
+    const logged = await http()
+      .post('/api/v1/auth/login')
+      .send({ email: 'minh@vku.edu.vn', password: 'secret123' })
+      .expect(200);
+    expect(logged.body.user.id).toBe(reg.body.user.id);
+
+    await http()
+      .post('/api/v1/auth/change-password')
+      .set('Authorization', `Bearer ${logged.body.access_token}`)
+      .send({ current_password: 'wrong', new_password: 'newpassword99' })
+      .expect(401);
+
+    await http()
+      .post('/api/v1/auth/change-password')
+      .set('Authorization', `Bearer ${logged.body.access_token}`)
+      .send({ current_password: 'secret123', new_password: 'newpassword99' })
+      .expect(200);
+
+    await http()
+      .post('/api/v1/auth/login')
+      .send({ email: 'minh@vku.edu.vn', password: 'secret123' })
+      .expect(401);
+
+    await http()
+      .post('/api/v1/auth/login')
+      .send({ email: 'minh@vku.edu.vn', password: 'newpassword99' })
+      .expect(200);
+  });
+
+  it('saves and retrieves physical profile, stripping sensitive restrictions', async () => {
+    const { access_token } = await loginMock(testApp, 'profile-test@vku.edu.vn');
+    const initial = await http()
+      .get('/api/v1/me/profile')
+      .set('Authorization', `Bearer ${access_token}`)
+      .expect(200);
+    expect(initial.body).toEqual({ profile: null });
+
+    const update = await http()
+      .put('/api/v1/me/profile')
+      .set('Authorization', `Bearer ${access_token}`)
+      .send({
+        age: 25,
+        gender: 'male',
+        height_cm: 175,
+        weight_kg: 70,
+        activity_level: 'moderate',
+        goal: 'maintain',
+        restrictions: { allergies: 'Đậu phộng' }, // sensitive, should be stripped!
+      })
+      .expect(200);
+
+    expect(update.body.success).toBe(true);
+    expect(update.body.profile).toEqual({
+      age: 25,
+      gender: 'male',
+      height_cm: 175,
+      weight_kg: 70,
+      activity_level: 'moderate',
+      goal: 'maintain',
+    });
+    expect(update.body.profile.restrictions).toBeUndefined();
+
+    const retrieved = await http()
+      .get('/api/v1/me/profile')
+      .set('Authorization', `Bearer ${access_token}`)
+      .expect(200);
+    expect(retrieved.body.profile).toEqual(update.body.profile);
   });
 });
 

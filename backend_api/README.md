@@ -1,12 +1,14 @@
 # SmartFit AI — Backend API (NestJS)
 
+AI mặc định từ 26/10/2026: **Groq** cho generate-plan, meals/swap, exercises/swap và feedback. Xem [cấu hình và kiểm chứng](GROQ_TRIAL.md). Các hướng dẫn Gemini phía dưới chỉ dùng khi chọn `PLAN_AI_PROVIDER=gemini`.
+
 Backend cho đồ án SmartFit AI. Xem đặc tả đầy đủ tại [`../BRD.md`](../BRD.md) (mục 4, 6, 7 liên quan trực tiếp tới backend).
 
 ## Cài đặt
 
 ```bash
 npm install
-cp .env.example .env   # rồi điền GEMINI_API_KEY
+cp .env.example .env   # rồi điền GROQ_API_KEY
 ```
 
 ## Chạy

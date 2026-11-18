@@ -9,7 +9,7 @@ async function createController(env: Record<string, string | undefined>) {
     controllers: [AppController],
     providers: [
       AppService,
-      { provide: ConfigService, useValue: { get: (key: string) => env[key] } },
+      { provide: ConfigService, useValue: { get: (key: string) => ({ PLAN_AI_PROVIDER: 'gemini', ...env })[key] } },
       { provide: AUTH_CONFIG, useValue: { mode: AuthMode.MOCK } },
     ],
   }).compile();
@@ -19,6 +19,10 @@ async function createController(env: Record<string, string | undefined>) {
 
 describe('AppController', () => {
   describe('health', () => {
+    it('reports Groq configuration without claiming live connectivity', async () => {
+      const controller = await createController({ PLAN_AI_PROVIDER: 'groq', GROQ_API_KEY: 'test-key' });
+      expect(controller.getHealth()).toMatchObject({ ai_provider: 'groq', ai_status: 'configured', gemini: 'fallback' });
+    });
     it('reports gemini fallback when GEMINI_API_KEY is unset', async () => {
       const controller = await createController({});
       expect(controller.getHealth()).toEqual({ status: 'ok', gemini: 'fallback', auth_mode: 'mock' });

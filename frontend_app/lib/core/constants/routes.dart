@@ -16,6 +16,7 @@ class AppRoutes {
   static const String adaptiveResult = '/adaptive-result';
   static const String profile = '/profile';
   static const String editProfile = '/profile/edit';
+  static const String history = '/history';
   static const String settings = '/settings';
 }
 

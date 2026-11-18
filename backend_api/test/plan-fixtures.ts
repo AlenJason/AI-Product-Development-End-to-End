@@ -35,8 +35,7 @@ export function geminiAnswering(...answers: unknown[]) {
     if (answer instanceof Error) generateJson.mockRejectedValueOnce(answer);
     else generateJson.mockResolvedValueOnce(answer);
   }
-  const budget = { perCallMs: 20_000, totalMs: 40_000 };
-  return { gemini: { isConfigured: true, generateJson, budget } as unknown as GeminiService, generateJson };
+  return { gemini: { isConfigured: true, generateJson, budget: { totalMs: 15000, perCallMs: 7500 } } as unknown as GeminiService, generateJson };
 }
 
 // Plan hợp lệ do chính server tạo (thực đơn mẫu, không Gemini) — giống plan app sẽ gửi lại.

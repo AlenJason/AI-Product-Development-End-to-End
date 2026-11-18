@@ -1,5 +1,5 @@
 ---
-last_updated: 2026-09-27
+last_updated: 2026-10-11
 tags: [doi-mon, doi-bai-tap, feedback, di-ung, kho-soan-san]
 ---
 
@@ -88,4 +88,4 @@ Dùng ở bốn chỗ:
   - chọn ngẫu nhiên cố định (`firstPick`, `lastPick`);
   - dấu hiệu nguy hiểm có `describe` riêng.
 - **E2E** `test/adjust.e2e-spec.ts`: ba endpoint, 400/409/422/401, lịch sử, #12, Swagger, và đổi món qua SDK thật + server Gemini giả.
-- **Smoke** (`npm run test:smoke`): gọi cả ba endpoint trên bản build, nên file JSON thiếu trong `dist/` sẽ bị bắt.
+- **Smoke** (`npm run test:smoke`): gọi cả ba endpoint trên bản build cho guest và user đăng nhập; kiểm token sai, cập nhật/lấy lại history, cô lập plan giữa hai user và lưu plan mới từ feedback ngày 3. DB dùng `:memory:`; preflight kiểm các JSON asset trong `dist/`.

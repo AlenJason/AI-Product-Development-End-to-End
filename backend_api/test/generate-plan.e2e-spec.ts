@@ -1,17 +1,28 @@
 import { readFileSync } from 'node:fs';
 import request from 'supertest';
-import { startFakeGemini, type FakeGemini } from './fake-gemini-server.js';
+import { startFakeGemini, type FakeGemini, type FakeGeminiReply } from './fake-gemini-server.js';
 import { createTestApp, type TestApp } from './test-app.js';
 
 const SAMPLE_CONTENT: unknown = JSON.parse(
   readFileSync(new URL('../src/plan/data/sample-plan.json', import.meta.url), 'utf-8'),
 );
 const SECRET = 'BENH-NEN-BI-MAT-123';
-const BASE = { age: 22, gender: 'female', height_cm: 168, weight_kg: 62, activity_level: 'light', goal: 'cut' };
+const BASE = {
+  age: 22,
+  gender: 'female',
+  height_cm: 168,
+  weight_kg: 62,
+  activity_level: 'light',
+  goal: 'cut',
+};
 const body = (overrides: object = {}) => ({
   ...BASE,
   // Thực đơn mẫu (dùng làm "đầu ra Gemini") không có đậu phộng, nên vẫn qua bước kiểm dị ứng.
-  restrictions: { allergies: 'Đậu phộng', injuries: '', health_conditions: SECRET },
+  restrictions: {
+    allergies: 'Đậu phộng',
+    injuries: '',
+    health_conditions: SECRET,
+  },
   ...overrides,
 });
 
@@ -21,7 +32,11 @@ describe('POST /api/v1/generate-plan (e2e, SDK thật + server Gemini giả)', (
 
   beforeAll(async () => {
     fake = await startFakeGemini();
-    testApp = await createTestApp({ GEMINI_API_KEY: 'test-key', GEMINI_BASE_URL: fake.url, GEMINI_TIMEOUT_MS: '200' });
+    testApp = await createTestApp({
+      GEMINI_API_KEY: 'test-key',
+      GEMINI_BASE_URL: fake.url,
+      GEMINI_TIMEOUT_MS: '200',
+    });
   });
 
   afterAll(async () => {
@@ -29,8 +44,7 @@ describe('POST /api/v1/generate-plan (e2e, SDK thật + server Gemini giả)', (
     await fake.close();
   });
 
-  const post = (payload: object) =>
-    request(testApp.app.getHttpServer()).post('/api/v1/generate-plan').send(payload);
+  const post = (payload: object) => request(testApp.app.getHttpServer()).post('/api/v1/generate-plan').send(payload);
 
   it('returns a Gemini plan that follows the contract', async () => {
     fake.reply({ kind: 'json', body: SAMPLE_CONTENT });
@@ -38,7 +52,10 @@ describe('POST /api/v1/generate-plan (e2e, SDK thật + server Gemini giả)', (
     expect(res.body.source).toBe('gemini');
     expect(res.body.plan_id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[0-9a-f]{4}-[0-9a-f]{12}$/);
     expect(res.body.days).toHaveLength(3);
-    expect(res.body.daily_target).toMatchObject({ bmr: 1399, target_calories: 1624 });
+    expect(res.body.daily_target).toMatchObject({
+      bmr: 1399,
+      target_calories: 1624,
+    });
     expect(res.body.grocery_list.map((group: { category: string }) => group.category)).toEqual([
       'protein',
       'produce',
@@ -62,6 +79,30 @@ describe('POST /api/v1/generate-plan (e2e, SDK thật + server Gemini giả)', (
     expect(res.body.warnings.some((warning: string) => warning.startsWith('Đang dùng thực đơn mẫu'))).toBe(true);
   });
 
+  it.each<[string, FakeGeminiReply]>([
+    ['invalid key', { kind: 'error', status: 400, message: 'API key not valid' }],
+    ['permission denied', { kind: 'error', status: 403, message: 'Permission denied' }],
+    ['unsupported model', { kind: 'error', status: 404, message: 'Model not found' }],
+    ['quota or rate limit', { kind: 'error', status: 429, message: 'Resource exhausted' }],
+    ['server error', { kind: 'error', status: 500, message: 'Internal error' }],
+    ['network disconnect', { kind: 'disconnect' }],
+    ['invalid JSON', { kind: 'text', text: `invalid JSON ${SECRET}` }],
+    ['empty response', { kind: 'text', text: '' }],
+  ])('identifies fallback after %s; HTTP 200 does not mean AI succeeded', async (_label, reply) => {
+    fake.reply(reply);
+    const res = await post(body()).expect(200);
+    expect(res.body.source).toBe('sample');
+    expect(res.body.days).toHaveLength(3);
+    expect(res.body.daily_target).toMatchObject({
+      bmr: 1399,
+      target_calories: 1624,
+    });
+    expect(res.body.grocery_list).toHaveLength(3);
+    expect(res.body.warnings.some((warning: string) => warning.startsWith('Đang dùng thực đơn mẫu'))).toBe(true);
+    expect(JSON.stringify(res.body)).not.toContain(SECRET);
+    expect(fake.requests).toHaveLength(2);
+  });
+
   it('rejects Gemini output that contains a recognised allergen, then serves the filtered sample', async () => {
     fake.reply({ kind: 'json', body: SAMPLE_CONTENT }); // thực đơn mẫu có "Nước mắm"
     const res = await post(body({ restrictions: { allergies: 'Hải sản' } })).expect(200);
@@ -75,6 +116,17 @@ describe('POST /api/v1/generate-plan (e2e, SDK thật + server Gemini giả)', (
     const res = await post(body()).expect(200);
     expect(res.body.source).toBe('sample');
     expect(fake.requests).toHaveLength(1);
+  });
+
+  it('returns a valid fallback at the BMR floor after project access is denied', async () => {
+    fake.reply({ kind: 'error', status: 403, message: 'Your project has been denied access. Please contact support.' });
+    const res = await post(body({ age: 19, height_cm: 150, weight_kg: 48.2, activity_level: 'sedentary' })).expect(200);
+    expect(res.body.source).toBe('sample');
+    expect(res.body.daily_target).toMatchObject({ bmr: 1164, target_calories: 1164 });
+    for (const day of res.body.days) {
+      expect(day.meals.reduce((sum: number, meal: { calories: number }) => sum + meal.calories, 0)).toBe(1164);
+    }
+    expect(fake.requests).toHaveLength(2);
   });
 
   it.each([
