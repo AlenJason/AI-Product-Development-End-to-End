@@ -1,5 +1,21 @@
 # SmartFit AI – Adaptive Meal & Workout Planner
 
+<p align="center">
+  <a href="https://github.com/AlenJason/AI-Product-Development-End-to-End/actions/workflows/backend.yml">
+    <img src="https://github.com/AlenJason/AI-Product-Development-End-to-End/actions/workflows/backend.yml/badge.svg" alt="Backend CI" />
+  </a>
+  <a href="https://github.com/AlenJason/AI-Product-Development-End-to-End/actions/workflows/frontend.yml">
+    <img src="https://github.com/AlenJason/AI-Product-Development-End-to-End/actions/workflows/frontend.yml/badge.svg" alt="Frontend CI" />
+  </a>
+  <a href="https://github.com/AlenJason/AI-Product-Development-End-to-End/actions/workflows/ai-pr-review.yml">
+    <img src="https://github.com/AlenJason/AI-Product-Development-End-to-End/actions/workflows/ai-pr-review.yml/badge.svg" alt="AI PR Code Review" />
+  </a>
+  <img src="https://img.shields.io/badge/Flutter-3.47.5-02569B?logo=flutter" alt="Flutter" />
+  <img src="https://img.shields.io/badge/NestJS-12.x-E0234E?logo=nestjs" alt="NestJS" />
+  <img src="https://img.shields.io/badge/MySQL-8.0-4479A1?logo=mysql" alt="MySQL" />
+  <img src="https://img.shields.io/badge/AI_Engine-Groq_GPT--OSS--120B-F55036" alt="AI Engine" />
+</p>
+
 **Cập nhật 26/10/2026:** AI runtime mặc định chuyển sang **Groq** (`openai/gpt-oss-120b`) cho tạo kế hoạch, đổi món, đổi bài và feedback. Cấu hình `GROQ_API_KEY` tại backend; xem [hướng dẫn Groq](backend_api/GROQ_TRIAL.md). Các mục Gemini phía dưới là lịch sử và phương án tương thích, không phải nhà cung cấp mặc định. Tạo kế hoạch Groq đã được người dùng chạy thành công trên app; tiến độ UI còn lại vẫn theo [roadmap](docs/PLAN.md).
 
 Roadmap chính thức duy nhất: [docs/PLAN.md](docs/PLAN.md). Trạng thái task, bằng chứng và ưu tiên N01–N10 nằm ở đó; các changelog dưới đây là lịch sử, không thay kết quả audit hiện tại.
@@ -26,9 +42,10 @@ Dự án trang bị đầy đủ 7 danh mục tài liệu tiêu chuẩn kỹ ngh
 | 2 | **Architecture Documentation** | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Sơ đồ hệ thống, mô hình Monorepo, sơ đồ ERD MySQL, cơ chế AI Fallback. |
 | 3 | **Product Documentation** | [BRD.md](BRD.md) & [docs/PLAN.md](docs/PLAN.md) | Đặc tả yêu cầu nghiệp vụ v2.6.0, hồ sơ người dùng, roadmap và tiến độ thực tế. |
 | 4 | **API Documentation** | [docs/API_DOCUMENTATION.md](docs/API_DOCUMENTATION.md) | Đặc tả toàn bộ REST API, JSON request/response, mã lỗi (Swagger: `/docs`). |
-| 5 | **Code Documentation** | [AGENTS.md](AGENTS.md) & [.agents/skills/](.agents/skills) | Quy chuẩn code (ESM `.js`, Provider, TypeORM), hợp đồng kiểm thử, kỹ năng AI. |
-| 6 | **User Documentation** | [docs/USER_GUIDE.md](docs/USER_GUIDE.md) | Cẩm nang hướng dẫn sử dụng chi tiết cho người dùng cuối (Onboarding, Kế hoạch, Đổi món, Đi chợ, Feedback). |
-| 7 | **Knowledge Transfer & Communication** | [docs/KNOWLEDGE_TRANSFER.md](docs/KNOWLEDGE_TRANSFER.md) | Quy chuẩn Git, Onboarding dev mới trong 10 phút, ma trận xử lý sự cố, bàn giao đồ án. |
+| 5 | **System Flowcharts** | [docs/FLOWCHARTS.md](docs/FLOWCHARTS.md) | Sơ đồ luồng dữ liệu & trình tự Mermaid: Auth, Auto-Fill Profile, AI Plan, Recipe, Feedback. |
+| 6 | **Code Documentation** | [AGENTS.md](AGENTS.md) & [.agents/skills/](.agents/skills) | Quy chuẩn code (ESM `.js`, Provider, TypeORM), hợp đồng kiểm thử, kỹ năng AI. |
+| 7 | **User Documentation** | [docs/USER_GUIDE.md](docs/USER_GUIDE.md) | Cẩm nang hướng dẫn sử dụng chi tiết cho người dùng cuối (Onboarding, Kế hoạch, Đổi món, Đi chợ, Feedback). |
+| 8 | **Knowledge Transfer & Communication** | [docs/KNOWLEDGE_TRANSFER.md](docs/KNOWLEDGE_TRANSFER.md) | Quy chuẩn Git, Onboarding dev mới trong 10 phút, ma trận xử lý sự cố, bàn giao đồ án. |
 
 ## Cấu trúc thư mục
 
