@@ -2,7 +2,8 @@
 
 > **Dự án:** SmartFit AI — Hệ thống gợi ý & điều chỉnh thực đơn món Việt và bài tập thích ứng 3 ngày  
 > **Đồ án:** AI Product Development End-to-End — Đại học Công nghệ Thông tin và Truyền thông Việt - Hàn (VKU)  
-> **Phiên bản kiến trúc:** 2.6.0 (Cập nhật tháng 11/2026)
+> **Phiên bản kiến trúc:** 2.6.0 (Cập nhật tháng 11/2026)  
+> **Tài liệu liên quan:** [FLOWCHARTS.md](FLOWCHARTS.md) (Sơ đồ luồng & trình tự Mermaid), [API_DOCUMENTATION.md](API_DOCUMENTATION.md) (Đặc tả chi tiết API & Swagger)
 
 ---
 
