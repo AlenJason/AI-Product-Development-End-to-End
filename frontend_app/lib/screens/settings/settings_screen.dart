@@ -192,12 +192,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       : () async {
                           await auth?.signOut();
                           if (!context.mounted) return;
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text(
-                                'Đã đăng xuất. Kế hoạch trên máy vẫn được giữ nguyên.',
-                              ),
-                            ),
+                          Navigator.pushNamedAndRemoveUntil(
+                            context,
+                            AppRoutes.welcome,
+                            (route) => false,
                           );
                         },
                 ),

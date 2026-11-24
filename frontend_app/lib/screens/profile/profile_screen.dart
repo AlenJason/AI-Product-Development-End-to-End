@@ -93,6 +93,24 @@ class ProfileScreen extends StatelessWidget {
                           : 'Đăng nhập để lưu lịch sử',
                     ),
                   ),
+                ] else if (auth != null && user != null) ...[
+                  const SizedBox(height: 12),
+                  OutlinedButton.icon(
+                    key: const Key('profile-signout-button'),
+                    onPressed: auth.busy
+                        ? null
+                        : () async {
+                            await auth.signOut();
+                            if (!context.mounted) return;
+                            Navigator.pushNamedAndRemoveUntil(
+                              context,
+                              AppRoutes.welcome,
+                              (route) => false,
+                            );
+                          },
+                    icon: const Icon(Icons.logout, size: 18),
+                    label: const Text('Đăng xuất'),
+                  ),
                 ],
               ],
             ),
