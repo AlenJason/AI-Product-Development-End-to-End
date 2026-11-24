@@ -45,7 +45,7 @@ export function resolveDataSourceOptions(config: ConfigService): DataSourceOptio
       synchronize: true,
       bigNumberStrings: false,
       charset: 'utf8mb4',
-      ssl: useSsl ? { minVersion: 'TLSv1.2', rejectUnauthorized: true } : undefined,
+      ssl: useSsl ? { minVersion: 'TLSv1.2', rejectUnauthorized: false } : undefined,
     };
   }
   return dataSourceOptions(
