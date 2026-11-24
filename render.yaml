@@ -26,6 +26,8 @@ services:
         value: "true"
       - key: JWT_SECRET
         generateValue: true
+      - key: ALLOW_MOCK_AUTH
+        value: "true"
       - key: GROQ_API_KEY
         sync: false
       - key: CORS_ORIGINS
