@@ -238,6 +238,6 @@ void main() {
     expect(backend.api.accessToken, isNull);
     expect(prefs.getString(AuthProvider.tokenKey), isNull);
     expect(plans.hasPlan, isTrue);
-    expect(find.byKey(const Key('settings-signin-tile')), findsOneWidget);
+    expect(find.byKey(const Key('welcome-signin-button')), findsOneWidget);
   });
 }
