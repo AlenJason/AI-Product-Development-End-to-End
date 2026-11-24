@@ -2,6 +2,8 @@ import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import type { Repository } from 'typeorm';
 import { PlanRecord } from '../database/entities/plan-record.entity.js';
+import { PlanMealItem } from '../database/entities/plan-meal-item.entity.js';
+import { PlanWorkoutItem } from '../database/entities/plan-workout-item.entity.js';
 import type { MealPlanResponseDto } from '../plan/dto/meal-plan-response.dto.js';
 import type { PlanHistoryResponseDto } from './dto/plan-history-response.dto.js';
 
@@ -19,13 +21,26 @@ export class HistoryService {
   // Trả false thay vì ném lỗi: lịch sử lỗi không được làm mất plan vừa tạo xong.
   async save(userId: string, plan: MealPlanResponseDto): Promise<boolean> {
     try {
+      const daily = plan.daily_target;
       await this.plans.insert({
         id: plan.plan_id,
         user_id: userId,
-        target_calories: plan.daily_target.target_calories,
+        target_calories: daily.target_calories,
+        source: plan.source ?? null,
+        bmi: daily?.bmi ?? null,
+        bmr: daily?.bmr ?? null,
+        tdee: daily?.tdee ?? null,
+        protein_g: daily?.protein_g ?? null,
+        carbs_g: daily?.carbs_g ?? null,
+        fat_g: daily?.fat_g ?? null,
+        day_count: plan.days?.length ?? 3,
         plan_json: plan,
         created_at: new Date(),
       });
+
+      // Lưu chi tiết từng món ăn và bài tập thể dục dưới dạng bảng quan hệ dễ đọc
+      await this.savePlanBreakdown(plan);
+
       return true;
     } catch {
       // A completed day-3 receipt can be replayed after a lost HTTP response.
@@ -57,9 +72,30 @@ export class HistoryService {
       for (const key of allowed) {
         if (raw[key] !== undefined && raw[key] !== null) sanitized[key] = raw[key];
       }
+
+      const age = typeof sanitized.age === 'number' ? sanitized.age : null;
+      const gender = typeof sanitized.gender === 'string' ? sanitized.gender : null;
+      const height = typeof sanitized.height_cm === 'number' ? sanitized.height_cm : null;
+      const weight = typeof sanitized.weight_kg === 'number' ? sanitized.weight_kg : null;
+      const goal = typeof sanitized.goal === 'string' ? sanitized.goal : null;
+      const activity = typeof sanitized.activity_level === 'string' ? sanitized.activity_level : null;
+      const bmi = (weight && height) ? Math.round((weight / ((height / 100) ** 2)) * 10) / 10 : null;
+
       await this.plans.manager
         .getRepository('users')
-        .update({ id: userId }, { profile_json: JSON.stringify(sanitized) });
+        .update(
+          { id: userId },
+          {
+            profile_json: JSON.stringify(sanitized),
+            age,
+            gender,
+            height_cm: height,
+            weight_kg: weight,
+            bmi,
+            goal,
+            activity_level: activity,
+          },
+        );
       return true;
     } catch {
       return false;
@@ -70,14 +106,86 @@ export class HistoryService {
   // hoặc plan tạo lúc chưa đăng nhập → không có dòng nào khớp, bỏ qua. Chỉ trả false khi DB lỗi.
   async update(userId: string, plan: MealPlanResponseDto): Promise<boolean> {
     try {
+      const daily = plan.daily_target;
       await this.plans.update(
         { id: plan.plan_id, user_id: userId },
-        { plan_json: plan, target_calories: plan.daily_target.target_calories },
+        {
+          plan_json: plan,
+          target_calories: daily.target_calories,
+          source: plan.source ?? null,
+          bmi: daily?.bmi ?? null,
+          bmr: daily?.bmr ?? null,
+          tdee: daily?.tdee ?? null,
+          protein_g: daily?.protein_g ?? null,
+          carbs_g: daily?.carbs_g ?? null,
+          fat_g: daily?.fat_g ?? null,
+          day_count: plan.days?.length ?? 3,
+        },
       );
+      await this.savePlanBreakdown(plan);
       return true;
     } catch {
       this.logger.error('Không cập nhật được kế hoạch trong lịch sử.');
       return false;
+    }
+  }
+
+  private async savePlanBreakdown(plan: MealPlanResponseDto): Promise<void> {
+    try {
+      const mealRepo = this.plans.manager.getRepository(PlanMealItem);
+      const workoutRepo = this.plans.manager.getRepository(PlanWorkoutItem);
+
+      await mealRepo.delete({ plan_id: plan.plan_id });
+      await workoutRepo.delete({ plan_id: plan.plan_id });
+
+      const mealRows: Partial<PlanMealItem>[] = [];
+      const workoutRows: Partial<PlanWorkoutItem>[] = [];
+      const now = new Date();
+
+      for (const day of plan.days || []) {
+        for (const meal of day.meals || []) {
+          const ingredientStr = meal.ingredients
+            ?.map((i) => `${i.name} (${i.amount}${i.unit})`)
+            .join(', ');
+          mealRows.push({
+            plan_id: plan.plan_id,
+            day_number: day.day_number,
+            meal_type: meal.meal_type,
+            meal_name: meal.name,
+            portion: meal.portion || null,
+            calories: meal.calories,
+            protein_g: meal.protein_g ?? null,
+            carbs_g: meal.carbs_g ?? null,
+            fat_g: meal.fat_g ?? null,
+            ingredient_summary: ingredientStr || null,
+            created_at: now,
+          });
+        }
+
+        if (day.workout) {
+          for (const ex of day.workout.exercises || []) {
+            workoutRows.push({
+              plan_id: plan.plan_id,
+              day_number: day.day_number,
+              workout_title: day.workout.title || null,
+              exercise_name: ex.name,
+              sets: ex.sets ?? null,
+              reps_or_duration: ex.reps_or_duration || null,
+              muscle_group: ex.muscle_group || null,
+              created_at: now,
+            });
+          }
+        }
+      }
+
+      if (mealRows.length > 0) {
+        await mealRepo.insert(mealRows);
+      }
+      if (workoutRows.length > 0) {
+        await workoutRepo.insert(workoutRows);
+      }
+    } catch (err) {
+      this.logger.warn(`Không lưu được chi tiết món/bài tập: ${String(err)}`);
     }
   }
 
