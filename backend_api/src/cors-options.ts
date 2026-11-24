@@ -2,6 +2,7 @@ import type { CorsOptions } from '@nestjs/common/interfaces/external/cors-option
 
 // Khi phát triển, Flutter web chạy ở cổng ngẫu nhiên trên localhost (`flutter run -d chrome`).
 const DEV_ORIGINS = [/^http:\/\/localhost(:\d+)?$/, /^http:\/\/127\.0\.0\.1(:\d+)?$/];
+const VERCEL_ORIGIN = /^https:\/\/[a-z0-9-]+(?:\.[a-z0-9-]+)*\.vercel\.app$/;
 
 // CORS chỉ cần cho bản web của app — trình duyệt chặn request khác origin nếu backend không cho phép.
 // App mobile không gửi Origin nên không bị ảnh hưởng. Không dùng cookie (đăng nhập bằng header Authorization),
@@ -17,22 +18,21 @@ export function resolveCorsOptions(env: (key: string) => string | undefined): Co
     }
   }
   // Deploy mà không khai báo origin → tắt CORS, chỉ app mobile gọi được.
-  if (listed.length === 0 && env('NODE_ENV')?.trim() === 'production') return null;
+  // Khi bật ALLOW_MOCK_AUTH (bản demo web/Vercel) thì cho phép domain Vercel và localhost gọi API.
+  if (listed.length === 0 && env('NODE_ENV')?.trim() === 'production') {
+    if (env('ALLOW_MOCK_AUTH') === 'true') {
+      return {
+        origin: [VERCEL_ORIGIN, ...DEV_ORIGINS],
+        methods: ['GET', 'POST', 'PUT', 'DELETE'],
+        allowedHeaders: ['Content-Type', 'Authorization'],
+        credentials: false,
+        maxAge: 600,
+      };
+    }
+    return null;
+  }
   return {
-    origin: (requestOrigin, callback) => {
-      if (!requestOrigin) return callback(null, true);
-      if (listed.length === 0) {
-        const allowed = DEV_ORIGINS.some((rx) => rx.test(requestOrigin));
-        return callback(null, allowed);
-      }
-      const allowed = listed.some((item) => {
-        if (item === requestOrigin) return true;
-        if (item.startsWith('http://localhost') && /^http:\/\/localhost(:\d+)?$/.test(requestOrigin)) return true;
-        if (item.startsWith('http://127.0.0.1') && /^http:\/\/127\.0\.0\.1(:\d+)?$/.test(requestOrigin)) return true;
-        return false;
-      });
-      return callback(null, allowed);
-    },
+    origin: listed.length > 0 ? listed : DEV_ORIGINS,
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: false,

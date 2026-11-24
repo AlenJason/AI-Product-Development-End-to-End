@@ -27,6 +27,12 @@ describe('resolveCorsOptions', () => {
     ]);
   });
 
+  it('allows Vercel apps in demo production mode when ALLOW_MOCK_AUTH is true', () => {
+    const options = resolve({ NODE_ENV: 'production', ALLOW_MOCK_AUTH: 'true' });
+    expect(allows(options?.origin, 'https://ai-product-development-end-to-end-f.vercel.app')).toBe(true);
+    expect(allows(options?.origin, 'https://evil.example.com')).toBe(false);
+  });
+
   it('allows the Authorization header without cookies', () => {
     expect(resolve({})).toMatchObject({ allowedHeaders: ['Content-Type', 'Authorization'], credentials: false });
   });

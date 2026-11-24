@@ -16,7 +16,7 @@ class ApiClient {
     required this.baseUrl,
     http.Client? httpClient,
     this.planTimeout = const Duration(seconds: 105),
-    this.requestTimeout = const Duration(seconds: 15),
+    this.requestTimeout = const Duration(seconds: 60),
   }) : _http = httpClient ?? http.Client();
 
   // Không có dấu / ở cuối (resolveApiBaseUrl() đã bỏ).
