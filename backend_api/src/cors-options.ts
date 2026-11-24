@@ -20,7 +20,7 @@ export function resolveCorsOptions(env: (key: string) => string | undefined): Co
   if (listed.length === 0 && env('NODE_ENV')?.trim() === 'production') return null;
   return {
     origin: listed.length > 0 ? listed : DEV_ORIGINS,
-    methods: ['GET', 'POST', 'DELETE'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: false,
     maxAge: 600,

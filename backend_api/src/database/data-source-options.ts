@@ -33,6 +33,7 @@ export function dataSourceOptions(database: string): DataSourceOptions {
 export function resolveDataSourceOptions(config: ConfigService): DataSourceOptions {
   const dbType = config.get<string>('DB_TYPE')?.trim().toLowerCase();
   if (dbType === 'mysql') {
+    const useSsl = config.get<string>('DB_SSL')?.trim().toLowerCase() === 'true';
     return {
       type: 'mysql',
       host: config.get<string>('DB_HOST')?.trim() || 'localhost',
@@ -44,6 +45,7 @@ export function resolveDataSourceOptions(config: ConfigService): DataSourceOptio
       synchronize: true,
       bigNumberStrings: false,
       charset: 'utf8mb4',
+      ssl: useSsl ? { minVersion: 'TLSv1.2', rejectUnauthorized: true } : undefined,
     };
   }
   return dataSourceOptions(
