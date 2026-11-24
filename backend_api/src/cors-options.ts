@@ -19,7 +19,20 @@ export function resolveCorsOptions(env: (key: string) => string | undefined): Co
   // Deploy mà không khai báo origin → tắt CORS, chỉ app mobile gọi được.
   if (listed.length === 0 && env('NODE_ENV')?.trim() === 'production') return null;
   return {
-    origin: listed.length > 0 ? listed : DEV_ORIGINS,
+    origin: (requestOrigin, callback) => {
+      if (!requestOrigin) return callback(null, true);
+      if (listed.length === 0) {
+        const allowed = DEV_ORIGINS.some((rx) => rx.test(requestOrigin));
+        return callback(null, allowed);
+      }
+      const allowed = listed.some((item) => {
+        if (item === requestOrigin) return true;
+        if (item.startsWith('http://localhost') && /^http:\/\/localhost(:\d+)?$/.test(requestOrigin)) return true;
+        if (item.startsWith('http://127.0.0.1') && /^http:\/\/127\.0\.0\.1(:\d+)?$/.test(requestOrigin)) return true;
+        return false;
+      });
+      return callback(null, allowed);
+    },
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: false,
