@@ -28,6 +28,7 @@ describe('database migrations', () => {
     await dataSource.undoLastMigration();
     await dataSource.undoLastMigration();
     await dataSource.undoLastMigration();
+    await dataSource.undoLastMigration();
     expect(
       await dataSource.query(
         "SELECT name FROM sqlite_master WHERE name = 'feedback_receipts'",

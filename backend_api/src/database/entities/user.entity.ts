@@ -1,7 +1,7 @@
 import { Column, CreateDateColumn, Entity, OneToMany, PrimaryGeneratedColumn, type Relation } from 'typeorm';
 import { PlanRecord } from './plan-record.entity.js';
 
-// Lưu thông tin định danh tài khoản và mật khẩu đã băm — không lưu dữ liệu sức khoẻ (NFR-5, NFR-7).
+// Lưu thông tin định danh tài khoản, mật khẩu đã băm và các chỉ số thể chất cơ bản — không lưu bệnh lý/dị ứng nhạy cảm (NFR-5, NFR-7, D4, D5).
 @Entity('users')
 export class User {
   @PrimaryGeneratedColumn('uuid')
@@ -18,6 +18,28 @@ export class User {
 
   @Column({ type: 'text', nullable: true })
   profile_json: string | null;
+
+  // Các trường thể chất hiển thị rõ ràng khi xem bảng (không cần bóc tách JSON)
+  @Column({ type: 'integer', nullable: true })
+  age: number | null;
+
+  @Column({ type: 'varchar', length: 20, nullable: true })
+  gender: string | null;
+
+  @Column({ type: 'float', nullable: true })
+  height_cm: number | null;
+
+  @Column({ type: 'float', nullable: true })
+  weight_kg: number | null;
+
+  @Column({ type: 'float', nullable: true })
+  bmi: number | null;
+
+  @Column({ type: 'varchar', length: 50, nullable: true })
+  goal: string | null;
+
+  @Column({ type: 'varchar', length: 50, nullable: true })
+  activity_level: string | null;
 
   @CreateDateColumn()
   created_at: Date;

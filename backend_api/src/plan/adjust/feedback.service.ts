@@ -202,10 +202,20 @@ export class FeedbackService {
         );
     }
     try {
+      const normal = normalizeFeedback(dto);
       const result = await this.applyOnce(dto);
       const saved = await repo.update(
         { ...key, token, status: 'processing' },
-        { status: 'completed', result_json: result, lease_until: 0 },
+        {
+          status: 'completed',
+          result_json: result,
+          lease_until: 0,
+          eating_status: dto.eating ?? null,
+          energy_level: dto.intensity ?? null,
+          feedback_summary: describeFeedback(normal) ?? null,
+          has_danger_signs: hasDangerSign(normal),
+          safety_warning: result.response.safety_warning?.message ?? null,
+        },
       );
       if (saved.affected !== 1)
         throw new ConflictException(

@@ -2,14 +2,17 @@ import type { ConfigService } from '@nestjs/config';
 import type { DataSourceOptions } from 'typeorm';
 import { PlanRecord } from './entities/plan-record.entity.js';
 import { User } from './entities/user.entity.js';
-import { InitialSchema1790208000000 } from './migrations/1790208000000-initial-schema.js';
 import { FeedbackReceipt } from './entities/feedback-receipt.entity.js';
+import { PlanMealItem } from './entities/plan-meal-item.entity.js';
+import { PlanWorkoutItem } from './entities/plan-workout-item.entity.js';
+import { InitialSchema1790208000000 } from './migrations/1790208000000-initial-schema.js';
 import { FeedbackReceipts1793498400000 } from './migrations/1793498400000-feedback-receipts.js';
 import { UserPasswords1794000000000 } from './migrations/1794000000000-user-passwords.js';
 import { UserProfile1794500000000 } from './migrations/1794500000000-user-profile.js';
+import { ReadableSchema1795540000000 } from './migrations/1795540000000-readable-schema.js';
 
 export const DEFAULT_DATABASE_PATH = 'database.sqlite';
-const ENTITIES = [User, PlanRecord, FeedbackReceipt];
+const ENTITIES = [User, PlanRecord, FeedbackReceipt, PlanMealItem, PlanWorkoutItem];
 
 // Dùng chung cho DatabaseModule và test. Không bao giờ bật `synchronize` cho SQLite: TypeORM có thể xoá cột
 // và dữ liệu khi entity đổi. Đổi entity = viết migration mới.
@@ -23,6 +26,7 @@ export function dataSourceOptions(database: string): DataSourceOptions {
       FeedbackReceipts1793498400000,
       UserPasswords1794000000000,
       UserProfile1794500000000,
+      ReadableSchema1795540000000,
     ],
     migrationsRun: true,
     synchronize: false,

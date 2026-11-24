@@ -96,14 +96,54 @@ export class AuthService {
     profile: Record<string, unknown>,
   ): Promise<{ success: boolean; profile: Record<string, unknown> }> {
     const sanitized = sanitizePhysicalProfile(profile);
-    await this.users.update({ id: userId }, { profile_json: JSON.stringify(sanitized) });
+    const age = typeof sanitized.age === 'number' ? sanitized.age : null;
+    const gender = typeof sanitized.gender === 'string' ? sanitized.gender : null;
+    const height = typeof sanitized.height_cm === 'number' ? sanitized.height_cm : null;
+    const weight = typeof sanitized.weight_kg === 'number' ? sanitized.weight_kg : null;
+    const goal = typeof sanitized.goal === 'string' ? sanitized.goal : null;
+    const activity = typeof sanitized.activity_level === 'string' ? sanitized.activity_level : null;
+    const bmi = (weight && height) ? Math.round((weight / ((height / 100) ** 2)) * 10) / 10 : null;
+
+    await this.users.update(
+      { id: userId },
+      {
+        profile_json: JSON.stringify(sanitized),
+        age,
+        gender,
+        height_cm: height,
+        weight_kg: weight,
+        bmi,
+        goal,
+        activity_level: activity,
+      },
+    );
     return { success: true, profile: sanitized };
   }
 
   async saveProfileFromPlan(userId: string, dto: Record<string, unknown>): Promise<void> {
     try {
       const sanitized = sanitizePhysicalProfile(dto);
-      await this.users.update({ id: userId }, { profile_json: JSON.stringify(sanitized) });
+      const age = typeof sanitized.age === 'number' ? sanitized.age : null;
+      const gender = typeof sanitized.gender === 'string' ? sanitized.gender : null;
+      const height = typeof sanitized.height_cm === 'number' ? sanitized.height_cm : null;
+      const weight = typeof sanitized.weight_kg === 'number' ? sanitized.weight_kg : null;
+      const goal = typeof sanitized.goal === 'string' ? sanitized.goal : null;
+      const activity = typeof sanitized.activity_level === 'string' ? sanitized.activity_level : null;
+      const bmi = (weight && height) ? Math.round((weight / ((height / 100) ** 2)) * 10) / 10 : null;
+
+      await this.users.update(
+        { id: userId },
+        {
+          profile_json: JSON.stringify(sanitized),
+          age,
+          gender,
+          height_cm: height,
+          weight_kg: weight,
+          bmi,
+          goal,
+          activity_level: activity,
+        },
+      );
     } catch {
       // Ignored: failure to save profile does not fail plan generation
     }
